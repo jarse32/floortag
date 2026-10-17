@@ -44,11 +44,11 @@ export function periodLength(p) {
   if (p === 4) return state.otLen;
   return 0; // Penaltyschießen hat keine Spielzeit
 }
-function teamShort(team) {
+export function teamShort(team) {
   return team === 'home' ? state.game.home_team_short_name : state.game.guest_team_short_name;
 }
 // Datenschutz: Jugendspieler auf Wunsch nur mit Rückennummer
-function personLabel(team, nr) {
+export function personLabel(team, nr) {
   if (nr == null) return '';
   const p = ((state.game.players || {})[team] || []).find(x => x.trikot_number === nr);
   if (!p) return `#${nr}`;

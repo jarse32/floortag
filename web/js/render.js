@@ -4,6 +4,7 @@ import { fmt, fmtGame, esc } from './format.js';
 import { events, periodList, periodTitle, describe } from './game.js';
 import { timeOf, bounds, suggestStart, suggestEnd, gameTimeAt } from './sync.js';
 import { buildChapters } from './chapters.js';
+import { buildClips, EDL_SCOPES } from './export.js';
 import * as yt from './player.js';
 
 export const $ = s => document.querySelector(s);
@@ -15,6 +16,7 @@ export function renderAll() {
   renderEvents();
   renderStrip();
   renderChapters();
+  renderClipNote();
 }
 export function renderMatchline() {
   const g = state.game;
@@ -30,6 +32,11 @@ function renderSettings() {
   $('#leadInput').value = state.leadIn;
   $('#penaltyCheck').checked = state.includePenalties;
   $('#youthCheck').checked = state.hideYouth;
+  $('#leadOutInput').value = state.leadOut;
+  $('#fpsInput').value = state.fps;
+  const scope = $('#edlScopeInput');
+  if (!scope.options.length) scope.innerHTML = Object.entries(EDL_SCOPES).map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('');
+  scope.value = state.edlScope;
 }
 function renderPeriods() {
   $('#periods').innerHTML = periodList().map(p => {
@@ -168,4 +175,15 @@ export function updateClock() {
 
 export function showPlayerMessage(msg) {
   const el = $('#playerEmpty'); el.textContent = msg; el.hidden = false;
+}
+
+// Hinweis zum Analyse-Export: was in den Dateien landet
+function renderClipNote() {
+  const clips = buildClips();
+  const scenes = clips.filter(c => c.kind !== 'period').length, phases = clips.length - scenes;
+  const n = $('#clipNote');
+  n.textContent = scenes || phases
+    ? `Im Export: ${scenes} Szene(n) und ${phases} Drittel als Phase. Szenen ohne Zeit oder „nicht im Video“ fehlen.`
+    : 'Noch nichts zu exportieren. Setze zuerst Drittelgrenzen oder Ereignisse.';
+  for (const id of ['#xmlBtn', '#csvBtn', '#edlBtn']) $(id).disabled = !clips.length;
 }

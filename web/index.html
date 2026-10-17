@@ -80,7 +80,7 @@
       <div class="settings">
         <label>Drittellänge (Min.)<input type="number" id="periodLenInput" min="5" max="30" step="1"></label>
         <label>Verlängerung (Min.)<input type="number" id="otLenInput" min="1" max="20" step="1"></label>
-        <label>Vorlauf der Kapitel (s)<input type="number" id="leadInput" min="0" max="30" step="1"></label>
+        <label>Vorlauf für Kapitel und Clips (s)<input type="number" id="leadInput" min="0" max="30" step="1"></label>
         <label>Drittelpause (Min.)<input type="number" id="pauseLenInput" min="1" max="30" step="1"></label>
         <label class="check"><input type="checkbox" id="penaltyCheck"> Strafen als Kapitel aufnehmen</label>
         <label class="check"><input type="checkbox" id="youthCheck"> Jugendspieler nur mit Rückennummer nennen</label>
@@ -94,6 +94,25 @@
         <label class="btn ghost file-btn">Sync laden<input type="file" id="syncInput" accept=".json,application/json"></label>
         <button id="resetBtn" class="btn ghost">Anderes Spiel laden</button>
       </div>
+    </section>
+
+    <section class="export analysis">
+      <h2>Videoanalyse und Schnitt</h2>
+      <p class="note">Jede Szene wird ein Clip mit Vor- und Nachlauf, Drittel werden als Phasen exportiert. Die Zeiten beziehen sich auf das YouTube-Video. In Spiideo Perform legst du beim Import ein Tag als Bezugspunkt fest, dann passen die Zeiten auch zur eigenen Aufnahme.</p>
+      <div class="settings">
+        <label>Nachlauf der Clips (s)<input type="number" id="leadOutInput" min="0" max="60" step="1"></label>
+        <label>Bildrate des Videos (für EDL)
+          <select id="fpsInput"><option value="24">24</option><option value="25">25</option><option value="30">30</option><option value="50">50</option><option value="60">60</option></select>
+        </label>
+        <label>Inhalt der Schnittliste<select id="edlScopeInput"></select></label>
+      </div>
+      <p id="clipNote" class="note"></p>
+      <div class="export-actions">
+        <button id="xmlBtn" class="btn">Sportscode-XML herunterladen</button>
+        <button id="csvBtn" class="btn ghost">CSV herunterladen</button>
+        <button id="edlBtn" class="btn ghost">Schnittliste (EDL) herunterladen</button>
+      </div>
+      <p class="note">XML für Nacsport, Spiideo Perform und Hudl Sportscode. Die EDL erzeugt in DaVinci Resolve eine fertige Timeline aus allen gewählten Szenen (Import über „Datei → Importieren → Timeline“, danach das heruntergeladene Video verknüpfen).</p>
     </section>
   </aside>
 </main>

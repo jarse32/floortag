@@ -8,7 +8,7 @@ const FIXTURE = JSON.parse(readFileSync(new URL('../fixtures/spiel_58668.json', 
 // Setzt den Zustand auf Standardwerte und lädt ein Spiel (Standard: Fixture 58668)
 export function setup(game = FIXTURE, overrides = {}) {
   Object.assign(state, {
-    game: null, videoId: 'test', periodLen: 1200, otLen: 600, pauseLen: 600, leadIn: 8,
+    game: null, videoId: 'test', periodLen: 1200, otLen: 600, pauseLen: 600, leadIn: 8, leadOut: 5, fps: 25, edlScope: 'goal',
     includePenalties: true, hideYouth: true, periods: {}, placed: {}, anchors: {}, missing: {}, gs: {}
   }, overrides);
   ui.selectedId = null; ui.anchorForm = null;

@@ -6,7 +6,10 @@ export const state = {
   periodLen: 1200,     // Drittellänge in Sekunden
   otLen: 600,          // Verlängerung in Sekunden
   pauseLen: 600,       // Drittelpause in Sekunden
-  leadIn: 8,           // Vorlauf für Kapitelmarken in Sekunden
+  leadIn: 8,           // Vorlauf für Kapitelmarken und Clips in Sekunden
+  leadOut: 5,          // Nachlauf für Clips im Analyse-Export in Sekunden
+  fps: 25,             // Bildrate des Videos für die Schnittliste (EDL)
+  edlScope: 'goal',    // Inhalt der Schnittliste, siehe EDL_SCOPES in export.js
   includePenalties: true,
   hideYouth: true,
   periods: {},         // { 1: { start, end }, ... } in Videosekunden

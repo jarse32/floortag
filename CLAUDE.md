@@ -23,7 +23,7 @@ php -S localhost:8000 -t web   # im Repo-Wurzelverzeichnis
 # dann http://localhost:8000/?spiel=58668
 ```
 
-Tests ohne Abhängigkeiten und ohne echten Key: `npm test` (Sync-Logik, freie Anker, Kapitel, Sync-Datei; `node --test`) und `npm run test:proxy`. Änderungen an `sync.js`, `game.js` oder `chapters.js` immer mit `npm test` prüfen.
+Tests ohne Abhängigkeiten und ohne echten Key: `npm test` (Sync-Logik, freie Anker, Kapitel, Sync-Datei, Analyse-Export; `node --test`) und `npm run test:proxy`. Änderungen an `sync.js`, `game.js` oder `chapters.js` immer mit `npm test` prüfen.
 
 Testfall: Spiel 58668 (2. FBL Herren Nord/West, Baltic Storms – TV Eiche Horn Bremen, 5:4), Video `lfIFpRsE55I`. Die JSON liegt in `fixtures/spiel_58668.json`.
 
@@ -36,7 +36,7 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 2. Kapitelmarken-Export – erledigt, wird getestet.
 3. **In Arbeit:** Prototyp in sinnvolle Dateien aufteilen (erledigt), API-Proxy als PHP (erledigt, lokal getestet), Spiel per ID laden statt per Datei (erledigt). Online unter `https://tag.floorballdashboard.app` seit 17.10.2026.
 4. Backend und gemeinsame Syncs: PocketBase (braucht einen eigenen Server, siehe Hosting), Accounts, ein gemeinsamer Sync pro Video mit Änderungshistorie, Deploy unter `tag.floorballdashboard.app`, geschlossene Beta mit wenigen Vereinen.
-5. Analyse-Tags: Code-Panel mit Floorball-Taxonomie und Tastenkürzeln, auch Ereignisse, die nicht im Saisonmanager stehen (z. B. verschossene Penaltys), eigene Layer pro Nutzer/Verein, Sichtbarkeit privat/Verein/öffentlich, Export als Sportscode-XML.
+5. Analyse-Tags: Code-Panel mit Floorball-Taxonomie und Tastenkürzeln, auch Ereignisse, die nicht im Saisonmanager stehen (z. B. verschossene Penaltys, Save, Block, Konter), dazu Phasen mit Dauer (z. B. Überzahl/Unterzahl), eigene Layer pro Nutzer/Verein, Sichtbarkeit privat/Verein/öffentlich, Export über das bestehende Clip-Modell (Sportscode-XML, CSV, EDL).
 6. Anschauen und Vernetzen: Filter, Playlists über mehrere Spiele, Deeplinks auf Szenen, Button „Szenen ansehen“ in der Floorball-Dashboard-App.
 
 ## Saisonmanager-API
@@ -89,6 +89,15 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 - IFrame Player API, Einbindung über `youtube-nocookie.com`, mit Zwei-Klick-Lösung (`web/js/consent.js`): Vor der Zustimmung wird nichts von YouTube geladen, auch kein Vorschaubild. Alle Wege zum Player laufen über `showVideo()` in `main.js`. Die Zustimmung wird nur auf Wunsch gemerkt (`localStorage`, Schlüssel `floortag:youtube-consent`) und lässt sich in der Fußzeile widerrufen.
 - `getCurrentTime()`/`seekTo()` sind nicht framegenau; für Szenen reicht das.
 - Kapitelmarken-Regeln: erstes Kapitel bei `0:00`, mindestens drei Kapitel, mindestens 10 Sekunden pro Kapitel. Kapitel zu Ereignissen beginnen mit einem einstellbaren Vorlauf (Standard 8 Sekunden) vor dem Ereignis.
+
+## Export für Videoanalyse und Schnitt
+
+- Gemeinsames Clip-Modell in `web/js/export.js` (`buildClips`): Jeder Clip hat Code, Start, Ende (Videosekunden) und Labels (Gruppe/Text). Ereignisse bekommen Vorlauf (`leadIn`, Standard 8 s) und Nachlauf (`leadOut`, Standard 5 s), Drittel werden Phasen mit echter Dauer. Eigene Tags und Phasen aus Etappe 5 sind weitere Clips, bei Phasen zählt die Dauer statt Vor- und Nachlauf.
+- **Sportscode-XML** (`ALL_INSTANCES` mit `instance`/`code`/`label`, `ROWS` mit Farben 0–65535) für Nacsport, Spiideo Perform (nutzt Eiche Horn) und Hudl Sportscode. Spiideo richtet die Zeit beim Import über ein Bezugs-Tag aus, deshalb passt der Export auch zur eigenen Aufnahme.
+- **CSV** mit Semikolon, Dezimalkomma und BOM für Excel.
+- **EDL (CMX3600)** als echte Schnittliste für DaVinci Resolve: Timeline ab 01:00:00:00, Clips hintereinander, Umfang wählbar (Tore / Tore und Strafen / alle), Bildrate als Einstellung. Kommentare nur in ASCII. Der Import in Resolve ist noch nicht praktisch getestet.
+- Codes heißen „Tor BAL“, „Strafe TVEH“, „Auszeit TVEH“. Jugendschutz gilt auch im Export.
+- Idee für später: Überzahl- und Unterzahlphasen aus 2-Minuten-Strafen ableiten (Beginn Strafe, Ende 2:00 Spielzeit später oder früheres Tor des Teams in Überzahl).
 
 ## Zusammenarbeit (ab Etappe 4)
 

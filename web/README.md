@@ -18,5 +18,6 @@ Start im Repo-Wurzelverzeichnis mit `php -S localhost:8000 -t web`, dann `http:/
 - `js/sync.js` – Sync-Logik: Anker, Interpolation, Grenzen, Vorschläge
 - `js/chapters.js` – YouTube-Kapitelmarken
 - `js/storage.js` – localStorage und Sync-Datei
+- `js/export.js` – Clip-Modell und Export für Videoanalyse (Sportscode-XML, CSV) und Schnitt (EDL)
 - `js/player.js` – YouTube-IFrame-API
 - `js/render.js` – Darstellung

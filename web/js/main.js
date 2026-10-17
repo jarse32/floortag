@@ -4,6 +4,7 @@ import { extractVideoId, fmt, fmtGame } from './format.js';
 import { prepareGame, events, findEvent, periodLength } from './game.js';
 import { timeOf, place, setMissing, addAnchor, removeAnchor } from './sync.js';
 import { save, restore, buildSyncFile, syncFileName, applySyncFile } from './storage.js';
+import { buildClips, toSportscodeXml, toCsv, toEdl } from './export.js';
 import * as yt from './player.js';
 import { hasConsent, giveConsent, revokeConsent, isRemembered } from './consent.js';
 import { $, renderAll, renderMatchline, renderStrip, updateClock, showPlayerMessage } from './render.js';
@@ -207,13 +208,31 @@ $('#copyBtn').addEventListener('click', async () => {
   b.textContent = 'Kopiert';
   setTimeout(() => { b.textContent = 'Kapitel kopieren'; }, 1500);
 });
-$('#saveSyncBtn').addEventListener('click', () => {
+// Datei im Browser zum Speichern anbieten
+function download(name, text, type) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(buildSyncFile(), null, 2)], { type: 'application/json' }));
-  a.download = syncFileName();
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+$('#saveSyncBtn').addEventListener('click', () => download(syncFileName(), JSON.stringify(buildSyncFile(), null, 2), 'application/json'));
+
+// Analyse-Export
+const exportBase = () => `floortag-${state.game.id}-${state.videoId || 'ohne-video'}`;
+$('#xmlBtn').addEventListener('click', () => download(`${exportBase()}-sportscode.xml`, toSportscodeXml(buildClips()), 'application/xml'));
+// BOM, damit Excel die Umlaute richtig liest
+$('#csvBtn').addEventListener('click', () => download(`${exportBase()}.csv`, '\uFEFF' + toCsv(buildClips()), 'text/csv'));
+$('#edlBtn').addEventListener('click', () => {
+  const g = state.game;
+  const edl = toEdl(buildClips(), { fps: state.fps, scope: state.edlScope, clipName: `${state.videoId || 'video'}.mp4`,
+    title: `${g.home_team_short_name}-${g.guest_team_short_name} ${g.date || ''}`.trim() });
+  if (!edl.count) { const n = $('#clipNote'); n.textContent = 'Für diese Auswahl gibt es noch keine Szenen mit Zeit.'; return; }
+  download(`${exportBase()}-${state.edlScope}.edl`, edl.text, 'text/plain');
 });
+$('#leadOutInput').addEventListener('change', e => { state.leadOut = Math.max(0, Number(e.target.value)); commit(); });
+$('#fpsInput').addEventListener('change', e => { state.fps = Number(e.target.value); commit(); });
+$('#edlScopeInput').addEventListener('change', e => { state.edlScope = e.target.value; commit(); });
 $('#syncInput').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return;
   const n = $('#chapterNote');

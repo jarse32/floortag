@@ -119,6 +119,9 @@ main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr
 .settings { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem .9rem; margin-bottom: .9rem; font-size: .9rem; }
 .settings label { display: flex; flex-direction: column; gap: .2rem; color: var(--muted); }
 .settings label.check { flex-direction: row; align-items: center; gap: .4rem; color: var(--ink); grid-column: span 2; }
+.export.analysis { margin-top: 1.5rem; }
+.export.analysis > .note:first-of-type { margin: 0 0 .9rem; }
+.settings select { padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); width: 100%; font: inherit; color: var(--ink); }
 .settings input[type=number] { padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); width: 100%; }
 .export textarea { width: 100%; font: .88rem/1.5 ui-monospace, Menlo, monospace; padding: .6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); resize: vertical; }
 .export-actions { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
