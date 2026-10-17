@@ -8,6 +8,7 @@ Start im Repo-Wurzelverzeichnis mit `php -S localhost:8000 -t web`, dann `http:/
 
 - `index.html` – Markup
 - `api/game.php` – Proxy zum Saisonmanager mit Dateicache (`api/cache/`), Key aus `SM_KEY` oder `api/config.php`
+- `css/fonts.css`, `fonts/` – selbst gehostete Schriften Barlow und Barlow Condensed (OFL 1.1)
 - `css/tokens.css` – Farb- und Schrift-Tokens für Hell- und Dunkelmodus
 - `css/app.css` – Layout und Komponenten
 - `js/main.js` – Einstieg: Spiel laden (per ID, Datei oder `?spiel=`), Event-Handler, Tastatur

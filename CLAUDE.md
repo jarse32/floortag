@@ -98,7 +98,7 @@ Ein Sync gehört zu einem **Video**, nicht zu einem Spiel. Ein Spiel kann mehrer
 - Vom Saisonmanager gesetzte Einschränkungen (z. B. gesperrte Scorerlisten) werden übernommen.
 - Analyse-Tags mit Personenbezug sind Leistungsbewertungen und standardmäßig nur vereinsintern sichtbar.
 - Hosting in der EU, Löschkonzept für Accounts und Tags.
-- Fußzeile verlinkt Impressum und Datenschutz von floorballdashboard.app. **Offen:** Die Datenschutzerklärung erwähnt FloorTag noch nicht (YouTube-Einbettung, Proxy, localStorage). Schriften kommen noch von Google Fonts und sollten selbst gehostet werden.
+- Fußzeile verlinkt Impressum und Datenschutz von floorballdashboard.app. **Offen:** Die Datenschutzerklärung erwähnt FloorTag noch nicht (YouTube-Einbettung, Proxy, localStorage). Schriften (Barlow, Barlow Condensed) sind selbst gehostet in `web/fonts/`; vor der YouTube-Zustimmung geht keine Anfrage an fremde Server.
 
 ## Repo-Struktur
 
