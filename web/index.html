@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FloorTag – Sync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">FloorTag<span class="brand-sub">Sync-Prototyp</span></div>
+  <div id="matchline" class="matchline"></div>
+</header>
+
+<section id="loader" class="loader">
+  <h1>Spiel laden</h1>
+  <p>Zieh die Saisonmanager-JSON eines Spiels hierher oder wähle sie aus. Das Video wird, wenn vorhanden, automatisch aus dem Livestream-Link übernommen.</p>
+  <div id="dropzone" class="dropzone">
+    <input type="file" id="fileInput" accept=".json,application/json">
+    <label for="fileInput" class="btn">JSON-Datei auswählen</label>
+    <span>oder hierher ziehen</span>
+  </div>
+  <details>
+    <summary>JSON stattdessen einfügen</summary>
+    <textarea id="pasteArea" rows="8" aria-label="JSON einfügen"></textarea>
+    <button id="pasteBtn" class="btn">Einfügen und laden</button>
+  </details>
+  <p id="loadError" class="error" hidden></p>
+</section>
+
+<main id="app" hidden>
+  <section class="stage">
+    <div class="videorow">
+      <input id="videoInput" type="text" placeholder="YouTube-Link oder Video-ID" aria-label="YouTube-Link oder Video-ID">
+      <button id="videoBtn" class="btn">Video laden</button>
+    </div>
+    <div class="player-wrap">
+      <div id="player"></div>
+      <div id="playerEmpty" class="player-empty">Noch kein Video geladen.</div>
+    </div>
+    <div class="transport">
+      <span id="clock" class="clock">0:00</span>
+      <button class="btn ghost" data-seek="-5">−5 s</button>
+      <button class="btn ghost" data-seek="-1">−1 s</button>
+      <button class="btn" id="playBtn">Play / Pause</button>
+      <button class="btn ghost" data-seek="1">+1 s</button>
+      <button class="btn ghost" data-seek="5">+5 s</button>
+    </div>
+    <div id="strip" class="strip" hidden aria-label="Zeitleiste des Videos"></div>
+    <div id="periods" class="periods"></div>
+    <p class="keys">Tastatur: <kbd>K</kbd> oder <kbd>Leertaste</kbd> Play/Pause, <kbd>J</kbd>/<kbd>L</kbd> ±5 s, <kbd>,</kbd>/<kbd>.</kbd> ±1 s, <kbd>Enter</kbd> setzt das gewählte Ereignis auf die aktuelle Videozeit, <kbd>N</kbd> wählt das nächste Ereignis.</p>
+  </section>
+
+  <aside class="side">
+    <div class="side-head"><h2>Ereignisse</h2><span id="progress"></span></div>
+    <ol id="events" class="events"></ol>
+
+    <section class="export">
+      <h2>Export</h2>
+      <div class="settings">
+        <label>Drittellänge (Min.)<input type="number" id="periodLenInput" min="5" max="30" step="1"></label>
+        <label>Verlängerung (Min.)<input type="number" id="otLenInput" min="1" max="20" step="1"></label>
+        <label>Vorlauf der Kapitel (s)<input type="number" id="leadInput" min="0" max="30" step="1"></label>
+        <label>Drittelpause (Min.)<input type="number" id="pauseLenInput" min="1" max="30" step="1"></label>
+        <label class="check"><input type="checkbox" id="penaltyCheck"> Strafen als Kapitel aufnehmen</label>
+        <label class="check"><input type="checkbox" id="youthCheck"> Jugendspieler nur mit Rückennummer nennen</label>
+      </div>
+      <label for="chapters" class="note">YouTube-Kapitel für die Videobeschreibung</label>
+      <textarea id="chapters" rows="11" readonly></textarea>
+      <p id="chapterNote" class="note"></p>
+      <div class="export-actions">
+        <button id="copyBtn" class="btn">Kapitel kopieren</button>
+        <button id="saveSyncBtn" class="btn ghost">Sync speichern</button>
+        <label class="btn ghost file-btn">Sync laden<input type="file" id="syncInput" accept=".json,application/json"></label>
+        <button id="resetBtn" class="btn ghost">Anderes Spiel laden</button>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<p class="source">Daten: Saisonmanager / Floorball Deutschland</p>
+</body>
+</html>

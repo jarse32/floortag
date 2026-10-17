@@ -14,13 +14,13 @@ Teil des Floorball-Dashboard-Ökosystems, geplante Adresse: `tag.floorballdashbo
 
 ## Aktueller Stand
 
-`prototype/floortag-prototyp.html` ist ein funktionierender Single-File-Prototyp (Etappen 1 und 2): Saisonmanager-JSON per Drag-and-drop laden, YouTube-Video wird aus `live_stream_link` übernommen, Drittelgrenzen setzen, Ereignisse schätzen und feinjustieren, YouTube-Kapitel und Sync-JSON exportieren. Zwischenstand liegt in `localStorage`.
+Das Frontend liegt in `web/` (native ES-Module, kein Build-Schritt, Aufbau siehe `web/README.md`). Funktionsumfang wie der Prototyp aus Etappen 1 und 2: Saisonmanager-JSON per Drag-and-drop laden, YouTube-Video wird aus `live_stream_link` übernommen, Drittelgrenzen setzen, Ereignisse schätzen und feinjustieren, YouTube-Kapitel und Sync-JSON exportieren. Zwischenstand liegt in `localStorage`. Der ursprüngliche Single-File-Prototyp liegt unverändert in `prototype/` und wird nicht weiterentwickelt.
 
 Start lokal nur über einen Server, nicht per Doppelklick (YouTube blockiert Einbettung von `file://`, Fehler 153):
 
 ```bash
 python3 -m http.server 8000   # im Repo-Wurzelverzeichnis
-# dann http://localhost:8000/prototype/floortag-prototyp.html
+# dann http://localhost:8000/web/
 ```
 
 Testfall: Spiel 58668 (2. FBL Herren Nord/West, Baltic Storms – TV Eiche Horn Bremen, 5:4), Video `lfIFpRsE55I`. Die JSON liegt in `fixtures/spiel_58668.json`.
@@ -32,7 +32,7 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 0. Datenstruktur verstehen – erledigt.
 1. Sync-Prototyp lokal – erledigt, wird getestet.
 2. Kapitelmarken-Export – erledigt, wird getestet.
-3. **Als Nächstes:** Prototyp in sinnvolle Dateien aufteilen, kleiner API-Proxy auf dem bestehenden VPS (dort läuft bereits das Push-Backend des Floorball Dashboard), Spiel per ID laden statt per Datei.
+3. **In Arbeit:** Prototyp in sinnvolle Dateien aufteilen (erledigt), kleiner API-Proxy auf dem bestehenden VPS (dort läuft bereits das Push-Backend des Floorball Dashboard), Spiel per ID laden statt per Datei.
 4. Backend und gemeinsame Syncs: PocketBase auf dem VPS, Accounts, ein gemeinsamer Sync pro Video mit Änderungshistorie, Deploy unter `tag.floorballdashboard.app`, geschlossene Beta mit wenigen Vereinen.
 5. Analyse-Tags: Code-Panel mit Floorball-Taxonomie und Tastenkürzeln, eigene Layer pro Nutzer/Verein, Sichtbarkeit privat/Verein/öffentlich, Export als Sportscode-XML.
 6. Anschauen und Vernetzen: Filter, Playlists über mehrere Spiele, Deeplinks auf Szenen, Button „Szenen ansehen“ in der Floorball-Dashboard-App.
@@ -103,7 +103,7 @@ floortag/
 ├── CLAUDE.md
 ├── README.md
 ├── prototype/floortag-prototyp.html   # Ausgangspunkt, nicht mehr weiterentwickeln
-├── web/                               # Frontend nach der Aufteilung (noch leer)
+├── web/                               # Frontend, ES-Module ohne Build
 ├── proxy/                             # API-Proxy für den VPS (noch leer)
 └── fixtures/spiel_58668.json          # Testdaten
 ```

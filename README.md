@@ -4,20 +4,20 @@ Synchronisiert Floorball-Spielvideos auf YouTube mit den offiziellen Spieldaten 
 
 Nicht-kommerzielles Hobbyprojekt aus dem Floorball-Dashboard-Ökosystem.
 
-## Prototyp starten
+## Starten
 
-YouTube blockiert die Einbettung von `file://`, deshalb über einen lokalen Server starten:
+YouTube blockiert die Einbettung von `file://`, deshalb im Repo-Wurzelverzeichnis einen lokalen Server starten:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Dann `http://localhost:8000/prototype/floortag-prototyp.html` öffnen und `fixtures/spiel_58668.json` hineinziehen.
+Dann `http://localhost:8000/web/` öffnen und `fixtures/spiel_58668.json` hineinziehen. Der alte Prototyp liegt unter `http://localhost:8000/prototype/floortag-prototyp.html`.
 
 ## Aufbau
 
 - `prototype/` – Single-File-Prototyp (Etappen 1 und 2), wird nicht mehr weiterentwickelt
-- `web/` – Frontend nach der Aufteilung
+- `web/` – Frontend (ES-Module, kein Build-Schritt)
 - `proxy/` – API-Proxy für den Saisonmanager
 - `fixtures/` – Testdaten
 

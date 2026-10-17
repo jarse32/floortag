@@ -1,0 +1,33 @@
+/* Farb- und Schrift-Tokens: Hell- und Dunkelmodus */
+:root {
+  --bg: #EDF1EE;
+  --surface: #FFFFFF;
+  --ink: #15231D;
+  --muted: #5A6B62;
+  --line: #D3DCD6;
+  --pine: #1D6A4B;
+  --pine-soft: #DCEBE2;
+  --estimate: #B5761B;
+  --guest: #2D5584;
+  --period: #E2EAE4;
+  --danger: #A33A2A;
+  --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0E1813;
+    --surface: #16231C;
+    --ink: #E6EEE9;
+    --muted: #9AAEA3;
+    --line: #2A3B32;
+    --pine: #44AA7E;
+    --pine-soft: #1E3529;
+    --estimate: #E2A64B;
+    --guest: #7AA2D4;
+    --period: #1F3027;
+    --danger: #E07A66;
+    color-scheme: dark;
+  }
+}
