@@ -9,9 +9,9 @@ const FIXTURE = JSON.parse(readFileSync(new URL('../fixtures/spiel_58668.json', 
 export function setup(game = FIXTURE, overrides = {}) {
   Object.assign(state, {
     game: null, videoId: 'test', periodLen: 1200, otLen: 600, pauseLen: 600, leadIn: 8,
-    includePenalties: true, hideYouth: true, periods: {}, placed: {}, gs: {}
+    includePenalties: true, hideYouth: true, periods: {}, placed: {}, anchors: {}, missing: {}, gs: {}
   }, overrides);
-  ui.selectedId = null;
+  ui.selectedId = null; ui.anchorForm = null;
   prepareGame(structuredClone(game));
   return state;
 }

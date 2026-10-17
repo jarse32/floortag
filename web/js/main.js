@@ -1,8 +1,8 @@
 // ===== Einstieg: Spiel laden und Bedienung verdrahten =====
 import { state, ui } from './state.js';
-import { extractVideoId, fmt } from './format.js';
-import { prepareGame, events, findEvent } from './game.js';
-import { timeOf, place } from './sync.js';
+import { extractVideoId, fmt, fmtGame } from './format.js';
+import { prepareGame, events, findEvent, periodLength } from './game.js';
+import { timeOf, place, setMissing, addAnchor, removeAnchor } from './sync.js';
 import { save, restore, buildSyncFile, syncFileName, applySyncFile } from './storage.js';
 import * as yt from './player.js';
 import { hasConsent, giveConsent, revokeConsent, isRemembered } from './consent.js';
@@ -50,7 +50,7 @@ function setVideo(id) {
 // ===== Spiel laden =====
 function loadGame(data) {
   prepareGame(data);
-  ui.selectedId = null;
+  ui.selectedId = null; ui.anchorForm = null;
   renderMatchline();
   $('#loader').hidden = true;
   $('#app').hidden = false;
@@ -122,13 +122,35 @@ $('#playBtn').addEventListener('click', yt.togglePlay);
 // ===== Drittelgrenzen =====
 $('#periods').addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
-  const p = Number(b.dataset.p), kind = b.dataset.kind;
-  state.periods[p] = state.periods[p] || {};
-  if (b.dataset.act === 'setmark') { state.periods[p][kind] = Math.round(yt.now() * 10) / 10; commit(); }
-  if (b.dataset.act === 'clearmark') { state.periods[p][kind] = null; commit(); }
-  if (b.dataset.act === 'seekmark') yt.seek(state.periods[p][kind]);
-  if (b.dataset.act === 'seeksuggest') yt.seek(Number(b.dataset.t) - 5);
+  const p = Number(b.dataset.p), kind = b.dataset.kind, i = Number(b.dataset.i);
+  switch (b.dataset.act) {
+    case 'setmark': (state.periods[p] = state.periods[p] || {})[kind] = Math.round(yt.now() * 10) / 10; commit(); break;
+    case 'clearmark': if (state.periods[p]) { state.periods[p][kind] = null; commit(); } break;
+    case 'seekmark': yt.seek(state.periods[p][kind]); break;
+    case 'seeksuggest': yt.seek(Number(b.dataset.t) - 5); break;
+    // Freie Anker: Videozeit wird beim Öffnen festgehalten, Spielzeit vorgeschlagen
+    case 'openanchor': ui.anchorForm = { p, v: Math.round(yt.now() * 10) / 10 }; renderAll(); focusAnchorInput(); break;
+    case 'cancelanchor': ui.anchorForm = null; renderAll(); break;
+    case 'seekanchor': yt.seek(state.anchors[p][i].v); break;
+    case 'removeanchor': removeAnchor(p, i); commit(); break;
+  }
 });
+$('#periods').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = ui.anchorForm; if (!f) return;
+  const raw = e.target.elements.g.value.trim();
+  const m = raw.match(/^(\d{1,2})[:.](\d{2})$/);
+  const g = m && Number(m[2]) < 60 ? Number(m[1]) * 60 + Number(m[2]) : null;
+  const len = periodLength(f.p);
+  if (g == null) f.error = 'Gib die Spielzeit als mm:ss ein, z. B. 14:30.';
+  else if (len && g > len) f.error = `Die Spielzeit darf höchstens ${fmtGame(len)} sein.`;
+  else { addAnchor(f.p, g, f.v); ui.anchorForm = null; commit(); return; }
+  renderAll(); focusAnchorInput();
+});
+function focusAnchorInput() {
+  const input = document.querySelector('.anchor-form input');
+  if (input) { input.focus(); input.select(); }
+}
 
 // ===== Ereignisse =====
 function handleEventAction(e) {
@@ -145,6 +167,8 @@ function handleEventAction(e) {
     case 'jump': yt.seek(t - state.leadIn); yt.play(); break;
     case 'nudge': place(ev, t + Number(b.dataset.d)); commit(); yt.seek(timeOf(ev) - 3); break;
     case 'unplace': delete state.placed[ev.event_id]; commit(); break;
+    case 'missing': setMissing(ev, true); commit(); break;
+    case 'unmissing': setMissing(ev, false); commit(); break;
   }
 }
 $('#events').addEventListener('click', handleEventAction);

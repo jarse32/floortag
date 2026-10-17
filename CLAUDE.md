@@ -23,7 +23,7 @@ php -S localhost:8000 -t web   # im Repo-Wurzelverzeichnis
 # dann http://localhost:8000/?spiel=58668
 ```
 
-Tests ohne Abhängigkeiten und ohne echten Key: `npm test` (Sync-Logik und Kapitel, `node --test`) und `npm run test:proxy`. Änderungen an `sync.js`, `game.js` oder `chapters.js` immer mit `npm test` prüfen.
+Tests ohne Abhängigkeiten und ohne echten Key: `npm test` (Sync-Logik, freie Anker, Kapitel, Sync-Datei; `node --test`) und `npm run test:proxy`. Änderungen an `sync.js`, `game.js` oder `chapters.js` immer mit `npm test` prüfen.
 
 Testfall: Spiel 58668 (2. FBL Herren Nord/West, Baltic Storms – TV Eiche Horn Bremen, 5:4), Video `lfIFpRsE55I`. Die JSON liegt in `fixtures/spiel_58668.json`.
 
@@ -36,7 +36,7 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 2. Kapitelmarken-Export – erledigt, wird getestet.
 3. **In Arbeit:** Prototyp in sinnvolle Dateien aufteilen (erledigt), API-Proxy als PHP (erledigt, lokal getestet), Spiel per ID laden statt per Datei (erledigt). Online unter `https://tag.floorballdashboard.app` seit 17.10.2026.
 4. Backend und gemeinsame Syncs: PocketBase (braucht einen eigenen Server, siehe Hosting), Accounts, ein gemeinsamer Sync pro Video mit Änderungshistorie, Deploy unter `tag.floorballdashboard.app`, geschlossene Beta mit wenigen Vereinen.
-5. Analyse-Tags: Code-Panel mit Floorball-Taxonomie und Tastenkürzeln, eigene Layer pro Nutzer/Verein, Sichtbarkeit privat/Verein/öffentlich, Export als Sportscode-XML.
+5. Analyse-Tags: Code-Panel mit Floorball-Taxonomie und Tastenkürzeln, auch Ereignisse, die nicht im Saisonmanager stehen (z. B. verschossene Penaltys), eigene Layer pro Nutzer/Verein, Sichtbarkeit privat/Verein/öffentlich, Export als Sportscode-XML.
 6. Anschauen und Vernetzen: Filter, Playlists über mehrere Spiele, Deeplinks auf Szenen, Button „Szenen ansehen“ in der Floorball-Dashboard-App.
 
 ## Saisonmanager-API
@@ -65,11 +65,18 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 
 Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnitten.
 
-- **Anker** sind: Drittelbeginn (Spielzeit 0), Drittelende (Spielzeit = Drittellänge) und jedes manuell gesetzte Ereignis.
+- **Anker** sind: Drittelbeginn (Spielzeit 0), Drittelende (Spielzeit = Drittellänge), jedes manuell gesetzte Ereignis und **freie Anker** („Spielzeit 15:00 liegt bei Videozeit 55:27“, `state.anchors`).
 - **Schätzung** eines Ereignisses: lineare Interpolation zwischen dem nächsten Anker davor und danach im selben Abschnitt. Gibt es nur einen Anker auf einer Seite, läuft die Spielzeit 1:1 mit der Videozeit weiter.
 - Jedes manuell gesetzte Ereignis wird selbst zum Anker und verbessert die Schätzung der übrigen.
 - **Grenzen:** Ein Ereignis darf nicht vor dem vorherigen oder nach dem nächsten Anker liegen. Ereignisse mit gleicher Spielzeit (z. B. Tor und Auszeit bei 18:55) dürfen auf derselben Videozeit liegen.
 - Penaltyschießen hat keine Spielzeit; dort wird pro Versuch mit 30 Sekunden Abstand geschätzt.
+
+### Streamlücken und freie Anker
+
+- Bei einem Livestream-Abbruch setzt man zwei freie Anker, einen direkt vor und einen direkt nach der Lücke. Das reicht, weil die Interpolation dann an der Lücke getrennt wird. Auch ein später Streambeginn lässt sich so abbilden (Anker statt Anpfiff).
+- Die Videozeit wird beim Öffnen des Formulars festgehalten. Die Spielzeit ist mit der Rückwärtsschätzung (`gameTimeAt`) vorausgefüllt und korrigierbar. Die eingeblendete virtuelle Anzeigetafel stimmt nicht sicher 1:1 mit der echten Spieluhr überein.
+- Ereignisse in der Lücke werden als **„nicht im Video“** markiert (`state.missing`): keine Zeit, kein Anker, kein Kapitel, im späteren Export nicht enthalten.
+- Sync-Datei Version 2: `free_anchors`, `not_in_video` und `pause_length_sec`. Version 1 wird weiter gelesen.
 
 ### Erkenntnisse aus dem ersten Test
 
@@ -121,6 +128,5 @@ floortag/
 ## Offene Fragen
 
 - Drittellänge und Pausenlänge pro Liga: Woher kommen die Werte (Tabelle im Projekt, Einstellung pro Liga, Ableitung aus Altersklasse)?
-- Livestream-Abbrüche: zusätzliche freie Anker („hier ist 14:30 im 2. Drittel“) einführen.
 - Server für Etappe 4: PocketBase läuft nicht auf All-Inkl. Optionen: kleiner VPS in der EU (z. B. Hetzner), gehostetes PocketBase oder ein PHP- und MySQL-Backend auf All-Inkl.
 - Öffentliches Repo ja oder nein; bei ja Fixtures anonymisieren.

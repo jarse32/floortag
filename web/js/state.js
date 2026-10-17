@@ -11,10 +11,13 @@ export const state = {
   hideYouth: true,
   periods: {},         // { 1: { start, end }, ... } in Videosekunden
   placed: {},          // { event_id: videoSec } manuell gesetzte Ereignisse = Ankerpunkte
+  anchors: {},         // { 2: [{ g, v }, ...] } freie Anker ohne Ereignis, z. B. vor und nach einer Streamlücke
+  missing: {},         // { event_id: true } Ereignisse, die nicht im Video zu sehen sind
   gs: {}               // { event_id: Spielsekunde im Abschnitt }
 };
 
 // Zustand der Oberfläche, wird nicht gespeichert
 export const ui = {
-  selectedId: null
+  selectedId: null,
+  anchorForm: null     // { p, v } offenes Formular „Freien Anker setzen“
 };

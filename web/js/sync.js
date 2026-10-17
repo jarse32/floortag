@@ -2,21 +2,22 @@
 import { state } from './state.js';
 import { events, periodLength } from './game.js';
 
-// Anker eines Abschnitts: Beginn, Ende und alle gesetzten Ereignisse
-function anchors(p, excludeId) {
+// Anker eines Abschnitts: Beginn, Ende, freie Anker und alle gesetzten Ereignisse.
+// exclude = { id } für ein Ereignis oder { anchor } für den Index eines freien Ankers
+function anchors(p, exclude = {}) {
   const a = [], ps = state.periods[p] || {}, len = periodLength(p);
   if (ps.start != null) a.push({ g: 0, v: ps.start });
   if (ps.end != null && len > 0) a.push({ g: len, v: ps.end });
+  (state.anchors[p] || []).forEach((x, i) => { if (i !== exclude.anchor) a.push({ g: x.g, v: x.v }); });
   for (const e of events()) {
-    if (Math.floor(e.period) === p && e.event_id !== excludeId && state.placed[e.event_id] != null) {
+    if (Math.floor(e.period) === p && e.event_id !== exclude.id && state.placed[e.event_id] != null && !state.missing[e.event_id]) {
       a.push({ g: state.gs[e.event_id], v: state.placed[e.event_id] });
     }
   }
   return a.sort((x, y) => x.g - y.g || x.v - y.v);
 }
-// Schätzt die Videozeit eines Ereignisses aus den umliegenden Ankerpunkten
-function estimate(e) {
-  const p = Math.floor(e.period), a = anchors(p, e.event_id), g = state.gs[e.event_id];
+// Videozeit zu Spielzeit g aus den umliegenden Ankerpunkten
+function interpolate(a, g) {
   if (!a.length) return null;
   let before = null, after = null;
   for (const x of a) {
@@ -31,18 +32,49 @@ function estimate(e) {
   if (before) return before.v + (g - before.g);
   return after.v - (after.g - g);
 }
+// Schätzt die Videozeit eines Ereignisses
+function estimate(e) {
+  return interpolate(anchors(Math.floor(e.period), { id: e.event_id }), state.gs[e.event_id]);
+}
+// Videozeit eines Ereignisses; null, wenn unbekannt oder nicht im Video
 export function timeOf(e) {
+  if (state.missing[e.event_id]) return null;
   return state.placed[e.event_id] != null ? state.placed[e.event_id] : estimate(e);
 }
-// Grenzen: Ein Ereignis darf nicht vor dem vorherigen oder nach dem nächsten Anker liegen
-export function bounds(e) {
-  const p = Math.floor(e.period), a = anchors(p, e.event_id), g = state.gs[e.event_id];
+// Rückwärts: geschätzte Spielzeit im Abschnitt p zur Videozeit v (für das Anker-Formular)
+export function gameTimeAt(p, v) {
+  const a = anchors(p).sort((x, y) => x.v - y.v || x.g - y.g);
+  if (!a.length) return null;
+  let before = null, after = null;
+  for (const x of a) {
+    if (x.v <= v) before = x;
+    if (x.v >= v && !after) after = x;
+  }
+  let g;
+  if (before && after) g = after.v === before.v ? before.g : before.g + (v - before.v) / (after.v - before.v) * (after.g - before.g);
+  else if (before) g = before.g + (v - before.v);
+  else g = after.g - (after.v - v);
+  const len = periodLength(p);
+  return Math.round(Math.min(Math.max(g, 0), len || Infinity));
+}
+// Grenzen zwischen den benachbarten Ankern für Spielzeit g
+function boundsFor(a, g) {
   let lo = -Infinity, hi = Infinity;
   for (const x of a) {
     if (x.g < g) lo = Math.max(lo, x.v);
     if (x.g > g) hi = Math.min(hi, x.v);
   }
   return { lo, hi };
+}
+// Grenzen: Ein Ereignis darf nicht vor dem vorherigen oder nach dem nächsten Anker liegen
+export function bounds(e) {
+  return boundsFor(anchors(Math.floor(e.period), { id: e.event_id }), state.gs[e.event_id]);
+}
+function clamp(v, { lo, hi }) {
+  let val = v;
+  if (isFinite(lo)) val = Math.max(lo, val);
+  if (isFinite(hi)) val = Math.min(hi, val);
+  return Math.max(0, Math.round(val * 10) / 10);
 }
 // Verhältnis echte Dauer zu Spielzeit, gelernt aus fertig markierten Dritteln
 function durationFactor() {
@@ -66,9 +98,24 @@ export function suggestStart(p) {
 
 // Setzt ein Ereignis als Anker, begrenzt auf die benachbarten Anker
 export function place(e, v) {
-  const { lo, hi } = bounds(e);
-  let val = v;
-  if (isFinite(lo)) val = Math.max(lo, val);
-  if (isFinite(hi)) val = Math.min(hi, val);
-  state.placed[e.event_id] = Math.max(0, Math.round(val * 10) / 10);
+  delete state.missing[e.event_id];
+  state.placed[e.event_id] = clamp(v, bounds(e));
+}
+
+// Ereignis als „nicht im Video“ markieren oder zurücknehmen; ein gesetzter Anker entfällt dabei
+export function setMissing(e, missing) {
+  if (missing) { state.missing[e.event_id] = true; delete state.placed[e.event_id]; }
+  else delete state.missing[e.event_id];
+}
+
+// Freier Anker: Spielzeit g im Abschnitt p liegt bei Videozeit v (begrenzt auf die Nachbarn)
+export function addAnchor(p, g, v) {
+  const list = state.anchors[p] = state.anchors[p] || [];
+  list.push({ g, v: clamp(v, boundsFor(anchors(p), g)) });
+  list.sort((x, y) => x.g - y.g);
+}
+export function removeAnchor(p, i) {
+  const list = state.anchors[p] || [];
+  list.splice(i, 1);
+  if (!list.length) delete state.anchors[p];
 }

@@ -75,6 +75,16 @@ main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr
 .timebtn { background: none; border: 0; padding: 0; font: 600 1.15rem var(--display); cursor: pointer; text-align: left; font-variant-numeric: tabular-nums; }
 .timebtn:disabled { color: var(--muted); cursor: default; }
 .suggest { grid-column: 2 / -1; justify-self: start; background: none; border: 0; padding: 0; color: var(--estimate); font-size: .85rem; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+/* Freie Anker in der Drittelkarte */
+.anchor-row .lbl { color: var(--estimate); font: 600 .95rem var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.addanchor { margin-top: .5rem; background: none; border: 0; padding: 0; color: var(--muted); font-size: .85rem; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.addanchor:hover { color: var(--ink); }
+.anchor-form { margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--line); display: grid; gap: .4rem; font-size: .88rem; }
+.anchor-form label { display: grid; gap: .25rem; color: var(--muted); }
+.anchor-form input { width: 6rem; padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font: 600 1.05rem var(--display); font-variant-numeric: tabular-nums; }
+.anchor-form .row { display: flex; gap: .35rem; }
+.anchor-form .hint { margin: 0; color: var(--muted); font-size: .8rem; }
+.anchor-pin { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; transform: rotate(45deg); background: var(--estimate); pointer-events: none; z-index: 2; }
 .keys { color: var(--muted); font-size: .85rem; margin-top: 1rem; }
 .keys kbd { font: inherit; border: 1px solid var(--line); border-radius: 4px; padding: 0 .3rem; background: var(--surface); }
 
@@ -96,6 +106,8 @@ main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr
 .st-placed { color: var(--pine); }
 .st-est { color: var(--estimate); }
 .st-open { color: var(--muted); }
+.st-missing { color: var(--muted); }
+.st-missing small { font-style: italic; }
 .ev-tools { padding: 0 .7rem .75rem 5.5rem; display: grid; gap: .5rem; }
 .ev-tools .row { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
 .ev-tools input[type=range] { width: 100%; accent-color: var(--pine); }

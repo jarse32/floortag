@@ -6,7 +6,7 @@ import { timeOf } from './sync.js';
 
 export function buildChapters() {
   const items = [];
-  let missing = 0;
+  let missing = 0, notInVideo = 0;
   const ps = periodList();
   ps.forEach((p, i) => {
     const st = state.periods[p] || {};
@@ -15,6 +15,7 @@ export function buildChapters() {
       if (Math.floor(e.period) !== p) continue;
       const d = describe(e);
       if (!d.chapter || (e.event_type === 'penalty' && !state.includePenalties)) continue;
+      if (state.missing[e.event_id]) { notInVideo++; continue; }
       const t = timeOf(e);
       if (t == null) { missing++; continue; }
       items.push({ t: Math.max(0, t - state.leadIn), label: d.chapter });
@@ -35,5 +36,5 @@ export function buildChapters() {
     if (t < last + 10) { t = last + 10; shifted++; }
     it.t = t; last = t;
   }
-  return { text: items.map(it => `${fmt(it.t)} ${it.label}`).join('\n'), count: items.length, missing, shifted };
+  return { text: items.map(it => `${fmt(it.t)} ${it.label}`).join('\n'), count: items.length, missing, notInVideo, shifted };
 }
