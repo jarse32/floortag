@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FloorTag – Sync</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%231D6A4B'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css">
@@ -46,6 +47,14 @@
     </div>
     <div class="player-wrap">
       <div id="player"></div>
+      <div id="consent" class="consent" hidden>
+        <p class="consent-title">Video von YouTube</p>
+        <p>Das Spielvideo liegt bei YouTube. Wenn du es lädst, überträgt dein Browser Daten an Google, darunter deine IP-Adresse, und YouTube kann Cookies oder ähnliche Techniken einsetzen. FloorTag nutzt dafür den erweiterten Datenschutzmodus von YouTube. Mehr dazu steht in der <a href="https://floorballdashboard.app/datenschutz/" target="_blank" rel="noopener">Datenschutzerklärung</a>.</p>
+        <div class="consent-actions">
+          <button id="consentBtn" class="btn">YouTube-Video laden</button>
+          <label><input type="checkbox" id="consentRemember"> Für FloorTag merken</label>
+        </div>
+      </div>
       <div id="playerEmpty" class="player-empty">Noch kein Video geladen.</div>
     </div>
     <div class="transport">
@@ -88,6 +97,11 @@
   </aside>
 </main>
 
-<p class="source">Daten: Saisonmanager / Floorball Deutschland</p>
+<footer class="source">
+  Daten: Saisonmanager / Floorball Deutschland ·
+  <a href="https://floorballdashboard.app/impressum/" target="_blank" rel="noopener">Impressum</a> ·
+  <a href="https://floorballdashboard.app/datenschutz/" target="_blank" rel="noopener">Datenschutz</a><span id="revokeWrap" hidden> ·
+  <button id="revokeBtn" class="linkbtn">YouTube-Zustimmung widerrufen</button></span>
+</footer>
 </body>
 </html>

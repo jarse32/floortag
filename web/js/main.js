@@ -5,23 +5,46 @@ import { prepareGame, events, findEvent } from './game.js';
 import { timeOf, place } from './sync.js';
 import { save, restore, buildSyncFile, syncFileName, applySyncFile } from './storage.js';
 import * as yt from './player.js';
+import { hasConsent, giveConsent, revokeConsent, isRemembered } from './consent.js';
 import { $, renderAll, renderMatchline, renderStrip, updateClock, showPlayerMessage } from './render.js';
 
 // Zustand geändert: speichern und neu zeichnen
 function commit() { save(); renderAll(); }
 
 yt.initPlayer('player', {
-  onLoad: () => { $('#playerEmpty').hidden = true; },
+  onLoad: () => { $('#playerEmpty').hidden = true; $('#consent').hidden = true; },
   onReady: renderAll,
   onStateChange: renderStrip,
   onError: showPlayerMessage
 });
 
+// ===== Zwei-Klick-Lösung =====
+let consentVideo = null;
+// Einziger Weg zum YouTube-Player: lädt nur mit Zustimmung, sonst Hinweis
+function showVideo(id) {
+  if (hasConsent()) { yt.loadVideo(id); return; }
+  consentVideo = id;
+  $('#playerEmpty').hidden = true;
+  $('#consent').hidden = false;
+}
+function renderRevoke() { $('#revokeWrap').hidden = !isRemembered(); }
+$('#consentBtn').addEventListener('click', () => {
+  giveConsent($('#consentRemember').checked);
+  renderRevoke();
+  if (consentVideo) yt.loadVideo(consentVideo);
+});
+$('#revokeBtn').addEventListener('click', () => {
+  revokeConsent();
+  // Neu laden, damit der Player sicher verschwindet; ?spiel= lädt das Spiel wieder
+  location.reload();
+});
+renderRevoke();
+
 function setVideo(id) {
   state.videoId = id;
   restore();
   renderAll();
-  yt.loadVideo(id);
+  showVideo(id);
 }
 
 // ===== Spiel laden =====
@@ -173,7 +196,7 @@ $('#syncInput').addEventListener('change', async e => {
   try {
     const d = JSON.parse(await f.text());
     applySyncFile(d);
-    if (d.video_id && d.video_id !== state.videoId) { $('#videoInput').value = d.video_id; state.videoId = d.video_id; yt.loadVideo(d.video_id); }
+    if (d.video_id && d.video_id !== state.videoId) { $('#videoInput').value = d.video_id; state.videoId = d.video_id; showVideo(d.video_id); }
     commit();
   } catch (err) { n.textContent = err.message; n.classList.add('warn'); }
   e.target.value = '';

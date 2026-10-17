@@ -116,5 +116,23 @@ main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
-/* Quellenangabe */
+/* Zwei-Klick-Lösung: Hinweis statt Player, bewusst immer dunkel wie die Videofläche */
+.consent { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; justify-content: safe center; gap: .6rem; padding: 1.25rem 2rem; overflow: auto; background: #0E1813; color: #CFD8D3; font-size: .95rem; }
+.consent p { margin: 0; max-width: 38rem; }
+.consent a { color: #E6EEE9; }
+.consent-title { font: 700 1.4rem/1.1 var(--display); color: #E6EEE9; }
+.consent-actions { display: flex; align-items: center; gap: .5rem 1.2rem; flex-wrap: wrap; margin-top: .3rem; }
+.consent-actions label { display: flex; align-items: center; gap: .4rem; }
+.consent .btn { background: #44AA7E; border-color: #44AA7E; color: #0E1813; font-weight: 600; }
+/* Schmale Bildschirme: Hinweis passt nicht in 16:9, Fläche wächst mit */
+@media (max-width: 600px) {
+  .player-wrap:has(> .consent:not([hidden])) { aspect-ratio: auto; }
+  .consent { position: relative; inset: auto; padding: 1rem; font-size: .88rem; }
+  .consent-title { font-size: 1.2rem; }
+}
+
+/* Fußzeile: Quelle und Rechtliches */
 .source { color: var(--muted); font-size: .8rem; text-align: center; padding: 0 1.5rem 1.5rem; margin: 0; }
+.source a, .linkbtn { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.linkbtn { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.source a:hover, .linkbtn:hover { color: var(--ink); }

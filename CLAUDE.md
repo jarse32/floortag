@@ -79,7 +79,7 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 
 ## YouTube
 
-- IFrame Player API, Einbindung über `youtube-nocookie.com`. Im fertigen Produkt mit Zwei-Klick-Lösung (Video erst nach Zustimmung laden).
+- IFrame Player API, Einbindung über `youtube-nocookie.com`, mit Zwei-Klick-Lösung (`web/js/consent.js`): Vor der Zustimmung wird nichts von YouTube geladen, auch kein Vorschaubild. Alle Wege zum Player laufen über `showVideo()` in `main.js`. Die Zustimmung wird nur auf Wunsch gemerkt (`localStorage`, Schlüssel `floortag:youtube-consent`) und lässt sich in der Fußzeile widerrufen.
 - `getCurrentTime()`/`seekTo()` sind nicht framegenau; für Szenen reicht das.
 - Kapitelmarken-Regeln: erstes Kapitel bei `0:00`, mindestens drei Kapitel, mindestens 10 Sekunden pro Kapitel. Kapitel zu Ereignissen beginnen mit einem einstellbaren Vorlauf (Standard 8 Sekunden) vor dem Ereignis.
 
@@ -97,7 +97,8 @@ Ein Sync gehört zu einem **Video**, nicht zu einem Spiel. Ein Spiel kann mehrer
 - Jugendspieler (`youth: true`) werden in öffentlichen Ausgaben standardmäßig nur mit Rückennummer genannt.
 - Vom Saisonmanager gesetzte Einschränkungen (z. B. gesperrte Scorerlisten) werden übernommen.
 - Analyse-Tags mit Personenbezug sind Leistungsbewertungen und standardmäßig nur vereinsintern sichtbar.
-- Hosting in der EU, Löschkonzept für Accounts und Tags, Datenschutzerklärung von floorballdashboard.app vor dem Livegang erweitern.
+- Hosting in der EU, Löschkonzept für Accounts und Tags.
+- Fußzeile verlinkt Impressum und Datenschutz von floorballdashboard.app. **Offen:** Die Datenschutzerklärung erwähnt FloorTag noch nicht (YouTube-Einbettung, Proxy, localStorage). Schriften kommen noch von Google Fonts und sollten selbst gehostet werden.
 
 ## Repo-Struktur
 
