@@ -6,7 +6,7 @@ Keine Rechtsberatung. Der Entwurf folgt dem Aufbau der bestehenden Erklärung un
 
 ## Vor dem Einsetzen prüfen
 
-- **Server-Logs:** Geprüft am 17.10.2026. Im KAS unter Einstellungen → Logs & Statistiken ist kontoweit „IP-Adressen werden vollständig anonymisiert“ (0.0.0.0) eingestellt. Der Satz in Abschnitt 2 ist entsprechend angepasst. Die Webalizer-Statistik unter `/usage/` ist aktiv und war öffentlich erreichbar.
+- **Server-Logs:** Geprüft am 17.10.2026. Im KAS unter Einstellungen → Logs & Statistiken ist kontoweit „IP-Adressen werden vollständig anonymisiert“ (0.0.0.0) eingestellt. Der Satz in Abschnitt 2 ist entsprechend angepasst. Die Webalizer-Statistik unter `/usage/` wird abgeschaltet (nicht benötigt), der Satz nennt deshalb nur die technische Bereitstellung.
 - **Google Fonts auf der Hauptseite:** Abschnitt 4 erklärt Google Fonts für floorballdashboard.app. Das bleibt richtig, solange die Hauptseite die Schriften noch von Google lädt. FloorTag lädt sie selbst gehostet und braucht diesen Absatz nicht.
 - **Neue Nummerierung:** Der neue Abschnitt wird 5. Danach werden „Cookies“ zu 6, „Ihre Rechte“ zu 7, „Beschwerderecht“ zu 8 und „Änderungen“ zu 9. Die Verweise im Text („Abschnitt 1 bis 4“) bleiben gültig.
 - **Sprungmarke:** Der neue Block hat `id="floortag"`. Die Fußzeile von FloorTag verlinkt bereits auf `/datenschutz/#floortag`.
