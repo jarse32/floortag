@@ -151,3 +151,8 @@ main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr
 .source a, .linkbtn { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .linkbtn { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
 .source a:hover, .linkbtn:hover { color: var(--ink); }
+
+/* Überzahlphasen auf der Zeitleiste */
+.pp-band { position: absolute; height: 4px; pointer-events: none; z-index: 1; opacity: .85; }
+.pp-band.home { top: 0; background: var(--pine); }
+.pp-band.guest { bottom: 0; background: var(--guest); }

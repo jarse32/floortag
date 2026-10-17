@@ -10,6 +10,7 @@ export const state = {
   leadOut: 5,          // Nachlauf für Clips im Analyse-Export in Sekunden
   fps: 25,             // Bildrate des Videos für die Schnittliste (EDL)
   edlScope: 'goal',    // Inhalt der Schnittliste, siehe EDL_SCOPES in export.js
+  kleinfeld: false,    // Kleinfeld: max. 1 Strafe gleichzeitig, 3 Feldspieler
   includePenalties: true,
   hideYouth: true,
   periods: {},         // { 1: { start, end }, ... } in Videosekunden

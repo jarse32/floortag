@@ -1,10 +1,11 @@
 // ===== Darstellung =====
 import { state, ui } from './state.js';
 import { fmt, fmtGame, esc } from './format.js';
-import { events, periodList, periodTitle, describe } from './game.js';
-import { timeOf, bounds, suggestStart, suggestEnd, gameTimeAt } from './sync.js';
+import { events, periodList, periodTitle, describe, teamShort as describeTeam } from './game.js';
+import { timeOf, bounds, suggestStart, suggestEnd, gameTimeAt, videoTimeAt } from './sync.js';
 import { buildChapters } from './chapters.js';
 import { buildClips, EDL_SCOPES } from './export.js';
+import { powerPlayPhases } from './phases.js';
 import * as yt from './player.js';
 
 export const $ = s => document.querySelector(s);
@@ -32,6 +33,7 @@ function renderSettings() {
   $('#leadInput').value = state.leadIn;
   $('#penaltyCheck').checked = state.includePenalties;
   $('#youthCheck').checked = state.hideYouth;
+  $('#kleinfeldCheck').checked = state.kleinfeld;
   $('#leadOutInput').value = state.leadOut;
   $('#fpsInput').value = state.fps;
   const scope = $('#edlScopeInput');
@@ -144,6 +146,12 @@ export function renderStrip() {
     const cls = [e.event_type, e.event_team, state.placed[e.event_id] != null ? 'is-placed' : 'is-est', e.event_id === ui.selectedId ? 'sel' : ''].join(' ');
     html += `<button class="pin ${cls}" style="left:${pct(t)}%" data-act="select" data-id="${e.event_id}" title="${esc(describe(e).text)} (${fmt(t)})"></button>`;
   }
+  // Überzahlphasen als schmales Band: Heim oben, Gast unten
+  for (const ph of powerPlayPhases()) {
+    const a = videoTimeAt(ph.p, ph.from), b = videoTimeAt(ph.p, ph.to);
+    if (a == null || b == null || b <= a) continue;
+    html += `<div class="pp-band ${ph.team}" style="left:${pct(a)}%;width:${pct(b) - pct(a)}%" title="Überzahl ${esc(describeTeam(ph.team))} ${ph.strength[0]} gegen ${ph.strength[1]}"></div>`;
+  }
   for (const [p, list] of Object.entries(state.anchors)) {
     for (const a of list) html += `<div class="anchor-pin" style="left:${pct(a.v)}%" title="Freier Anker: ${esc(periodTitle(Number(p), true))} ${fmtGame(a.g)} (${fmt(a.v)})"></div>`;
   }
@@ -180,10 +188,11 @@ export function showPlayerMessage(msg) {
 // Hinweis zum Analyse-Export: was in den Dateien landet
 function renderClipNote() {
   const clips = buildClips();
-  const scenes = clips.filter(c => c.kind !== 'period').length, phases = clips.length - scenes;
+  const count = kind => clips.filter(c => c.kind === kind).length;
+  const scenes = count('goal') + count('penalty') + count('timeout'), periods = count('period'), pp = count('powerplay');
   const n = $('#clipNote');
-  n.textContent = scenes || phases
-    ? `Im Export: ${scenes} Szene(n) und ${phases} Drittel als Phase. Szenen ohne Zeit oder „nicht im Video“ fehlen.`
+  n.textContent = clips.length
+    ? `Im Export: ${scenes} Szene(n), ${periods} Drittel und ${pp} Überzahlphase(n), jeweils auch als Unterzahl des Gegners. Szenen ohne Zeit oder „nicht im Video“ fehlen.`
     : 'Noch nichts zu exportieren. Setze zuerst Drittelgrenzen oder Ereignisse.';
   for (const id of ['#xmlBtn', '#csvBtn', '#edlBtn']) $(id).disabled = !clips.length;
 }

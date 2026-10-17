@@ -36,6 +36,10 @@ function interpolate(a, g) {
 function estimate(e) {
   return interpolate(anchors(Math.floor(e.period), { id: e.event_id }), state.gs[e.event_id]);
 }
+// Videozeit zu einer beliebigen Spielzeit g im Abschnitt p (z. B. Beginn und Ende von Phasen)
+export function videoTimeAt(p, g) {
+  return interpolate(anchors(p), g);
+}
 // Videozeit eines Ereignisses; null, wenn unbekannt oder nicht im Video
 export function timeOf(e) {
   if (state.missing[e.event_id]) return null;

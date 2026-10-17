@@ -13,7 +13,7 @@ export function save() {
       periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing,
       periodLen: state.periodLen, otLen: state.otLen, pauseLen: state.pauseLen,
       leadIn: state.leadIn, leadOut: state.leadOut, fps: state.fps, edlScope: state.edlScope,
-      includePenalties: state.includePenalties, hideYouth: state.hideYouth
+      kleinfeld: state.kleinfeld, includePenalties: state.includePenalties, hideYouth: state.hideYouth
     }));
   } catch (e) { /* Speicher nicht verfügbar */ }
 }

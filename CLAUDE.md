@@ -23,7 +23,7 @@ php -S localhost:8000 -t web   # im Repo-Wurzelverzeichnis
 # dann http://localhost:8000/?spiel=58668
 ```
 
-Tests ohne Abhängigkeiten und ohne echten Key: `npm test` (Sync-Logik, freie Anker, Kapitel, Sync-Datei, Analyse-Export; `node --test`) und `npm run test:proxy`. Änderungen an `sync.js`, `game.js` oder `chapters.js` immer mit `npm test` prüfen.
+Tests ohne Abhängigkeiten und ohne echten Key: `npm test` (Sync-Logik, freie Anker, Kapitel, Sync-Datei, Analyse-Export, Überzahlphasen; `node --test`) und `npm run test:proxy`. Änderungen an `sync.js`, `game.js` oder `chapters.js` immer mit `npm test` prüfen.
 
 Testfall: Spiel 58668 (2. FBL Herren Nord/West, Baltic Storms – TV Eiche Horn Bremen, 5:4), Video `lfIFpRsE55I`. Die JSON liegt in `fixtures/spiel_58668.json`.
 
@@ -97,7 +97,9 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 - **CSV** mit Semikolon, Dezimalkomma und BOM für Excel.
 - **EDL (CMX3600)** als echte Schnittliste für DaVinci Resolve: Timeline ab 01:00:00:00, Clips hintereinander, Umfang wählbar (Tore / Tore und Strafen / alle), Bildrate als Einstellung. Kommentare nur in ASCII. Der Import in Resolve ist noch nicht praktisch getestet.
 - Codes heißen „Tor BAL“, „Strafe TVEH“, „Auszeit TVEH“. Jugendschutz gilt auch im Export.
-- Idee für später: Überzahl- und Unterzahlphasen aus 2-Minuten-Strafen ableiten (Beginn Strafe, Ende 2:00 Spielzeit später oder früheres Tor des Teams in Überzahl).
+- **Überzahl und Unterzahl** (`web/js/phases.js`) werden aus den Strafen abgeleitet, mit denselben Regeln wie `PPCalculator.swift` im Floorball Dashboard: `penalty_2` 2 Min (durch Überzahltor beendbar), `penalty_2and2` und Matchstrafen (`penalty_ms_tech`/`_full`, Regel seit 2025) 2 + 2 Min verknüpft, `penalty_5` 5 Min (nicht beendbar), `penalty_10` nur 2 Min Unterzahl. Stapelregel max. 2 gleichzeitige Strafen pro Team, Kleinfeld 1 (Einstellung, 3 statt 5 Feldspieler). Tore zählen nur bei echter Überzahl. Abweichend vom Dashboard gilt die eingestellte Drittellänge statt fest 20 Minuten. Strafzeit läuft über Drittelgrenzen weiter, im Video entstehen dann zwei Clips.
+- Pro Phase entstehen zwei Clips, „Überzahl BAL“ und „Unterzahl TVEH“, mit Label „Stärke“ (5 gegen 4 bzw. 4 gegen 5). Die Schnittliste kann nur Überzahlphasen enthalten. Auf der Zeitleiste zeigt ein schmales Band die Überzahl (Heim oben, Gast unten).
+- Ändern sich die Strafregeln, müssen `phases.js` und `PPCalculator.swift` gemeinsam angepasst werden.
 
 ## Zusammenarbeit (ab Etappe 4)
 

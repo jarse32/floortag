@@ -39,7 +39,7 @@ test('Szenen bekommen Vor- und Nachlauf, Drittel werden Phasen', () => {
 test('Clips sind nach Start sortiert und fortlaufend nummeriert', () => {
   synced();
   const clips = buildClips();
-  assert.equal(clips.length, 3 + 13);
+  assert.equal(clips.length, 3 + 13 + 8); // Drittel, Ereignisse, 4 Phasen × Überzahl/Unterzahl
   clips.forEach((c, i) => {
     assert.equal(c.id, i + 1);
     if (i) assert.ok(c.start >= clips[i - 1].start);
@@ -85,14 +85,14 @@ test('Sportscode-XML enthält Instanzen mit Start, Ende, Code und Labels', () =>
   const x = toSportscodeXml(buildClips());
   assert.match(x, /^<\?xml version="1.0" encoding="UTF-8"\?>\n<file>\n  <ALL_INSTANCES>/);
   assert.match(x, /<instance>\s*<ID>\d+<\/ID>\s*<start>892\.00<\/start>\s*<end>905\.00<\/end>\s*<code>Tor BAL<\/code>\s*<label><group>Team<\/group><text>BAL<\/text><\/label>/);
-  assert.equal((x.match(/<instance>/g) || []).length, 16);
+  assert.equal((x.match(/<instance>/g) || []).length, 24);
 });
 
 test('Sportscode-XML hat eine farbige Zeile pro Code', () => {
   synced();
   const x = toSportscodeXml(buildClips());
   const rows = [...x.matchAll(/<row><code>([^<]+)<\/code><R>(\d+)<\/R><G>(\d+)<\/G><B>(\d+)<\/B><\/row>/g)];
-  assert.deepEqual(rows.map(r => r[1]).sort(), ['Auszeit TVEH', 'Drittel', 'Strafe BAL', 'Strafe TVEH', 'Tor BAL', 'Tor TVEH']);
+  assert.deepEqual(rows.map(r => r[1]).sort(), ['Auszeit TVEH', 'Drittel', 'Strafe BAL', 'Strafe TVEH', 'Tor BAL', 'Tor TVEH', 'Unterzahl BAL', 'Unterzahl TVEH', 'Überzahl BAL', 'Überzahl TVEH']);
   for (const r of rows) for (const v of r.slice(2)) assert.ok(Number(v) >= 0 && Number(v) <= 65535);
 });
 
@@ -120,7 +120,7 @@ test('CSV: Kopfzeile, Semikolon, Dezimalkomma, eine Zeile pro Clip', () => {
   const csv = toCsv(buildClips());
   const lines = csv.trimEnd().split('\r\n');
   assert.equal(lines[0], 'Nr;Code;Start;Ende;Start (s);Ende (s);Team;Abschnitt;Spielzeit;Spielstand;Spieler;Vorlage;Details');
-  assert.equal(lines.length, 1 + 16);
+  assert.equal(lines.length, 1 + 24);
   const goal = lines.find(l => l.includes(';Tor BAL;') && l.includes('1:0'));
   assert.match(goal, /;0:14:53;0:15:06;892,50;905,50;BAL;1\. Drittel;06:04;1:0;#38 /);
 });

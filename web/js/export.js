@@ -5,7 +5,8 @@
 import { state } from './state.js';
 import { fmtGame } from './format.js';
 import { events, periodList, periodTitle, teamShort, personLabel } from './game.js';
-import { timeOf } from './sync.js';
+import { timeOf, videoTimeAt } from './sync.js';
+import { powerPlayPhases } from './phases.js';
 
 // Farben der Zeilen (0–255), für Sportscode auf 0–65535 umgerechnet
 const COLORS = { home: [29, 106, 75], guest: [45, 85, 132], period: [140, 150, 145], timeout: [181, 118, 27] };
@@ -41,6 +42,18 @@ export function buildClips() {
     clips.push({ code, kind: e.event_type, color, eventId: e.event_id,
       start: Math.max(0, t - state.leadIn), end: t + state.leadOut,
       labels: labels.filter(([, v]) => v) });
+  }
+  // Über- und Unterzahl: zwei Clips pro Phase, damit jedes Team seine eigene Zeile hat
+  for (const ph of powerPlayPhases()) {
+    const start = videoTimeAt(ph.p, ph.from), end = videoTimeAt(ph.p, ph.to);
+    if (start == null || end == null || end <= start || end < 0) continue;
+    const opp = ph.team === 'home' ? 'guest' : 'home';
+    const common = [['Abschnitt', periodTitle(ph.p)], ['Spielzeit', `${fmtGame(ph.from)}–${fmtGame(ph.to)}`]];
+    const range = { start: Math.max(0, start), end };
+    clips.push({ code: `Überzahl ${teamShort(ph.team)}`, kind: 'powerplay', color: COLORS[ph.team], ...range,
+      labels: [['Team', teamShort(ph.team)], ...common, ['Stärke', `${ph.strength[0]} gegen ${ph.strength[1]}`]] });
+    clips.push({ code: `Unterzahl ${teamShort(opp)}`, kind: 'boxplay', color: COLORS[opp], ...range,
+      labels: [['Team', teamShort(opp)], ...common, ['Stärke', `${ph.strength[1]} gegen ${ph.strength[0]}`]] });
   }
   clips.sort((a, b) => a.start - b.start || a.end - b.end);
   clips.forEach((c, i) => { c.id = i + 1; });
@@ -98,7 +111,8 @@ export function toCsv(clips) {
 export const EDL_SCOPES = {
   goal: { label: 'Tore', kinds: ['goal'] },
   goalPenalty: { label: 'Tore und Strafen', kinds: ['goal', 'penalty'] },
-  all: { label: 'Alle Ereignisse', kinds: ['goal', 'penalty', 'timeout'] }
+  all: { label: 'Alle Ereignisse', kinds: ['goal', 'penalty', 'timeout'] },
+  powerplay: { label: 'Überzahlphasen', kinds: ['powerplay'] }
 };
 
 // EDL ist ein altes Format: Kommentare nur in ASCII (ü → ue, ß → ss, übrige Akzente weg)

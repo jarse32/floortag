@@ -199,6 +199,7 @@ $('#pauseLenInput').addEventListener('change', e => { state.pauseLen = Math.max(
 $('#leadInput').addEventListener('change', e => { state.leadIn = Math.max(0, Number(e.target.value)); commit(); });
 $('#penaltyCheck').addEventListener('change', e => { state.includePenalties = e.target.checked; commit(); });
 $('#youthCheck').addEventListener('change', e => { state.hideYouth = e.target.checked; commit(); });
+$('#kleinfeldCheck').addEventListener('change', e => { state.kleinfeld = e.target.checked; commit(); });
 
 // ===== Export und Import =====
 $('#copyBtn').addEventListener('click', async () => {
