@@ -1,0 +1,9 @@
+# Geheimnisse und Cache nie ausliefern
+<FilesMatch "^config\.php$">
+    Require all denied
+</FilesMatch>
+RewriteEngine On
+RewriteRule ^cache/ - [F,L]
+
+Options -Indexes
+AddDefaultCharset UTF-8

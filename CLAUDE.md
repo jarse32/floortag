@@ -16,12 +16,14 @@ Teil des Floorball-Dashboard-Ökosystems, geplante Adresse: `tag.floorballdashbo
 
 Das Frontend liegt in `web/` (native ES-Module, kein Build-Schritt, Aufbau siehe `web/README.md`). Funktionsumfang wie der Prototyp aus Etappen 1 und 2: Saisonmanager-JSON per Drag-and-drop laden, YouTube-Video wird aus `live_stream_link` übernommen, Drittelgrenzen setzen, Ereignisse schätzen und feinjustieren, YouTube-Kapitel und Sync-JSON exportieren. Zwischenstand liegt in `localStorage`. Der ursprüngliche Single-File-Prototyp liegt unverändert in `prototype/` und wird nicht weiterentwickelt.
 
-Start lokal nur über einen Server, nicht per Doppelklick (YouTube blockiert Einbettung von `file://`, Fehler 153):
+Start lokal nur über einen Server, nicht per Doppelklick (YouTube blockiert Einbettung von `file://`, Fehler 153). Der PHP-Server liefert Frontend und Proxy zusammen aus:
 
 ```bash
-python3 -m http.server 8000   # im Repo-Wurzelverzeichnis
-# dann http://localhost:8000/web/
+php -S localhost:8000 -t web   # im Repo-Wurzelverzeichnis
+# dann http://localhost:8000/?spiel=58668
 ```
+
+Proxy-Tests ohne echten Key: `bash tests/proxy-test.sh`.
 
 Testfall: Spiel 58668 (2. FBL Herren Nord/West, Baltic Storms – TV Eiche Horn Bremen, 5:4), Video `lfIFpRsE55I`. Die JSON liegt in `fixtures/spiel_58668.json`.
 
@@ -32,15 +34,16 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 0. Datenstruktur verstehen – erledigt.
 1. Sync-Prototyp lokal – erledigt, wird getestet.
 2. Kapitelmarken-Export – erledigt, wird getestet.
-3. **In Arbeit:** Prototyp in sinnvolle Dateien aufteilen (erledigt), kleiner API-Proxy auf dem bestehenden VPS (dort läuft bereits das Push-Backend des Floorball Dashboard), Spiel per ID laden statt per Datei.
-4. Backend und gemeinsame Syncs: PocketBase auf dem VPS, Accounts, ein gemeinsamer Sync pro Video mit Änderungshistorie, Deploy unter `tag.floorballdashboard.app`, geschlossene Beta mit wenigen Vereinen.
+3. **In Arbeit:** Prototyp in sinnvolle Dateien aufteilen (erledigt), API-Proxy als PHP (erledigt, lokal getestet), Spiel per ID laden statt per Datei (erledigt). Offen: Subdomain `tag.floorballdashboard.app` anlegen und erster Deploy.
+4. Backend und gemeinsame Syncs: PocketBase (braucht einen eigenen Server, siehe Hosting), Accounts, ein gemeinsamer Sync pro Video mit Änderungshistorie, Deploy unter `tag.floorballdashboard.app`, geschlossene Beta mit wenigen Vereinen.
 5. Analyse-Tags: Code-Panel mit Floorball-Taxonomie und Tastenkürzeln, eigene Layer pro Nutzer/Verein, Sichtbarkeit privat/Verein/öffentlich, Export als Sportscode-XML.
 6. Anschauen und Vernetzen: Filter, Playlists über mehrere Spiele, Deeplinks auf Szenen, Button „Szenen ansehen“ in der Floorball-Dashboard-App.
 
 ## Saisonmanager-API
 
 - Endpunkt: `https://saisonmanager.de/api/v2/games/{id}.json`, Header `X-Api-Key`.
-- Der Key liegt als Umgebungsvariable `SM_KEY` vor. **Der Key darf nie im Browser, im Repo oder in Logs landen.** Abfragen laufen ausschließlich über den Proxy.
+- Der Key kommt aus der Umgebungsvariable `SM_KEY` oder aus `web/api/config.php` (gitignored, auf dem Server per `.htaccess` gesperrt). **Der Key darf nie im Browser, im Repo oder in Logs landen.** Abfragen laufen ausschließlich über den Proxy `web/api/game.php`.
+- Bis zum eigenen FloorTag-Key wird übergangsweise der Key des Floorball Dashboard genutzt (mit dem Nutzer abgestimmt).
 - Für FloorTag wurde bzw. wird ein eigener Key beantragt, getrennt vom Key der App.
 - Ohne Echtzeit-Freigabe liefert die API Live-Daten mit zehn Minuten Verzögerung. Für FloorTag irrelevant, weil nur abgeschlossene Spiele verarbeitet werden.
 - Daten abgeschlossener Spiele (`game_status: "match_record_closed"`, `ended: true`) ändern sich kaum, also großzügig cachen.
@@ -103,14 +106,20 @@ floortag/
 ├── CLAUDE.md
 ├── README.md
 ├── prototype/floortag-prototyp.html   # Ausgangspunkt, nicht mehr weiterentwickeln
-├── web/                               # Frontend, ES-Module ohne Build
-├── proxy/                             # API-Proxy für den VPS (noch leer)
+├── web/                               # Deploy-Ordner: Frontend (ES-Module ohne Build) + api/game.php
+├── tests/                             # Proxy-Tests mit Fake-Saisonmanager
 └── fixtures/spiel_58668.json          # Testdaten
 ```
+
+## Hosting
+
+- `floorballdashboard.app` liegt bei **All-Inkl** (Shared Hosting, PHP und Apache, Deploy per FTP), nicht auf einem VPS. Dauerhaft laufende Prozesse (Node, Python-Dienste, PocketBase) sind dort nicht möglich.
+- Der FloorTag-Proxy ist deshalb PHP, nach dem Muster von `FloorballDashboard-iOS/server/saisonmanager/saisonmanager-proxy.php`, aber eigenständig: eigener Dateicache, kein CORS, globales Abrufbudget statt IP-Sperren (keine personenbezogenen Daten).
+- Die Subdomain `tag.floorballdashboard.app` zeigt auf den Inhalt von `web/`. Deploy-Schritte stehen in der README.
 
 ## Offene Fragen
 
 - Drittellänge und Pausenlänge pro Liga: Woher kommen die Werte (Tabelle im Projekt, Einstellung pro Liga, Ableitung aus Altersklasse)?
 - Livestream-Abbrüche: zusätzliche freie Anker („hier ist 14:30 im 2. Drittel“) einführen.
-- Proxy-Technik: schlankes Node- oder Python-Skript neben dem Push-Backend, oder direkt als PocketBase-Hook?
+- Server für Etappe 4: PocketBase läuft nicht auf All-Inkl. Optionen: kleiner VPS in der EU (z. B. Hetzner), gehostetes PocketBase oder ein PHP- und MySQL-Backend auf All-Inkl.
 - Öffentliches Repo ja oder nein; bei ja Fixtures anonymisieren.

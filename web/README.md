@@ -1,15 +1,16 @@
 # web
 
-Frontend von FloorTag. Native ES-Module, kein Build-Schritt.
+Alles, was auf `tag.floorballdashboard.app` hochgeladen wird. Native ES-Module, kein Build-Schritt.
 
-Start im Repo-Wurzelverzeichnis mit `python3 -m http.server 8000`, dann `http://localhost:8000/web/` öffnen.
+Start im Repo-Wurzelverzeichnis mit `php -S localhost:8000 -t web`, dann `http://localhost:8000/` öffnen.
 
 ## Aufbau
 
 - `index.html` – Markup
+- `api/game.php` – Proxy zum Saisonmanager mit Dateicache (`api/cache/`), Key aus `SM_KEY` oder `api/config.php`
 - `css/tokens.css` – Farb- und Schrift-Tokens für Hell- und Dunkelmodus
 - `css/app.css` – Layout und Komponenten
-- `js/main.js` – Einstieg: Spiel laden, Event-Handler, Tastatur
+- `js/main.js` – Einstieg: Spiel laden (per ID, Datei oder `?spiel=`), Event-Handler, Tastatur
 - `js/state.js` – Zustand (gespeichert) und UI-Zustand
 - `js/format.js` – reine Helfer: Zeitformate, Escaping, Video-ID
 - `js/game.js` – Saisonmanager-Daten: Ereignisse, Abschnitte, Beschriftungen

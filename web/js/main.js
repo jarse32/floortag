@@ -36,11 +36,49 @@ function loadGame(data) {
   const id = extractVideoId(link);
   if (id) setVideo(id); else { state.videoId = null; restore(); renderAll(); }
 }
-function handleText(text) {
+function showLoadError(msg) {
   const err = $('#loadError');
-  try { loadGame(JSON.parse(text)); err.hidden = true; }
-  catch (e) { err.textContent = e instanceof SyntaxError ? 'Die Datei enthält kein gültiges JSON.' : e.message; err.hidden = false; }
+  err.textContent = msg; err.hidden = !msg;
 }
+function handleText(text) {
+  try { loadGame(JSON.parse(text)); showLoadError(''); }
+  catch (e) { showLoadError(e instanceof SyntaxError ? 'Die Datei enthält kein gültiges JSON.' : e.message); }
+}
+
+// Spiel-ID aus einer Eingabe: nackte Zahl oder Saisonmanager-Link
+function extractGameId(input) {
+  const s = String(input || '').trim();
+  if (/^\d{1,9}$/.test(s)) return s;
+  const m = s.match(/(?:game|games|spiel)\/(\d{1,9})/i) || s.match(/(\d{3,9})(?!.*\d)/);
+  return m ? m[1] : null;
+}
+// Lädt ein Spiel über den Proxy (api/game.php) und merkt die ID in der Adresse
+async function loadById(id) {
+  const btn = $('#idBtn');
+  btn.disabled = true; btn.textContent = 'Lädt …';
+  try {
+    const res = await fetch(`api/game.php?id=${encodeURIComponent(id)}`);
+    const type = res.headers.get('Content-Type') || '';
+    if (!type.includes('application/json')) throw new Error('Der Proxy antwortet nicht. Lokal muss das Frontend über „php -S localhost:8000 -t web“ laufen.');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Fehler ${res.status} beim Laden.`);
+    loadGame(data);
+    showLoadError('');
+    const url = new URL(location.href);
+    url.searchParams.set('spiel', id);
+    history.replaceState(null, '', url);
+  } catch (e) {
+    showLoadError(e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Spiel laden';
+  }
+}
+$('#idForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const id = extractGameId($('#idInput').value);
+  if (id) loadById(id);
+  else showLoadError('Daraus konnte keine Spiel-ID gelesen werden. Gib eine Zahl wie 58668 ein.');
+});
 
 $('#fileInput').addEventListener('change', e => { const f = e.target.files[0]; if (f) f.text().then(handleText); });
 const dz = $('#dropzone');
@@ -144,6 +182,9 @@ $('#resetBtn').addEventListener('click', () => {
   state.game = null; ui.selectedId = null;
   yt.pause();
   $('#app').hidden = true; $('#loader').hidden = false; $('#matchline').innerHTML = '';
+  const url = new URL(location.href);
+  url.searchParams.delete('spiel');
+  history.replaceState(null, '', url);
 });
 
 // ===== Tastatur =====
@@ -170,3 +211,7 @@ document.addEventListener('keydown', e => {
 
 // Uhr und Abspielposition aktualisieren
 setInterval(updateClock, 250);
+
+// Spiel aus der Adresse laden, z. B. ?spiel=58668
+const startId = extractGameId(new URLSearchParams(location.search).get('spiel'));
+if (startId) { $('#idInput').value = startId; loadById(startId); }

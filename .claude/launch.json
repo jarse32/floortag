@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "floortag",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8000"],
-      "port": 8000
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "localhost:8001", "-t", "web"],
+      "port": 8001
     }
   ]
 }

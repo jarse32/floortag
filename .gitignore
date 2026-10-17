@@ -15,3 +15,8 @@ dist/
 # Editoren
 .vscode/
 .idea/
+
+# Proxy: echte Konfiguration und Laufzeit-Cache
+web/api/config.php
+web/api/cache/*
+!web/api/cache/.htaccess

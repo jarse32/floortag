@@ -19,7 +19,12 @@
 
 <section id="loader" class="loader">
   <h1>Spiel laden</h1>
-  <p>Zieh die Saisonmanager-JSON eines Spiels hierher oder wähle sie aus. Das Video wird, wenn vorhanden, automatisch aus dem Livestream-Link übernommen.</p>
+  <p>Gib die Spiel-ID aus dem Saisonmanager ein oder füge den Link zum Spiel ein. Das Video wird, wenn vorhanden, automatisch aus dem Livestream-Link übernommen.</p>
+  <form id="idForm" class="idform">
+    <input id="idInput" type="text" inputmode="numeric" placeholder="z. B. 58668 oder Link zum Spiel" aria-label="Spiel-ID oder Saisonmanager-Link" autocomplete="off">
+    <button id="idBtn" class="btn" type="submit">Spiel laden</button>
+  </form>
+  <p class="or">Oder lade die Spiel-JSON als Datei:</p>
   <div id="dropzone" class="dropzone">
     <input type="file" id="fileInput" accept=".json,application/json">
     <label for="fileInput" class="btn">JSON-Datei auswählen</label>
