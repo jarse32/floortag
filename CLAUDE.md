@@ -34,7 +34,7 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 0. Datenstruktur verstehen – erledigt.
 1. Sync-Prototyp lokal – erledigt, wird getestet.
 2. Kapitelmarken-Export – erledigt, wird getestet.
-3. **In Arbeit:** Prototyp in sinnvolle Dateien aufteilen (erledigt), API-Proxy als PHP (erledigt, lokal getestet), Spiel per ID laden statt per Datei (erledigt). Offen: Subdomain `tag.floorballdashboard.app` anlegen und erster Deploy.
+3. **In Arbeit:** Prototyp in sinnvolle Dateien aufteilen (erledigt), API-Proxy als PHP (erledigt, lokal getestet), Spiel per ID laden statt per Datei (erledigt). Online unter `https://tag.floorballdashboard.app` seit 17.10.2026.
 4. Backend und gemeinsame Syncs: PocketBase (braucht einen eigenen Server, siehe Hosting), Accounts, ein gemeinsamer Sync pro Video mit Änderungshistorie, Deploy unter `tag.floorballdashboard.app`, geschlossene Beta mit wenigen Vereinen.
 5. Analyse-Tags: Code-Panel mit Floorball-Taxonomie und Tastenkürzeln, eigene Layer pro Nutzer/Verein, Sichtbarkeit privat/Verein/öffentlich, Export als Sportscode-XML.
 6. Anschauen und Vernetzen: Filter, Playlists über mehrere Spiele, Deeplinks auf Szenen, Button „Szenen ansehen“ in der Floorball-Dashboard-App.

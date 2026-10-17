@@ -1,0 +1,15 @@
+# Startseite ist index.html, nicht die index.htm-Vorlage des Hosters
+DirectoryIndex index.html
+
+# Immer über HTTPS
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# Repo-Dateien nicht ausliefern
+<FilesMatch "\.md$">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes
+AddDefaultCharset UTF-8

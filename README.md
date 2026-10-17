@@ -31,7 +31,7 @@ bash tests/proxy-test.sh
 
 1. Im KAS unter „Domain“ → „Subdomain hinzufügen“ die Subdomain `tag` für `floorballdashboard.app` anlegen, Zielverzeichnis z. B. `/floortag/`.
 2. Für die Subdomain SSL (Let’s Encrypt) aktivieren und PHP 8.2 oder neuer einstellen.
-3. Den **Inhalt** von `web/` per FTP nach `/floortag/` hochladen, ohne den Ordner `api/cache/` mit lokalen Cache-Dateien (nur dessen `.htaccess`).
+3. Den **Inhalt** von `web/` per FTP nach `/floortag/` hochladen, ohne den Ordner `api/cache/` mit lokalen Cache-Dateien (nur dessen `.htaccess`). Die versteckten `.htaccess`-Dateien müssen mit, und eine vom Hoster angelegte `index.htm` muss gelöscht werden.
 4. Auf dem Server `api/config.php` aus `api/config.example.php` anlegen und den Key eintragen.
 5. Prüfen:
    - `https://tag.floorballdashboard.app/api/game.php?id=58668` liefert JSON.
