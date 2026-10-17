@@ -14,16 +14,18 @@ Teil des Floorball-Dashboard-Ökosystems, geplante Adresse: `tag.floorballdashbo
 
 ## Aktueller Stand
 
-`floortag-prototyp.html` ist ein funktionierender Single-File-Prototyp (Etappen 1 und 2): Saisonmanager-JSON per Drag-and-drop laden, YouTube-Video wird aus `live_stream_link` übernommen, Drittelgrenzen setzen, Ereignisse schätzen und feinjustieren, YouTube-Kapitel und Sync-JSON exportieren. Zwischenstand liegt in `localStorage`.
+`prototype/floortag-prototyp.html` ist ein funktionierender Single-File-Prototyp (Etappen 1 und 2): Saisonmanager-JSON per Drag-and-drop laden, YouTube-Video wird aus `live_stream_link` übernommen, Drittelgrenzen setzen, Ereignisse schätzen und feinjustieren, YouTube-Kapitel und Sync-JSON exportieren. Zwischenstand liegt in `localStorage`.
 
 Start lokal nur über einen Server, nicht per Doppelklick (YouTube blockiert Einbettung von `file://`, Fehler 153):
 
 ```bash
-python3 -m http.server 8000
-# dann http://localhost:8000/floortag-prototyp.html
+python3 -m http.server 8000   # im Repo-Wurzelverzeichnis
+# dann http://localhost:8000/prototype/floortag-prototyp.html
 ```
 
-Testfall: Spiel 58668 (2. FBL Herren Nord/West, Baltic Storms – TV Eiche Horn Bremen, 5:4), Video `lfIFpRsE55I`. Die JSON liegt in `fixtures/`.
+Testfall: Spiel 58668 (2. FBL Herren Nord/West, Baltic Storms – TV Eiche Horn Bremen, 5:4), Video `lfIFpRsE55I`. Die JSON liegt in `fixtures/spiel_58668.json`.
+
+Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 
 ## Etappenplan
 
@@ -94,15 +96,15 @@ Ein Sync gehört zu einem **Video**, nicht zu einem Spiel. Ein Spiel kann mehrer
 - Analyse-Tags mit Personenbezug sind Leistungsbewertungen und standardmäßig nur vereinsintern sichtbar.
 - Hosting in der EU, Löschkonzept für Accounts und Tags, Datenschutzerklärung von floorballdashboard.app vor dem Livegang erweitern.
 
-## Vorgeschlagene Repo-Struktur
+## Repo-Struktur
 
 ```
 floortag/
 ├── CLAUDE.md
 ├── README.md
 ├── prototype/floortag-prototyp.html   # Ausgangspunkt, nicht mehr weiterentwickeln
-├── web/                               # Frontend nach der Aufteilung
-├── proxy/                             # API-Proxy für den VPS
+├── web/                               # Frontend nach der Aufteilung (noch leer)
+├── proxy/                             # API-Proxy für den VPS (noch leer)
 └── fixtures/spiel_58668.json          # Testdaten
 ```
 
