@@ -1,0 +1,10 @@
+{
+  "name": "floortag",
+  "private": true,
+  "type": "module",
+  "description": "Floorball-Videos mit Saisonmanager-Daten synchronisieren",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:proxy": "bash tests/proxy-test.sh"
+  }
+}

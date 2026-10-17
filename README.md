@@ -14,17 +14,18 @@ php -S localhost:8000 -t web
 
 Dann `http://localhost:8000/` öffnen und eine Spiel-ID eingeben (Testfall: `58668`) oder direkt `http://localhost:8000/?spiel=58668` aufrufen. Ohne Key lässt sich `fixtures/spiel_58668.json` weiterhin als Datei hineinziehen.
 
-Tests für den Proxy (brauchen keinen echten Key):
+Tests (ohne Abhängigkeiten, brauchen keinen echten Key):
 
 ```bash
-bash tests/proxy-test.sh
+npm test             # Sync-Logik und Kapitelmarken (node --test)
+npm run test:proxy   # Proxy gegen einen gefälschten Saisonmanager
 ```
 
 ## Aufbau
 
 - `web/` – alles, was auf den Server kommt: Frontend (ES-Module, kein Build-Schritt) und `api/game.php` als Proxy zum Saisonmanager
 - `prototype/` – Single-File-Prototyp (Etappen 1 und 2), wird nicht mehr weiterentwickelt
-- `tests/` – Proxy-Tests mit gefälschtem Saisonmanager
+- `tests/` – Tests für Sync-Logik, Kapitelmarken und Proxy
 - `fixtures/` – Testdaten
 
 ## Deploy auf All-Inkl (`tag.floorballdashboard.app`)

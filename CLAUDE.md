@@ -23,7 +23,7 @@ php -S localhost:8000 -t web   # im Repo-Wurzelverzeichnis
 # dann http://localhost:8000/?spiel=58668
 ```
 
-Proxy-Tests ohne echten Key: `bash tests/proxy-test.sh`.
+Tests ohne Abhängigkeiten und ohne echten Key: `npm test` (Sync-Logik und Kapitel, `node --test`) und `npm run test:proxy`. Änderungen an `sync.js`, `game.js` oder `chapters.js` immer mit `npm test` prüfen.
 
 Testfall: Spiel 58668 (2. FBL Herren Nord/West, Baltic Storms – TV Eiche Horn Bremen, 5:4), Video `lfIFpRsE55I`. Die JSON liegt in `fixtures/spiel_58668.json`.
 
@@ -108,7 +108,7 @@ floortag/
 ├── README.md
 ├── prototype/floortag-prototyp.html   # Ausgangspunkt, nicht mehr weiterentwickeln
 ├── web/                               # Deploy-Ordner: Frontend (ES-Module ohne Build) + api/game.php
-├── tests/                             # Proxy-Tests mit Fake-Saisonmanager
+├── tests/                             # Tests: Sync-Logik, Kapitel, Proxy (Fake-Saisonmanager)
 └── fixtures/spiel_58668.json          # Testdaten
 ```
 
