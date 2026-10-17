@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Geheimnisse – der Saisonmanager-Key (SM_KEY) darf nie ins Repo
+.env
+.env.*
+!.env.example
+
+# Abhängigkeiten und Builds
+node_modules/
+__pycache__/
+*.pyc
+dist/
+
+# Editoren
+.vscode/
+.idea/

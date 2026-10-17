@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FloorTag – Sync-Prototyp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Farb-Tokens: Hell- und Dunkelmodus */
+  :root {
+    --bg: #EDF1EE;
+    --surface: #FFFFFF;
+    --ink: #15231D;
+    --muted: #5A6B62;
+    --line: #D3DCD6;
+    --pine: #1D6A4B;
+    --pine-soft: #DCEBE2;
+    --estimate: #B5761B;
+    --guest: #2D5584;
+    --period: #E2EAE4;
+    --danger: #A33A2A;
+    --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0E1813;
+      --surface: #16231C;
+      --ink: #E6EEE9;
+      --muted: #9AAEA3;
+      --line: #2A3B32;
+      --pine: #44AA7E;
+      --pine-soft: #1E3529;
+      --estimate: #E2A64B;
+      --guest: #7AA2D4;
+      --period: #1F3027;
+      --danger: #E07A66;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 16px/1.45 var(--body); }
+  button, input, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+
+  .topbar { display: flex; align-items: baseline; gap: 1.5rem; flex-wrap: wrap; padding: .9rem 1.5rem; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .brand { font: 700 1.6rem/1 var(--display); letter-spacing: .01em; }
+  .brand-sub { font: 500 1rem var(--display); color: var(--muted); margin-left: .4rem; }
+  .matchline { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; }
+  .matchline .teams { font: 600 1.25rem var(--display); }
+  .matchline .score { font: 700 1.5rem var(--display); color: var(--pine); padding: 0 .3rem; }
+  .matchline .meta { color: var(--muted); font-size: .9rem; }
+
+  .btn { border: 1px solid var(--pine); background: var(--pine); color: #fff; border-radius: 6px; padding: .4rem .8rem; cursor: pointer; white-space: nowrap; }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn.ghost:hover { border-color: var(--pine); }
+  .btn.small { padding: .2rem .55rem; font-size: .88rem; }
+  .btn.quiet { background: transparent; border-color: transparent; color: var(--muted); }
+  .btn.quiet:hover { color: var(--danger); }
+
+  /* Ladebereich */
+  .loader { max-width: 40rem; margin: 4rem auto; padding: 0 1.5rem; }
+  .loader h1 { font: 700 2.6rem/1.05 var(--display); margin: 0 0 .6rem; }
+  .loader p { color: var(--muted); }
+  .dropzone { border: 2px dashed var(--line); border-radius: 10px; padding: 2rem; text-align: center; margin: 1.5rem 0; background: var(--surface); }
+  .dropzone.over { border-color: var(--pine); background: var(--pine-soft); }
+  .dropzone input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .dropzone label { display: inline-block; margin-right: .5rem; }
+  .dropzone span { color: var(--muted); }
+  details textarea { width: 100%; margin: .6rem 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: .6rem; font-size: .85rem; }
+  .error { color: var(--danger); }
+
+  /* Hauptlayout */
+  main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr); gap: 1.5rem; padding: 1.5rem; max-width: 1500px; margin: 0 auto; }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+
+  .videorow { display: flex; gap: .5rem; margin-bottom: .75rem; }
+  .videorow input { flex: 1; min-width: 0; padding: .4rem .6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+  .player-wrap { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; }
+  .player-wrap iframe, #player { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .player-empty { position: absolute; inset: 0; display: grid; place-items: center; color: #cfd8d3; padding: 1rem; text-align: center; }
+
+  .transport { display: flex; align-items: center; gap: .4rem; margin: .75rem 0; flex-wrap: wrap; }
+  .clock { font: 700 1.7rem/1 var(--display); min-width: 5.5rem; font-variant-numeric: tabular-nums; }
+
+  /* Zeitleiste: das zentrale Element */
+  .strip { position: relative; height: 56px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; cursor: crosshair; margin-bottom: 1rem; overflow: hidden; }
+  .strip::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed var(--line); pointer-events: none; }
+  .seg { position: absolute; top: 0; bottom: 0; background: var(--period); border-left: 2px solid var(--pine); border-right: 2px solid var(--pine); pointer-events: none; }
+  .seg.open { border-right-style: dashed; border-right-color: var(--muted); }
+  .seg span { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); font: 600 .85rem var(--display); color: var(--muted); }
+  .pin { position: absolute; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; border: 2px solid var(--pine); background: var(--pine); padding: 0; cursor: pointer; z-index: 2; }
+  .pin.home { top: 8px; }
+  .pin.guest { bottom: 8px; border-color: var(--guest); background: var(--guest); }
+  .pin.is-est { background: var(--surface); border-style: dashed; }
+  .pin.penalty { border-radius: 2px; width: 10px; height: 10px; margin-left: -5px; }
+  .pin.timeout { border-radius: 0; width: 3px; height: 14px; margin-left: -1.5px; border-width: 0; background: var(--muted); }
+  .pin.sel { box-shadow: 0 0 0 3px var(--estimate); }
+  .playhead { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--danger); pointer-events: none; z-index: 3; }
+
+  .periods { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .75rem; }
+  .period { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .75rem .9rem; }
+  .period h3 { margin: 0 0 .5rem; font: 700 1.2rem var(--display); }
+  .mark { display: grid; grid-template-columns: 3.2rem 1fr auto auto; align-items: center; gap: .35rem; margin-top: .3rem; }
+  .mark .lbl { color: var(--muted); font-size: .9rem; }
+  .timebtn { background: none; border: 0; padding: 0; font: 600 1.15rem var(--display); cursor: pointer; text-align: left; font-variant-numeric: tabular-nums; }
+  .timebtn:disabled { color: var(--muted); cursor: default; }
+  .suggest { grid-column: 2 / -1; justify-self: start; background: none; border: 0; padding: 0; color: var(--estimate); font-size: .85rem; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .keys { color: var(--muted); font-size: .85rem; margin-top: 1rem; }
+  .keys kbd { font: inherit; border: 1px solid var(--line); border-radius: 4px; padding: 0 .3rem; background: var(--surface); }
+
+  /* Ereignisliste */
+  .side-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .side h2 { font: 700 1.5rem var(--display); margin: 0 0 .5rem; }
+  #progress { color: var(--muted); font-size: .9rem; }
+  .events { list-style: none; margin: 0 0 1.5rem; padding: 0; border-top: 1px solid var(--line); }
+  .event { border-bottom: 1px solid var(--line); border-left: 4px solid var(--pine); background: var(--surface); }
+  .event.guest { border-left-color: var(--guest); }
+  .event.sel { background: var(--pine-soft); }
+  .ev-head { display: grid; grid-template-columns: 4.2rem 1fr auto; gap: .6rem; align-items: center; width: 100%; padding: .55rem .7rem; background: none; border: 0; cursor: pointer; text-align: left; }
+  .ev-gt { font: 600 .95rem var(--display); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ev-title { font-weight: 600; }
+  .ev-title .sc { font: 700 1.2rem var(--display); margin-right: .35rem; }
+  .ev-sub { color: var(--muted); font-size: .88rem; }
+  .ev-vt { text-align: right; font: 600 1.05rem var(--display); font-variant-numeric: tabular-nums; }
+  .ev-vt small { display: block; font: 500 .78rem var(--body); }
+  .st-placed { color: var(--pine); }
+  .st-est { color: var(--estimate); }
+  .st-open { color: var(--muted); }
+  .ev-tools { padding: 0 .7rem .75rem 5.5rem; display: grid; gap: .5rem; }
+  .ev-tools .row { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
+  .ev-tools input[type=range] { width: 100%; accent-color: var(--pine); }
+  .ev-tools .hint { color: var(--muted); font-size: .82rem; }
+  @media (max-width: 520px) { .ev-tools { padding-left: .7rem; } }
+
+  /* Export */
+  .export { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 1rem; }
+  .settings { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem .9rem; margin-bottom: .9rem; font-size: .9rem; }
+  .settings label { display: flex; flex-direction: column; gap: .2rem; color: var(--muted); }
+  .settings label.check { flex-direction: row; align-items: center; gap: .4rem; color: var(--ink); grid-column: span 2; }
+  .settings input[type=number] { padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); width: 100%; }
+  .export textarea { width: 100%; font: .88rem/1.5 ui-monospace, Menlo, monospace; padding: .6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); resize: vertical; }
+  .export-actions { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+  .file-btn input { display: none; }
+  .note { color: var(--muted); font-size: .85rem; margin: .5rem 0 0; }
+  .note.warn { color: var(--estimate); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">FloorTag<span class="brand-sub">Sync-Prototyp</span></div>
+  <div id="matchline" class="matchline"></div>
+</header>
+
+<section id="loader" class="loader">
+  <h1>Spiel laden</h1>
+  <p>Zieh die Saisonmanager-JSON eines Spiels hierher oder wähle sie aus. Das Video wird, wenn vorhanden, automatisch aus dem Livestream-Link übernommen.</p>
+  <div id="dropzone" class="dropzone">
+    <input type="file" id="fileInput" accept=".json,application/json">
+    <label for="fileInput" class="btn">JSON-Datei auswählen</label>
+    <span>oder hierher ziehen</span>
+  </div>
+  <details>
+    <summary>JSON stattdessen einfügen</summary>
+    <textarea id="pasteArea" rows="8" aria-label="JSON einfügen"></textarea>
+    <button id="pasteBtn" class="btn">Einfügen und laden</button>
+  </details>
+  <p id="loadError" class="error" hidden></p>
+</section>
+
+<main id="app" hidden>
+  <section class="stage">
+    <div class="videorow">
+      <input id="videoInput" type="text" placeholder="YouTube-Link oder Video-ID" aria-label="YouTube-Link oder Video-ID">
+      <button id="videoBtn" class="btn">Video laden</button>
+    </div>
+    <div class="player-wrap">
+      <div id="player"></div>
+      <div id="playerEmpty" class="player-empty">Noch kein Video geladen.</div>
+    </div>
+    <div class="transport">
+      <span id="clock" class="clock">0:00</span>
+      <button class="btn ghost" data-seek="-5">−5 s</button>
+      <button class="btn ghost" data-seek="-1">−1 s</button>
+      <button class="btn" id="playBtn">Play / Pause</button>
+      <button class="btn ghost" data-seek="1">+1 s</button>
+      <button class="btn ghost" data-seek="5">+5 s</button>
+    </div>
+    <div id="strip" class="strip" hidden aria-label="Zeitleiste des Videos"></div>
+    <div id="periods" class="periods"></div>
+    <p class="keys">Tastatur: <kbd>K</kbd> oder <kbd>Leertaste</kbd> Play/Pause, <kbd>J</kbd>/<kbd>L</kbd> ±5 s, <kbd>,</kbd>/<kbd>.</kbd> ±1 s, <kbd>Enter</kbd> setzt das gewählte Ereignis auf die aktuelle Videozeit, <kbd>N</kbd> wählt das nächste Ereignis.</p>
+  </section>
+
+  <aside class="side">
+    <div class="side-head"><h2>Ereignisse</h2><span id="progress"></span></div>
+    <ol id="events" class="events"></ol>
+
+    <section class="export">
+      <h2>Export</h2>
+      <div class="settings">
+        <label>Drittellänge (Min.)<input type="number" id="periodLenInput" min="5" max="30" step="1"></label>
+        <label>Verlängerung (Min.)<input type="number" id="otLenInput" min="1" max="20" step="1"></label>
+        <label>Vorlauf der Kapitel (s)<input type="number" id="leadInput" min="0" max="30" step="1"></label>
+        <label>Drittelpause (Min.)<input type="number" id="pauseLenInput" min="1" max="30" step="1"></label>
+        <label class="check"><input type="checkbox" id="penaltyCheck"> Strafen als Kapitel aufnehmen</label>
+        <label class="check"><input type="checkbox" id="youthCheck"> Jugendspieler nur mit Rückennummer nennen</label>
+      </div>
+      <label for="chapters" class="note">YouTube-Kapitel für die Videobeschreibung</label>
+      <textarea id="chapters" rows="11" readonly></textarea>
+      <p id="chapterNote" class="note"></p>
+      <div class="export-actions">
+        <button id="copyBtn" class="btn">Kapitel kopieren</button>
+        <button id="saveSyncBtn" class="btn ghost">Sync speichern</button>
+        <label class="btn ghost file-btn">Sync laden<input type="file" id="syncInput" accept=".json,application/json"></label>
+        <button id="resetBtn" class="btn ghost">Anderes Spiel laden</button>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<script>
+// ===== Zustand =====
+const $ = s => document.querySelector(s);
+const state = {
+  game: null,
+  videoId: null,
+  periodLen: 1200,     // Drittellänge in Sekunden
+  otLen: 600,          // Verlängerung in Sekunden
+  pauseLen: 600,       // Drittelpause in Sekunden
+  leadIn: 8,           // Vorlauf für Kapitelmarken in Sekunden
+  includePenalties: true,
+  hideYouth: true,
+  periods: {},         // { 1: { start, end }, ... } in Videosekunden
+  placed: {},          // { event_id: videoSec } manuell gesetzte Ereignisse = Ankerpunkte
+  gs: {}               // { event_id: Spielsekunde im Abschnitt }
+};
+let player = null, playerReady = false, apiReady = false, pendingVideo = null, selectedId = null;
+
+// ===== Hilfsfunktionen =====
+function parseTime(t) {
+  const [m, s] = String(t || '0:00').split(':').map(Number);
+  return (m || 0) * 60 + (s || 0);
+}
+function fmt(sec) {
+  if (sec == null || isNaN(sec)) return '–';
+  sec = Math.max(0, Math.round(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+}
+function fmtGame(g) {
+  return `${String(Math.floor(g / 60)).padStart(2, '0')}:${String(g % 60).padStart(2, '0')}`;
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function extractVideoId(input) {
+  if (!input) return null;
+  const s = input.trim();
+  if (/^[\w-]{11}$/.test(s)) return s;
+  try {
+    const u = new URL(s);
+    if (u.hostname.includes('youtu.be')) return u.pathname.slice(1, 12);
+    if (u.searchParams.get('v')) return u.searchParams.get('v');
+    const m = u.pathname.match(/\/(live|embed|shorts)\/([\w-]{11})/);
+    if (m) return m[2];
+  } catch (e) { /* kein gültiger Link */ }
+  return null;
+}
+
+// ===== Spieldaten =====
+function events() {
+  if (!state.game) return [];
+  return (state.game.events || [])
+    .filter(e => ['goal', 'penalty', 'timeout'].includes(e.event_type))
+    .slice()
+    .sort((a, b) => a.period - b.period || parseTime(a.time) - parseTime(b.time) || a.event_id - b.event_id);
+}
+function periodList() {
+  const g = state.game, ps = new Set([1, 2, 3]);
+  if (g.result && g.result.overtime) ps.add(4);
+  for (const e of g.events || []) if (e.period >= 1) ps.add(Math.floor(e.period));
+  return [...ps].sort((a, b) => a - b);
+}
+function periodTitle(p, short) {
+  const t = (state.game.period_titles || []).find(x => x.period === p);
+  if (short) return p <= 3 ? `${p}. Dr.` : (t ? t.short_title : String(p));
+  return t ? t.title : `${p}. Abschnitt`;
+}
+function pauseTitle(p) {
+  const t = (state.game.period_titles || []).find(x => x.period === p + 0.5);
+  return t ? t.title : 'Pause';
+}
+function periodLength(p) {
+  if (p <= 3) return state.periodLen;
+  if (p === 4) return state.otLen;
+  return 0; // Penaltyschießen hat keine Spielzeit
+}
+function teamShort(team) {
+  return team === 'home' ? state.game.home_team_short_name : state.game.guest_team_short_name;
+}
+function personLabel(team, nr) {
+  if (nr == null) return '';
+  const p = ((state.game.players || {})[team] || []).find(x => x.trikot_number === nr);
+  if (!p) return `#${nr}`;
+  if (p.youth && state.hideYouth) return `#${nr}`;
+  return `#${nr} ${p.player_name}`;
+}
+function describe(e) {
+  const short = teamShort(e.event_team);
+  if (e.event_type === 'goal') {
+    const score = `${e.home_goals}:${e.guest_goals}`;
+    const scorer = personLabel(e.event_team, e.number);
+    const assist = e.assist ? personLabel(e.event_team, e.assist) : '';
+    const special = e.goal_type && e.goal_type !== 'regular' ? e.goal_type_string : '';
+    return {
+      score, text: `Tor ${short} ${scorer}`,
+      sub: [assist ? `Vorlage ${assist}` : '', special].filter(Boolean).join(', '),
+      chapter: `${score} ${short} – ${scorer}${assist ? ` (${assist})` : ''}${special ? ` [${special}]` : ''}`
+    };
+  }
+  if (e.event_type === 'penalty') {
+    const who = personLabel(e.event_team, e.number);
+    return {
+      score: '', text: `Strafe ${short} ${who}`,
+      sub: [e.penalty_type_string, e.penalty_reason_string].filter(Boolean).join(', '),
+      chapter: `Strafe ${short} – ${who} (${e.penalty_type_string || ''}${e.penalty_reason_string ? ', ' + e.penalty_reason_string : ''})`
+    };
+  }
+  return { score: '', text: `Auszeit ${short}`, sub: '', chapter: null };
+}
+
+// ===== Sync-Logik: Ankerpunkte und Interpolation =====
+function anchors(p, excludeId) {
+  const a = [], ps = state.periods[p] || {}, len = periodLength(p);
+  if (ps.start != null) a.push({ g: 0, v: ps.start });
+  if (ps.end != null && len > 0) a.push({ g: len, v: ps.end });
+  for (const e of events()) {
+    if (Math.floor(e.period) === p && e.event_id !== excludeId && state.placed[e.event_id] != null) {
+      a.push({ g: state.gs[e.event_id], v: state.placed[e.event_id] });
+    }
+  }
+  return a.sort((x, y) => x.g - y.g || x.v - y.v);
+}
+// Schätzt die Videozeit eines Ereignisses aus den umliegenden Ankerpunkten
+function estimate(e) {
+  const p = Math.floor(e.period), a = anchors(p, e.event_id), g = state.gs[e.event_id];
+  if (!a.length) return null;
+  let before = null, after = null;
+  for (const x of a) {
+    if (x.g <= g) before = x;
+    if (x.g >= g && !after) after = x;
+  }
+  if (before && after) {
+    if (after.g === before.g) return before.v;
+    return before.v + (g - before.g) / (after.g - before.g) * (after.v - before.v);
+  }
+  // Nur ein Anker auf einer Seite: Spielzeit läuft 1:1 mit der Videozeit
+  if (before) return before.v + (g - before.g);
+  return after.v - (after.g - g);
+}
+function timeOf(e) {
+  return state.placed[e.event_id] != null ? state.placed[e.event_id] : estimate(e);
+}
+// Grenzen: Ein Ereignis darf nicht vor dem vorherigen oder nach dem nächsten Anker liegen
+function bounds(e) {
+  const p = Math.floor(e.period), a = anchors(p, e.event_id), g = state.gs[e.event_id];
+  let lo = -Infinity, hi = Infinity;
+  for (const x of a) {
+    if (x.g < g) lo = Math.max(lo, x.v);
+    if (x.g > g) hi = Math.min(hi, x.v);
+  }
+  return { lo, hi };
+}
+// Verhältnis echte Dauer zu Spielzeit, gelernt aus fertig markierten Dritteln
+function durationFactor() {
+  const r = [];
+  for (const p of [1, 2, 3]) {
+    const st = state.periods[p] || {};
+    if (st.start != null && st.end != null && st.end > st.start) r.push((st.end - st.start) / periodLength(p));
+  }
+  return r.length ? r.reduce((a, b) => a + b, 0) / r.length : 1.35; // Startwert ohne Erfahrung
+}
+function suggestEnd(p) {
+  const st = state.periods[p] || {};
+  if (st.start == null || !periodLength(p)) return null;
+  return st.start + periodLength(p) * durationFactor();
+}
+function suggestStart(p) {
+  if (p < 2 || p > 3) return null;
+  const prev = state.periods[p - 1] || {};
+  return prev.end != null ? prev.end + state.pauseLen : null;
+}
+
+function place(e, v) {
+  const { lo, hi } = bounds(e);
+  let val = v;
+  if (isFinite(lo)) val = Math.max(lo, val);
+  if (isFinite(hi)) val = Math.min(hi, val);
+  state.placed[e.event_id] = Math.max(0, Math.round(val * 10) / 10);
+  save();
+  renderAll();
+}
+
+// ===== Kapitelmarken =====
+function buildChapters() {
+  const items = [];
+  let missing = 0;
+  const ps = periodList();
+  ps.forEach((p, i) => {
+    const st = state.periods[p] || {};
+    if (st.start != null) items.push({ t: st.start, label: periodTitle(p) });
+    for (const e of events()) {
+      if (Math.floor(e.period) !== p) continue;
+      const d = describe(e);
+      if (!d.chapter || (e.event_type === 'penalty' && !state.includePenalties)) continue;
+      const t = timeOf(e);
+      if (t == null) { missing++; continue; }
+      items.push({ t: Math.max(0, t - state.leadIn), label: d.chapter });
+    }
+    if (st.end != null) {
+      const last = i === ps.length - 1;
+      items.push({ t: st.end, label: last ? 'Nach dem Spiel' : pauseTitle(p) });
+    }
+  });
+  items.sort((a, b) => a.t - b.t);
+  // YouTube verlangt ein erstes Kapitel bei 0:00
+  if (!items.length || items[0].t >= 10) items.unshift({ t: 0, label: 'Vor dem Spiel' });
+  else items[0].t = 0;
+  // YouTube verlangt mindestens 10 Sekunden pro Kapitel
+  let last = -Infinity, shifted = 0;
+  for (const it of items) {
+    let t = Math.round(it.t);
+    if (t < last + 10) { t = last + 10; shifted++; }
+    it.t = t; last = t;
+  }
+  return { text: items.map(it => `${fmt(it.t)} ${it.label}`).join('\n'), count: items.length, missing, shifted };
+}
+
+// ===== Speichern (lokal im Browser) =====
+function storageKey() { return `floortag:${state.game && state.game.id}:${state.videoId || 'ohne-video'}`; }
+function save() {
+  try {
+    localStorage.setItem(storageKey(), JSON.stringify({
+      periods: state.periods, placed: state.placed, periodLen: state.periodLen, otLen: state.otLen, pauseLen: state.pauseLen,
+      leadIn: state.leadIn, includePenalties: state.includePenalties, hideYouth: state.hideYouth
+    }));
+  } catch (e) { /* Speicher nicht verfügbar */ }
+}
+function restore() {
+  state.periods = {}; state.placed = {};
+  try {
+    const raw = localStorage.getItem(storageKey());
+    if (raw) Object.assign(state, JSON.parse(raw));
+  } catch (e) { /* ignorieren */ }
+}
+
+// ===== YouTube =====
+function loadYouTubeApi() {
+  if (window.YT && window.YT.Player) { apiReady = true; return; }
+  if (document.getElementById('yt-api')) return;
+  const s = document.createElement('script');
+  s.id = 'yt-api';
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+}
+window.onYouTubeIframeAPIReady = () => {
+  apiReady = true;
+  if (pendingVideo) createPlayer(pendingVideo);
+};
+function setVideo(id) {
+  state.videoId = id;
+  restore();
+  renderAll();
+  if (!apiReady) { pendingVideo = id; loadYouTubeApi(); return; }
+  createPlayer(id);
+}
+function createPlayer(id) {
+  $('#playerEmpty').hidden = true;
+  if (player && playerReady) { player.cueVideoById(id); return; }
+  player = new YT.Player('player', {
+    videoId: id,
+    host: 'https://www.youtube-nocookie.com',
+    playerVars: { rel: 0, playsinline: 1 },
+    events: {
+      onReady: () => { playerReady = true; renderAll(); },
+      onStateChange: () => renderStrip(),
+      onError: ev => {
+        const msg = {
+          2: 'Die Video-ID ist ungültig.',
+          100: 'Das Video wurde nicht gefunden oder ist privat.',
+          101: 'Das Video darf nicht eingebettet werden.',
+          150: 'Das Video darf nicht eingebettet werden.',
+          153: 'YouTube verweigert die Wiedergabe. Öffne die Datei über einen lokalen Server statt per Doppelklick.'
+        }[ev.data] || `YouTube meldet Fehler ${ev.data}.`;
+        const el = $('#playerEmpty'); el.textContent = msg; el.hidden = false;
+      }
+    }
+  });
+}
+function now() { return playerReady ? player.getCurrentTime() : 0; }
+function seek(t) { if (playerReady) player.seekTo(Math.max(0, t), true); }
+
+// ===== Darstellung =====
+function renderAll() {
+  if (!state.game) return;
+  renderSettings();
+  renderPeriods();
+  renderEvents();
+  renderStrip();
+  renderChapters();
+}
+function renderMatchline() {
+  const g = state.game;
+  const date = g.date ? new Date(g.date + 'T12:00').toLocaleDateString('de-DE') : '';
+  $('#matchline').innerHTML =
+    `<span class="teams">${esc(g.home_team_name)}</span><span class="score">${esc(g.result_string || '–')}</span>` +
+    `<span class="teams">${esc(g.guest_team_name)}</span><span class="meta">${esc(g.league_name)}, ${esc(date)}</span>`;
+}
+function renderSettings() {
+  $('#periodLenInput').value = state.periodLen / 60;
+  $('#otLenInput').value = state.otLen / 60;
+  $('#pauseLenInput').value = state.pauseLen / 60;
+  $('#leadInput').value = state.leadIn;
+  $('#penaltyCheck').checked = state.includePenalties;
+  $('#youthCheck').checked = state.hideYouth;
+}
+function renderPeriods() {
+  $('#periods').innerHTML = periodList().map(p => {
+    const st = state.periods[p] || {};
+    const sugg = { start: suggestStart(p), end: suggestEnd(p) };
+    const row = (kind, label) => `
+      <div class="mark">
+        <span class="lbl">${label}</span>
+        <button class="timebtn" data-act="seekmark" data-p="${p}" data-kind="${kind}" ${st[kind] == null ? 'disabled' : ''}>${fmt(st[kind])}</button>
+        <button class="btn small" data-act="setmark" data-p="${p}" data-kind="${kind}">Jetzt</button>
+        <button class="btn small quiet" data-act="clearmark" data-p="${p}" data-kind="${kind}" aria-label="${label} entfernen" ${st[kind] == null ? 'hidden' : ''}>✕</button>
+        ${st[kind] == null && sugg[kind] != null ? `<button class="suggest" data-act="seeksuggest" data-t="${sugg[kind]}">Vorschlag ${fmt(sugg[kind])} ansehen</button>` : ''}
+      </div>`;
+    return `<div class="period"><h3>${esc(periodTitle(p))}</h3>${row('start', 'Anpfiff')}${p < 5 ? row('end', 'Ende') : ''}</div>`;
+  }).join('');
+}
+function renderEvents() {
+  const evs = events();
+  const placedCount = evs.filter(e => state.placed[e.event_id] != null).length;
+  $('#progress').textContent = `${placedCount} von ${evs.length} gesetzt`;
+  $('#events').innerHTML = evs.map(e => {
+    const d = describe(e), t = timeOf(e), isPlaced = state.placed[e.event_id] != null;
+    const status = isPlaced ? ['gesetzt', 'st-placed'] : t != null ? ['geschätzt', 'st-est'] : ['offen', 'st-open'];
+    const sel = e.event_id === selectedId;
+    let tools = '';
+    if (sel) {
+      const { lo, hi } = bounds(e);
+      const c = t != null ? t : now();
+      const min = Math.max(isFinite(lo) ? lo : 0, c - 90), max = Math.min(isFinite(hi) ? hi : c + 90, c + 90);
+      tools = `<div class="ev-tools">
+        <div class="row">
+          <button class="btn small" data-act="setnow" data-id="${e.event_id}">Auf aktuelle Videozeit setzen</button>
+          <button class="btn small ghost" data-act="jump" data-id="${e.event_id}" ${t == null ? 'disabled' : ''}>Ab ${state.leadIn} s vorher abspielen</button>
+        </div>
+        <div class="row">
+          <button class="btn small ghost" data-act="nudge" data-d="-5" data-id="${e.event_id}" ${t == null ? 'disabled' : ''}>−5 s</button>
+          <button class="btn small ghost" data-act="nudge" data-d="-1" data-id="${e.event_id}" ${t == null ? 'disabled' : ''}>−1 s</button>
+          <button class="btn small ghost" data-act="nudge" data-d="1" data-id="${e.event_id}" ${t == null ? 'disabled' : ''}>+1 s</button>
+          <button class="btn small ghost" data-act="nudge" data-d="5" data-id="${e.event_id}" ${t == null ? 'disabled' : ''}>+5 s</button>
+          ${isPlaced ? `<button class="btn small quiet" data-act="unplace" data-id="${e.event_id}">Schätzung verwenden</button>` : ''}
+        </div>
+        ${t != null && max > min ? `<input type="range" data-id="${e.event_id}" min="${min}" max="${max}" step="0.5" value="${c}" aria-label="Videozeit feinjustieren">
+        <span class="hint">Der Regler bleibt zwischen den benachbarten gesetzten Punkten.</span>` : '<span class="hint">Setze zuerst den Anpfiff des Abschnitts, dann wird die Position geschätzt.</span>'}
+      </div>`;
+    }
+    return `<li class="event ${e.event_team} ${sel ? 'sel' : ''}" data-row="${e.event_id}">
+      <button class="ev-head" data-act="select" data-id="${e.event_id}" aria-expanded="${sel}">
+        <span class="ev-gt">${esc(periodTitle(Math.floor(e.period), true))}<br>${fmtGame(state.gs[e.event_id])}</span>
+        <span><span class="ev-title">${d.score ? `<span class="sc">${esc(d.score)}</span>` : ''}${esc(d.text)}</span>
+          ${d.sub ? `<br><span class="ev-sub">${esc(d.sub)}</span>` : ''}</span>
+        <span class="ev-vt ${status[1]}">${fmt(t)}<small>${status[0]}</small></span>
+      </button>${tools}</li>`;
+  }).join('');
+}
+function renderStrip() {
+  const strip = $('#strip');
+  const dur = playerReady ? player.getDuration() : 0;
+  if (!dur) { strip.hidden = true; return; }
+  strip.hidden = false;
+  const pct = v => Math.min(100, Math.max(0, v / dur * 100));
+  let html = '';
+  for (const p of periodList()) {
+    const st = state.periods[p] || {};
+    if (st.start == null) continue;
+    const end = st.end != null ? st.end : (suggestEnd(p) || st.start + 300);
+    html += `<div class="seg ${st.end == null ? 'open' : ''}" style="left:${pct(st.start)}%;width:${pct(end) - pct(st.start)}%"><span>${esc(periodTitle(p, true))}</span></div>`;
+  }
+  for (const e of events()) {
+    const t = timeOf(e);
+    if (t == null) continue;
+    const cls = [e.event_type, e.event_team, state.placed[e.event_id] != null ? 'is-placed' : 'is-est', e.event_id === selectedId ? 'sel' : ''].join(' ');
+    html += `<button class="pin ${cls}" style="left:${pct(t)}%" data-act="select" data-id="${e.event_id}" title="${esc(describe(e).text)} (${fmt(t)})"></button>`;
+  }
+  html += `<div class="playhead" id="playhead" style="left:${pct(now())}%"></div>`;
+  strip.innerHTML = html;
+}
+function renderChapters() {
+  const c = buildChapters();
+  $('#chapters').value = c.text;
+  const notes = [];
+  if (c.missing) notes.push(`${c.missing} Ereignis(se) noch ohne Zeit, sie fehlen in den Kapiteln.`);
+  if (c.shifted) notes.push(`${c.shifted} Kapitel wurden verschoben, weil YouTube mindestens 10 Sekunden Abstand verlangt.`);
+  if (c.count < 3) notes.push('YouTube zeigt Kapitel erst ab drei Einträgen an.');
+  const n = $('#chapterNote');
+  n.textContent = notes.join(' ') || 'Kapitel sind bereit zum Einfügen in die Videobeschreibung.';
+  n.classList.toggle('warn', notes.length > 0);
+}
+
+// ===== Spiel laden =====
+function loadGame(data) {
+  if (!data || !data.id || !Array.isArray(data.events)) throw new Error('Das sieht nicht nach einer Saisonmanager-Spiel-JSON aus (es fehlen id oder events).');
+  state.game = data;
+  state.gs = {};
+  let shootout = 0;
+  for (const e of events()) {
+    // Im Penaltyschießen gibt es keine Spielzeit, dort wird pro Versuch geschätzt
+    state.gs[e.event_id] = Math.floor(e.period) === 5 ? (shootout++) * 30 : parseTime(e.time);
+  }
+  selectedId = null;
+  renderMatchline();
+  $('#loader').hidden = true;
+  $('#app').hidden = false;
+  const link = data.vod_link || data.live_stream_link || '';
+  $('#videoInput').value = link;
+  const id = extractVideoId(link);
+  if (id) setVideo(id); else { state.videoId = null; restore(); renderAll(); }
+}
+function handleText(text) {
+  const err = $('#loadError');
+  try { loadGame(JSON.parse(text)); err.hidden = true; }
+  catch (e) { err.textContent = e instanceof SyntaxError ? 'Die Datei enthält kein gültiges JSON.' : e.message; err.hidden = false; }
+}
+
+// ===== Ereignis-Handler =====
+$('#fileInput').addEventListener('change', e => { const f = e.target.files[0]; if (f) f.text().then(handleText); });
+const dz = $('#dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); const f = e.dataTransfer.files[0]; if (f) f.text().then(handleText); });
+$('#pasteBtn').addEventListener('click', () => handleText($('#pasteArea').value));
+
+$('#videoBtn').addEventListener('click', () => {
+  const id = extractVideoId($('#videoInput').value);
+  if (id) setVideo(id);
+  else { const el = $('#playerEmpty'); el.textContent = 'Daraus konnte keine YouTube-Video-ID gelesen werden.'; el.hidden = false; }
+});
+document.querySelectorAll('[data-seek]').forEach(b => b.addEventListener('click', () => seek(now() + Number(b.dataset.seek))));
+$('#playBtn').addEventListener('click', togglePlay);
+function togglePlay() { if (!playerReady) return; player.getPlayerState() === 1 ? player.pauseVideo() : player.playVideo(); }
+
+$('#periods').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const p = Number(b.dataset.p), kind = b.dataset.kind;
+  state.periods[p] = state.periods[p] || {};
+  if (b.dataset.act === 'setmark') { state.periods[p][kind] = Math.round(now() * 10) / 10; save(); renderAll(); }
+  if (b.dataset.act === 'clearmark') { state.periods[p][kind] = null; save(); renderAll(); }
+  if (b.dataset.act === 'seekmark') seek(state.periods[p][kind]);
+  if (b.dataset.act === 'seeksuggest') seek(Number(b.dataset.t) - 5);
+});
+
+function findEvent(id) { return events().find(e => e.event_id === Number(id)); }
+function handleEventAction(e) {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const ev = findEvent(b.dataset.id); if (!ev) return;
+  const t = timeOf(ev);
+  switch (b.dataset.act) {
+    case 'select':
+      selectedId = selectedId === ev.event_id ? null : ev.event_id;
+      if (selectedId && t != null) seek(t - 3);
+      renderAll();
+      break;
+    case 'setnow': place(ev, now()); break;
+    case 'jump': seek(t - state.leadIn); if (playerReady) player.playVideo(); break;
+    case 'nudge': place(ev, t + Number(b.dataset.d)); seek(timeOf(ev) - 3); break;
+    case 'unplace': delete state.placed[ev.event_id]; save(); renderAll(); break;
+  }
+}
+$('#events').addEventListener('click', handleEventAction);
+$('#strip').addEventListener('click', e => {
+  if (e.target.closest('[data-act]')) { handleEventAction(e); return; }
+  // Klick auf freie Fläche springt an diese Stelle im Video
+  const r = $('#strip').getBoundingClientRect();
+  if (playerReady) seek((e.clientX - r.left) / r.width * player.getDuration());
+});
+// Regler: beim Ziehen Vorschau im Video, beim Loslassen übernehmen
+$('#events').addEventListener('input', e => {
+  if (e.target.type !== 'range') return;
+  seek(Number(e.target.value));
+  const vt = e.target.closest('.event').querySelector('.ev-vt');
+  vt.firstChild.textContent = fmt(Number(e.target.value));
+});
+$('#events').addEventListener('change', e => {
+  if (e.target.type !== 'range') return;
+  const ev = findEvent(e.target.dataset.id);
+  if (ev) place(ev, Number(e.target.value));
+});
+
+// Einstellungen
+$('#periodLenInput').addEventListener('change', e => { state.periodLen = Math.max(60, Number(e.target.value) * 60); save(); renderAll(); });
+$('#otLenInput').addEventListener('change', e => { state.otLen = Math.max(60, Number(e.target.value) * 60); save(); renderAll(); });
+$('#pauseLenInput').addEventListener('change', e => { state.pauseLen = Math.max(60, Number(e.target.value) * 60); save(); renderAll(); });
+$('#leadInput').addEventListener('change', e => { state.leadIn = Math.max(0, Number(e.target.value)); save(); renderAll(); });
+$('#penaltyCheck').addEventListener('change', e => { state.includePenalties = e.target.checked; save(); renderAll(); });
+$('#youthCheck').addEventListener('change', e => { state.hideYouth = e.target.checked; save(); renderAll(); });
+
+// Export und Import
+$('#copyBtn').addEventListener('click', async () => {
+  const b = $('#copyBtn'), text = $('#chapters').value;
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) { $('#chapters').select(); document.execCommand('copy'); }
+  b.textContent = 'Kopiert';
+  setTimeout(() => { b.textContent = 'Kapitel kopieren'; }, 1500);
+});
+$('#saveSyncBtn').addEventListener('click', () => {
+  const data = {
+    format: 'floortag-sync', version: 1,
+    game_id: state.game.id, video_id: state.videoId, created: new Date().toISOString(),
+    period_length_sec: state.periodLen, overtime_length_sec: state.otLen,
+    periods: state.periods,
+    events: events().filter(e => state.placed[e.event_id] != null).map(e => ({
+      event_id: e.event_id, period: e.period, time: e.time, video_sec: state.placed[e.event_id]
+    }))
+  };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  a.download = `floortag-sync-${state.game.id}-${state.videoId || 'ohne-video'}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+$('#syncInput').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const n = $('#chapterNote');
+  try {
+    const d = JSON.parse(await f.text());
+    if (d.format !== 'floortag-sync') throw new Error('Das ist keine FloorTag-Sync-Datei.');
+    if (d.game_id !== state.game.id) throw new Error(`Die Sync-Datei gehört zu Spiel ${d.game_id}, geladen ist Spiel ${state.game.id}.`);
+    state.periods = d.periods || {};
+    state.placed = {};
+    for (const x of d.events || []) state.placed[x.event_id] = x.video_sec;
+    if (d.period_length_sec) state.periodLen = d.period_length_sec;
+    if (d.overtime_length_sec) state.otLen = d.overtime_length_sec;
+    if (d.video_id && d.video_id !== state.videoId) { $('#videoInput').value = d.video_id; state.videoId = d.video_id; if (apiReady) createPlayer(d.video_id); }
+    save(); renderAll();
+  } catch (err) { n.textContent = err.message; n.classList.add('warn'); }
+  e.target.value = '';
+});
+$('#resetBtn').addEventListener('click', () => {
+  state.game = null; selectedId = null;
+  if (playerReady) player.pauseVideo();
+  $('#app').hidden = true; $('#loader').hidden = false; $('#matchline').innerHTML = '';
+});
+
+// Tastatur
+document.addEventListener('keydown', e => {
+  if (!state.game || e.metaKey || e.ctrlKey || e.altKey) return;
+  const tag = e.target.tagName;
+  if (tag === 'TEXTAREA' || (tag === 'INPUT' && !['range', 'checkbox'].includes(e.target.type))) return;
+  const k = e.key.toLowerCase();
+  if (k === 'k' || k === ' ') { e.preventDefault(); togglePlay(); }
+  else if (k === 'j') seek(now() - 5);
+  else if (k === 'l') seek(now() + 5);
+  else if (k === ',') seek(now() - 1);
+  else if (k === '.') seek(now() + 1);
+  else if (k === 'enter' && selectedId != null) { e.preventDefault(); const ev = findEvent(selectedId); if (ev) place(ev, now()); }
+  else if (k === 'n') {
+    const evs = events(), i = evs.findIndex(x => x.event_id === selectedId);
+    const next = evs[(i + 1) % evs.length];
+    selectedId = next.event_id;
+    const t = timeOf(next); if (t != null) seek(t - 3);
+    renderAll();
+    const row = document.querySelector(`[data-row="${selectedId}"]`); if (row) row.scrollIntoView({ block: 'nearest' });
+  }
+});
+
+// Uhr und Abspielposition aktualisieren
+setInterval(() => {
+  if (!playerReady || !state.game) return;
+  const t = now(), dur = player.getDuration();
+  $('#clock').textContent = fmt(t);
+  const ph = document.getElementById('playhead');
+  if (ph && dur) ph.style.left = `${Math.min(100, t / dur * 100)}%`;
+  else if (dur && $('#strip').hidden) renderStrip();
+}, 250);
+</script>
+</body>
+</html>
