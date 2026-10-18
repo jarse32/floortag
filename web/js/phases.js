@@ -11,6 +11,7 @@
 // Abweichend vom Dashboard rechnet FloorTag mit der eingestellten Drittellänge statt fest 20 Min.
 import { state } from './state.js';
 import { events, periodList, periodLength } from './game.js';
+import { periodAtVideo } from './sync.js';
 
 // Spielzeit über alle Abschnitte hinweg (Drittel 2 beginnt bei Drittellänge usw.)
 function offset(p) {
@@ -85,30 +86,47 @@ export function penaltyWindowsByTeam() {
   return pens;
 }
 
+// Phasen „Torhüter raus“ (eigene Tags, Videozeit) als Zeitfenster auf der Gesamtspielzeit.
+// Nur abgeschlossene Phasen, deren Beginn und Ende in markierten Dritteln liegen.
+export function emptyNetWindows() {
+  const out = { home: [], guest: [] };
+  for (const t of state.tags || []) {
+    if (t.code !== 'empty_net' || !out[t.team] || t.end == null) continue;
+    const a = periodAtVideo(t.v), b = periodAtVideo(t.end);
+    if (!a || !b) continue;
+    const start = offset(a.p) + a.g, end = offset(b.p) + b.g;
+    if (end > start) out[t.team].push({ start, end });
+  }
+  return out;
+}
+
 // Phasen mit ungleicher Stärke, getrennt an Drittelgrenzen und bei Stärkewechsel:
-// [{ team: 'home', p, from, to, strength: [5, 4] }]  (from/to = Spielzeit im Abschnitt)
+// [{ team: 'home', p, from, to, strength: [5, 4], emptyNet: ['home'] }]  (from/to = Spielzeit im Abschnitt)
+// Stärke = Feldspieler: Grundzahl − laufende Strafen + 1, wenn der Torhüter draußen ist.
 export function powerPlayPhases() {
-  const pens = penaltyWindowsByTeam();
+  const pens = penaltyWindowsByTeam(), empty = emptyNetWindows();
   const base = state.kleinfeld ? 3 : 5;
   const phases = [];
   for (const { p, from, to } of playedPeriods()) {
     const cuts = new Set([from, to]);
-    for (const list of Object.values(pens)) for (const w of list) {
+    for (const list of [...Object.values(pens), ...Object.values(empty)]) for (const w of list) {
       if (w.start > from && w.start < to) cuts.add(w.start);
       if (w.end > from && w.end < to) cuts.add(w.end);
     }
     const points = [...cuts].sort((a, b) => a - b);
     for (let i = 0; i < points.length - 1; i++) {
       const a = points[i], b = points[i + 1], mid = (a + b) / 2;
-      const h = pens.home.filter(w => w.start <= mid && w.end > mid).length;
-      const g = pens.guest.filter(w => w.start <= mid && w.end > mid).length;
-      if (h === g) continue;
-      const team = h < g ? 'home' : 'guest';
-      const strength = team === 'home' ? [base - h, base - g] : [base - g, base - h];
+      const active = list => list.filter(w => w.start <= mid && w.end > mid).length;
+      const en = { home: active(empty.home) > 0, guest: active(empty.guest) > 0 };
+      const field = { home: base - active(pens.home) + (en.home ? 1 : 0), guest: base - active(pens.guest) + (en.guest ? 1 : 0) };
+      if (field.home === field.guest) continue;
+      const team = field.home > field.guest ? 'home' : 'guest', opp = team === 'home' ? 'guest' : 'home';
+      const strength = [field[team], field[opp]];
+      const emptyNet = ['home', 'guest'].filter(t => en[t]);
       const last = phases[phases.length - 1];
       // Nahtlos anschließender Abschnitt mit gleicher Lage: verlängern
-      if (last && last.p === p && last.team === team && last.to === a - from && last.strength.join() === strength.join()) last.to = b - from;
-      else phases.push({ team, p, from: a - from, to: b - from, strength });
+      if (last && last.p === p && last.team === team && last.to === a - from && last.strength.join() === strength.join() && last.emptyNet.join() === emptyNet.join()) last.to = b - from;
+      else phases.push({ team, p, from: a - from, to: b - from, strength, emptyNet });
     }
   }
   return phases;

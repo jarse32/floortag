@@ -1,6 +1,6 @@
 // ===== Sync-Logik: Ankerpunkte und Interpolation =====
 import { state } from './state.js';
-import { events, periodLength } from './game.js';
+import { events, periodLength, periodList } from './game.js';
 
 // Anker eines Abschnitts: Beginn, Ende, freie Anker und alle gesetzten Ereignisse.
 // exclude = { id } für ein Ereignis oder { anchor } für den Index eines freien Ankers
@@ -39,6 +39,15 @@ function estimate(e) {
 // Videozeit zu einer beliebigen Spielzeit g im Abschnitt p (z. B. Beginn und Ende von Phasen)
 export function videoTimeAt(p, g) {
   return interpolate(anchors(p), g);
+}
+// Abschnitt und Spielzeit zu einer Videozeit, soweit die Drittelgrenzen das hergeben
+export function periodAtVideo(v) {
+  let found = null;
+  for (const p of periodList()) {
+    const st = state.periods[p] || {};
+    if (st.start != null && v >= st.start && (st.end == null || v <= st.end)) found = p;
+  }
+  return found == null ? null : { p: found, g: gameTimeAt(found, v) };
 }
 // Videozeit eines Ereignisses; null, wenn unbekannt oder nicht im Video
 export function timeOf(e) {

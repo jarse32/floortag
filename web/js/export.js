@@ -5,8 +5,8 @@
 import { state } from './state.js';
 import { fmtGame } from './format.js';
 import { events, periodList, periodTitle, teamShort, personLabel } from './game.js';
-import { timeOf, videoTimeAt, gameTimeAt } from './sync.js';
-import { codeOf, other, outcomeLabel, placeLabel, faceoffAdvantage } from './tags.js';
+import { timeOf, videoTimeAt, periodAtVideo } from './sync.js';
+import { codeOf, other, outcomeLabel, placeLabel, faceoffAdvantage, goalieAt } from './tags.js';
 import { powerPlayPhases } from './phases.js';
 
 // Farben der Zeilen (0–255), für Sportscode auf 0–65535 umgerechnet
@@ -50,6 +50,7 @@ export function buildClips() {
     if (start == null || end == null || end <= start || end < 0) continue;
     const opp = ph.team === 'home' ? 'guest' : 'home';
     const common = [['Abschnitt', periodTitle(ph.p)], ['Spielzeit', `${fmtGame(ph.from)}–${fmtGame(ph.to)}`]];
+    if (ph.emptyNet.length) common.push(['Torhüter raus', ph.emptyNet.map(teamShort).join(', ')]);
     const range = { start: Math.max(0, start), end };
     clips.push({ code: `Überzahl ${teamShort(ph.team)}`, kind: 'powerplay', color: COLORS[ph.team], ...range,
       labels: [['Team', teamShort(ph.team)], ...common, ['Stärke', `${ph.strength[0]} gegen ${ph.strength[1]}`]] });
@@ -64,20 +65,10 @@ export function buildClips() {
   return clips;
 }
 
-// Abschnitt und Spielzeit zu einer Videozeit, soweit die Drittelgrenzen das hergeben
-function periodAt(v) {
-  let found = null;
-  for (const p of periodList()) {
-    const st = state.periods[p] || {};
-    if (st.start != null && v >= st.start && (st.end == null || v <= st.end)) found = p;
-  }
-  return found == null ? null : { p: found, g: gameTimeAt(found, v) };
-}
-
 // Ein Tag wird zu einem Clip, bei Codes mit zwei Sichtweisen kommt der Clip für den Gegner dazu
 export function tagClips(tag, names) {
   const def = codeOf(tag.code);
-  if (!def) return [];
+  if (!def || def.noClip) return [];
   let start, end;
   if (def.phase) {
     if (tag.end == null || tag.end <= tag.v) return []; // Phase noch offen
@@ -90,7 +81,7 @@ export function tagClips(tag, names) {
   const team = tag.team, opp = other(team);
   const labels = [];
   if (team) labels.push(['Team', names[team]]);
-  const where = periodAt(tag.v);
+  const where = periodAtVideo(tag.v);
   if (where) labels.push(['Abschnitt', periodTitle(where.p)], ['Spielzeit', fmtGame(where.g)]);
   if (tag.outcome) labels.push(['Ergebnis', outcomeLabel(def, tag.outcome, names)]);
   if (tag.place) labels.push(['Ort', placeLabel(def, tag.place, names)]);
@@ -113,6 +104,11 @@ export function tagClips(tag, names) {
   if (derived && opp) {
     // Gegenperspektive: Team tauscht, aus „Spieler“ wird „Gegenspieler“
     const flipped = labels.filter(([g]) => g !== 'Team').map(([g, t]) => [g === 'Spieler' ? 'Gegenspieler' : g === 'Gegenspieler' ? 'Spieler' : g, t]);
+    // Saves und gehaltene Penaltys bekommen den Torhüter, der zu dem Zeitpunkt im Tor stand
+    if (['Save', 'Penalty gehalten'].includes(derived)) {
+      const gk = goalieAt(opp, tag.v);
+      if (gk != null) flipped.push(['Torhüter', personLabel(opp, gk)]);
+    }
     clips.push({ code: `${derived} ${names[opp]}`, kind: 'tag-derived', tagKey: def.key, color: COLORS[opp], start, end,
       labels: [['Team', names[opp]], ...flipped] });
   }

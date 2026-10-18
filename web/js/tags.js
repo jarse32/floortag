@@ -26,7 +26,9 @@ export const CATALOG = [
   { key: 'turnover', label: 'Ballgewinn', players: 'team', derivedAll: 'Ballverlust' },
   { key: 'counter', label: 'Konter', players: 'team', duration: 'counterLen', derivedAll: 'Konterabwehr' },
   { key: 'empty_net', label: 'Torhüter raus', phase: true },
-  { key: 'special', label: 'Besonderes Ereignis', players: 'team', teamOptional: true, comment: true }
+  { key: 'special', label: 'Besonderes Ereignis', players: 'team', teamOptional: true, comment: true },
+  // Kein eigener Clip: legt fest, wer ab dieser Szene im Tor steht (Torhüterwechsel)
+  { key: 'goalie', label: 'Torhüter', players: 'team', goalieOnly: true, noClip: true }
 ];
 
 export function codeOf(key) { return CATALOG.find(c => c.key === key); }
@@ -51,6 +53,22 @@ export function faceoffAdvantage(tag) {
   if (tag.place === 'half_home') return 'home';
   if (tag.place === 'half_guest') return 'guest';
   return null;
+}
+
+// ===== Torhüter =====
+// Torhüter laut Kader (Saisonmanager-Feld goalkeeper)
+export function goalkeepers(team) {
+  return ((state.game && state.game.players || {})[team] || []).filter(p => p.goalkeeper && p.trikot_number != null);
+}
+// Wer steht zur Videozeit v im Tor? Letzter Torhüter-Tag davor; ohne Tag der einzige Torhüter im Kader
+export function goalieAt(team, v) {
+  let nr = null;
+  for (const t of state.tags) {
+    if (t.code === 'goalie' && t.team === team && t.v <= v && t.players[team] != null) nr = t.players[team];
+  }
+  if (nr != null) return nr;
+  const gks = goalkeepers(team);
+  return gks.length === 1 ? gks[0].trikot_number : null;
 }
 
 // ===== Bearbeiten =====

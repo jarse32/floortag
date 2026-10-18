@@ -11,8 +11,8 @@ const label = (c, g) => Object.fromEntries(c.labels)[g];
 const synced = () => { const s = setup(); s.periods[1] = { start: 300, end: 1920 }; return s; };
 
 // ===== Katalog =====
-test('Standard-Katalog: feste Schlüssel in fester Reihenfolge (Tastenkürzel 1–8)', () => {
-  assert.deepEqual(CATALOG.map(c => c.key), ['shot', 'penalty_shot', 'faceoff', 'free_hit', 'turnover', 'counter', 'empty_net', 'special']);
+test('Standard-Katalog: feste Schlüssel in fester Reihenfolge (Tastenkürzel 1–9)', () => {
+  assert.deepEqual(CATALOG.map(c => c.key), ['shot', 'penalty_shot', 'faceoff', 'free_hit', 'turnover', 'counter', 'empty_net', 'special', 'goalie']);
   for (const c of CATALOG) assert.ok(c.label);
 });
 

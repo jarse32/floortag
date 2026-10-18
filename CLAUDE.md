@@ -107,7 +107,17 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 - Grundsatz: Jede Szene wird einmal getaggt, aus Sicht des handelnden Teams; die Gegenperspektive (Save, Block, Ballverlust, Freistoßabwehr, Konterabwehr, Penalty gehalten, Bully verloren) entsteht im Export.
 - Bedienung: Tag-Leiste unter dem Video (ein Klick = Code + Ergebnis bzw. Ort, Tasten 1–8, Q/W/E, T), Nachtragsleiste für Team, Spieler (Kader-Rückennummern), Ort, Kommentar, ±1 s. Reiter „Tags“ in der rechten Spalte. Modus Penaltyschießen mit automatischem Wechsel und Stand (Tasten V/X).
 - Tags hängen an der Videozeit und liegen getrennt vom Sync (`floortag-tags:<Spiel>:<Video>` im `localStorage`, eigene Tag-Datei `floortag-tags`), weil sie zur Analyse-Ebene gehören.
-- Als Nächstes: „Torhüter raus“ in die Spielstärke einrechnen, danach eigene Codes.
+- Code **Torhüter** (Taste 9): „ab dieser Szene steht #x im Tor“, für Torhüterwechsel. Ohne Tag gilt der einzige Torhüter laut Kader (`goalkeeper`). Saves und gehaltene Penaltys tragen im Export das Label „Torhüter“.
+- **Torhüter raus** fließt in die Spielstärke ein (Feldspieler: Grundzahl − Strafen + 1 ohne Torhüter), z. B. 6 gegen 5 oder 6 gegen 4. Unterzahl mit Torhüter raus ist ausgeglichen und keine Überzahlphase. Das Beenden von Strafen durch Tore regelt weiter nur die Strafzählung wie im Dashboard.
+
+### Fahrplan Etappe 5
+
+1. Torhüter-Einsatz und „Torhüter raus“ in der Spielstärke – erledigt.
+2. **Als Nächstes:** Auswertungsansicht „Statistik“ je Team und Drittel: Schüsse (aufs Tor/daneben/geblockt/Tore), Saves und Fangquote je Torhüter (Tore ins leere Tor zählen nicht gegen den Torhüter), Bully-Quote (auch mit/ohne Vorteil), Ballgewinne, Penaltys, Überzahl-Effizienz. Pro Drittel und Team ein Haken „Schüsse vollständig erfasst“; ohne ihn zeigt die Statistik „unvollständig“ statt einer Quote.
+3. Aufstellung bei Toren („auf dem Feld“, beide Teams) und Plus/Minus nach Eishockey-Regel: Tore bei gleicher Stärke und Unterzahltore zählen (+1 für die Feldspieler des erzielenden Teams, −1 für die des Gegners), Überzahltore und Penaltytore nicht, Tore ins leere Tor schon.
+4. Eigene Codes mit Farbe und Tastenkürzel, später als Katalog pro Verein.
+
+Grundsatz: Standards aus dem Eishockey übernehmen, wo nichts Floorball-Eigenes dagegen spricht.
 
 ## Zusammenarbeit (ab Etappe 4)
 

@@ -21,6 +21,7 @@ Gemeinsamer Katalog, damit Analysen über Teams, Vereine und Spiele hinweg vergl
 | `counter` | Konter | konterndes Team | – | Zeitpunkt + Dauer (Standard 10 s) | Konterabwehr |
 | `empty_net` | Torhüter raus | Team ohne Torhüter | – | Phase (Start/Ende) | – |
 | `special` | Besonderes Ereignis | optional | Kommentar (optional) | Moment | – |
+| `goalie` | Torhüter | Team des Torhüters | Spieler = Torhüter | ab dieser Szene (kein Clip) | – |
 
 Gleichwertige Ausgänge sind bewusst zusammengefasst: verschossen und gehalten beim Penalty, aufs Tor beim Schuss und Save beim Gegner, geblockt beim Schuss und Block beim Gegner.
 
@@ -32,6 +33,10 @@ Den Vorteil leitet FloorTag aus dem Regelwerk ab:
 - **Hälfte eines Teams:** Das Team, dem die Hälfte gehört, wählt die Seite und hat den Vorteil.
 
 Im Export stehen „Vorteil“ und „Mit Vorteil gewonnen: ja/nein“, dazu die Rückennummern beider beteiligten Spieler („Spieler BAL“, „Spieler TVEH“).
+
+### Torhüter
+
+Ein Torhüter-Tag legt fest, wer ab dieser Szene im Tor steht, z. B. nach einem Wechsel. Ohne Tag gilt der einzige Torhüter laut Kader. Saves und gehaltene Penaltys tragen im Export das Label „Torhüter“. „Torhüter raus“ fließt in die Spielstärke ein: Ein Team ohne Torhüter hat einen Feldspieler mehr (6 gegen 5, mit Strafen auch 6 gegen 4). Nimmt ein Team in Unterzahl den Torhüter raus, ist die Stärke ausgeglichen.
 
 ### Penaltyschießen
 
@@ -47,5 +52,4 @@ Team, Abschnitt, Spielzeit, Ergebnis, Ort, Spieler / Gegenspieler (bzw. „Spiel
 
 ## Offen
 
-- „Torhüter raus“ in die Spielstärke einrechnen (6 gegen 5, 6 gegen 4 …), kombiniert mit den Strafen.
 - Eigene Codes mit Farbe und Tastenkürzel, später als Katalog pro Verein.

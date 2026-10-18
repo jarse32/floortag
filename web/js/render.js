@@ -6,7 +6,7 @@ import { timeOf, bounds, suggestStart, suggestEnd, gameTimeAt, videoTimeAt } fro
 import { buildChapters } from './chapters.js';
 import { buildClips, EDL_SCOPES } from './export.js';
 import { powerPlayPhases } from './phases.js';
-import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, faceoffAdvantage } from './tags.js';
+import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, faceoffAdvantage, goalieAt, goalkeepers } from './tags.js';
 import { personLabel } from './game.js';
 import * as yt from './player.js';
 
@@ -184,6 +184,13 @@ export function updateClock() {
   const ph = document.getElementById('playhead');
   if (ph && dur) ph.style.left = `${Math.min(100, t / dur * 100)}%`;
   else if (dur && $('#strip').hidden) renderStrip();
+  // Wer an der aktuellen Stelle im Tor steht
+  const gi = document.getElementById('goalieInfo');
+  if (gi) {
+    const names = teamNames();
+    const text = 'Im Tor: ' + ['home', 'guest'].map(s => { const nr = goalieAt(s, t); return `${names[s]} ${nr != null ? '#' + nr : '?'}`; }).join(' · ');
+    if (gi.textContent !== text) gi.textContent = text;
+  }
 }
 
 export function showPlayerMessage(msg) {
@@ -213,6 +220,7 @@ function renderTagBar() {
     let buttons;
     if (c.phase) buttons = `<button class="tagbtn" data-tag="${c.key}">${openPhase(c.key, team) ? 'beenden' : 'Start'}</button>`;
     else if (c.outcomes) buttons = c.outcomes.map(([k, l]) => `<button class="tagbtn" data-tag="${c.key}" data-outcome="${k}">${esc(fill(l, names))}</button>`).join('');
+    else if (c.key === 'goalie') buttons = `<button class="tagbtn" data-tag="${c.key}">Wechsel ab hier</button>`;
     else if (c.places) buttons = c.places.map(([k, l]) => `<button class="tagbtn" data-tag="${c.key}" data-place="${k}">${esc(fill(l, names))}</button>`).join('');
     else buttons = `<button class="tagbtn" data-tag="${c.key}">Taggen</button>`;
     return `<div class="code-group"><span class="code-name"><kbd>${i + 1}</kbd> ${esc(c.label)}</span><div class="code-btns">${buttons}</div></div>`;
@@ -228,6 +236,7 @@ function renderTagBar() {
       <div class="segbtns">${seg('tagteam', [['home', names.home], ['guest', names.guest]], team)}</div>
       <label class="check"><input type="checkbox" id="shootoutCheck" ${ui.shootout ? 'checked' : ''}> Penaltyschießen</label>
       ${so}
+      <span id="goalieInfo" class="goalie-info"></span>
     </div>
     <div class="codes">${groups}</div>
     ${tagEditor(names)}`;
@@ -251,9 +260,13 @@ function tagEditor(names) {
   }
   const sides = def.players === 'both' ? ['home', 'guest'] : def.players && tag.team ? [tag.team] : [];
   for (const side of sides) {
-    const roster = ((state.game.players || {})[side] || []).filter(p => p.trikot_number != null).sort((a, b) => a.trikot_number - b.trikot_number);
-    const chips = roster.map(p => `<button class="chip" data-edit-player="${side}:${p.trikot_number}" aria-pressed="${tag.players[side] === p.trikot_number}" title="${esc(personLabel(side, p.trikot_number))}">${p.trikot_number}</button>`).join('');
-    rows.push([def.players === 'both' ? `Spieler ${names[side]}` : 'Spieler', chips || '<span class="te-info">Kein Kader im Saisonmanager</span>']);
+    const byNr = (a, b) => a.trikot_number - b.trikot_number;
+    const all = ((state.game.players || {})[side] || []).filter(p => p.trikot_number != null).sort(byNr);
+    // Beim Torhüter zuerst die Torhüter laut Kader, dahinter abgesetzt alle übrigen (Ersatz im Tor)
+    const gks = def.goalieOnly ? goalkeepers(side).sort(byNr) : [];
+    const roster = gks.length ? [...gks, ...all.filter(p => !p.goalkeeper)] : all;
+    const chips = roster.map(p => `<button class="chip${gks.length && !p.goalkeeper ? ' minor' : ''}" data-edit-player="${side}:${p.trikot_number}" aria-pressed="${tag.players[side] === p.trikot_number}" title="${esc(personLabel(side, p.trikot_number))}">${p.trikot_number}</button>`).join('');
+    rows.push([def.players === 'both' ? `Spieler ${names[side]}` : def.goalieOnly ? 'Torhüter' : 'Spieler', chips || '<span class="te-info">Kein Kader im Saisonmanager</span>']);
   }
   if (def.comment) rows.push(['Kommentar', `<input type="text" data-edit-comment value="${esc(tag.comment)}" placeholder="optional" maxlength="300">`]);
   if (def.phase) rows.push(['Ende', tag.end != null ? `<span class="te-info">${fmt(tag.end)}</span> <button data-tagact="endnow">Auf aktuelle Zeit setzen</button>` : '<button data-tagact="endnow">Jetzt beenden</button>']);

@@ -172,6 +172,7 @@ main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr
 .tagbar-head .lbl { color: var(--muted); }
 .tagbar-head .check { display: flex; align-items: center; gap: .35rem; }
 .so-info { color: var(--estimate); font-weight: 600; }
+.goalie-info { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
 .segbtns { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
 .segbtns button, .te-ctl > button { background: transparent; border: 0; border-left: 1px solid var(--line); padding: .3rem .6rem; cursor: pointer; font-size: .88rem; }
 .segbtns button:first-child { border-left: 0; }
@@ -200,6 +201,8 @@ main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr
 .te-ctl > button[aria-pressed="true"] { background: var(--pine); color: #fff; border-color: var(--pine); }
 .te-ctl input[type=text] { flex: 1; min-width: 12rem; padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
 .te-info { color: var(--muted); }
+.chip.minor { opacity: .6; }
+.chip.minor:first-of-type, .chip:not(.minor) + .chip.minor { margin-left: .6rem; }
 .chip { min-width: 2.1rem; padding: .2rem .35rem; font-variant-numeric: tabular-nums; cursor: pointer; background: transparent; }
 @media (max-width: 520px) { .te-row { grid-template-columns: 1fr; gap: .2rem; } }
 
