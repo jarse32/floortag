@@ -18,6 +18,7 @@ Start im Repo-Wurzelverzeichnis mit `php -S localhost:8000 -t web`, dann `http:/
 - `js/sync.js` – Sync-Logik: Anker, Interpolation, Grenzen, Vorschläge
 - `js/chapters.js` – YouTube-Kapitelmarken
 - `js/storage.js` – localStorage und Sync-Datei
+- `js/tags.js` – eigene Tags: Standard-Katalog, Bearbeiten, Penaltyschießen (siehe docs/tag-standard.md)
 - `js/phases.js` – Über- und Unterzahlphasen aus den Strafen (Regeln wie im Dashboard)
 - `js/export.js` – Clip-Modell und Export für Videoanalyse (Sportscode-XML, CSV) und Schnitt (EDL)
 - `js/player.js` – YouTube-IFrame-API

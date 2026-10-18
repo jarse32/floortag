@@ -2,6 +2,7 @@
 import { state } from './state.js';
 import { events } from './game.js';
 import { fmtGame, parseTime } from './format.js';
+import { codeOf, TAG_STANDARD_VERSION } from './tags.js';
 
 const SYNC_VERSION = 2;
 
@@ -12,17 +13,46 @@ export function save() {
     localStorage.setItem(storageKey(), JSON.stringify({
       periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing,
       periodLen: state.periodLen, otLen: state.otLen, pauseLen: state.pauseLen,
-      leadIn: state.leadIn, leadOut: state.leadOut, fps: state.fps, edlScope: state.edlScope,
+      leadIn: state.leadIn, leadOut: state.leadOut, fps: state.fps, edlScope: state.edlScope, counterLen: state.counterLen,
       kleinfeld: state.kleinfeld, includePenalties: state.includePenalties, hideYouth: state.hideYouth
     }));
   } catch (e) { /* Speicher nicht verfügbar */ }
 }
 export function restore() {
-  state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {};
+  state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.tags = [];
   try {
     const raw = localStorage.getItem(storageKey());
-    if (raw) Object.assign(state, JSON.parse(raw));
+    if (raw) { const { tags, ...rest } = JSON.parse(raw); Object.assign(state, rest); }
+    const rawTags = localStorage.getItem(tagKey());
+    if (rawTags) state.tags = JSON.parse(rawTags);
   } catch (e) { /* ignorieren */ }
+}
+
+// ===== Eigene Tags: eigene Ebene, eigener Speicherplatz und eigene Datei =====
+// Getrennt vom Sync, weil Tags später pro Person oder Verein gehören (Etappe 4)
+function tagKey() { return `floortag-tags:${state.game && state.game.id}:${state.videoId || 'ohne-video'}`; }
+export function saveTags() {
+  try { localStorage.setItem(tagKey(), JSON.stringify(state.tags)); } catch (e) { /* Speicher nicht verfügbar */ }
+}
+export function buildTagFile() {
+  return {
+    format: 'floortag-tags', version: 1, standard: TAG_STANDARD_VERSION,
+    game_id: state.game.id, video_id: state.videoId, created: new Date().toISOString(),
+    tags: state.tags
+  };
+}
+export function tagFileName() {
+  return `floortag-tags-${state.game.id}-${state.videoId || 'ohne-video'}.json`;
+}
+// Übernimmt eine Tag-Datei; unbekannte Codes (z. B. aus einem neueren Standard) werden übersprungen
+export function applyTagFile(d) {
+  if (d.format !== 'floortag-tags') throw new Error('Das ist keine FloorTag-Tag-Datei.');
+  if ((d.version || 1) > 1) throw new Error('Diese Tag-Datei stammt aus einer neueren FloorTag-Version.');
+  if (d.game_id !== state.game.id) throw new Error(`Die Tag-Datei gehört zu Spiel ${d.game_id}, geladen ist Spiel ${state.game.id}.`);
+  const tags = (d.tags || []).filter(t => t && codeOf(t.code) && typeof t.v === 'number');
+  state.tags = tags.map(t => ({ players: { home: null, guest: null }, comment: '', place: null, outcome: null, ...t }))
+    .sort((a, b) => a.v - b.v);
+  return { loaded: state.tags.length, skipped: (d.tags || []).length - state.tags.length };
 }
 
 // Sync-Datei zum Herunterladen

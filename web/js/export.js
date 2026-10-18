@@ -5,11 +5,12 @@
 import { state } from './state.js';
 import { fmtGame } from './format.js';
 import { events, periodList, periodTitle, teamShort, personLabel } from './game.js';
-import { timeOf, videoTimeAt } from './sync.js';
+import { timeOf, videoTimeAt, gameTimeAt } from './sync.js';
+import { codeOf, other, outcomeLabel, placeLabel, faceoffAdvantage } from './tags.js';
 import { powerPlayPhases } from './phases.js';
 
 // Farben der Zeilen (0–255), für Sportscode auf 0–65535 umgerechnet
-const COLORS = { home: [29, 106, 75], guest: [45, 85, 132], period: [140, 150, 145], timeout: [181, 118, 27] };
+const COLORS = { home: [29, 106, 75], guest: [45, 85, 132], period: [140, 150, 145], timeout: [181, 118, 27], special: [128, 90, 150] };
 
 export function buildClips() {
   const clips = [];
@@ -55,8 +56,66 @@ export function buildClips() {
     clips.push({ code: `Unterzahl ${teamShort(opp)}`, kind: 'boxplay', color: COLORS[opp], ...range,
       labels: [['Team', teamShort(opp)], ...common, ['Stärke', `${ph.strength[1]} gegen ${ph.strength[0]}`]] });
   }
+  // Eigene Tags, jeweils mit Gegenperspektive
+  const names = { home: teamShort('home'), guest: teamShort('guest') };
+  for (const tag of state.tags) clips.push(...tagClips(tag, names));
   clips.sort((a, b) => a.start - b.start || a.end - b.end);
   clips.forEach((c, i) => { c.id = i + 1; });
+  return clips;
+}
+
+// Abschnitt und Spielzeit zu einer Videozeit, soweit die Drittelgrenzen das hergeben
+function periodAt(v) {
+  let found = null;
+  for (const p of periodList()) {
+    const st = state.periods[p] || {};
+    if (st.start != null && v >= st.start && (st.end == null || v <= st.end)) found = p;
+  }
+  return found == null ? null : { p: found, g: gameTimeAt(found, v) };
+}
+
+// Ein Tag wird zu einem Clip, bei Codes mit zwei Sichtweisen kommt der Clip für den Gegner dazu
+export function tagClips(tag, names) {
+  const def = codeOf(tag.code);
+  if (!def) return [];
+  let start, end;
+  if (def.phase) {
+    if (tag.end == null || tag.end <= tag.v) return []; // Phase noch offen
+    start = tag.v; end = tag.end;
+  } else if (def.duration) {
+    start = tag.v; end = tag.v + state[def.duration];
+  } else {
+    start = Math.max(0, tag.v - state.leadIn); end = tag.v + state.leadOut;
+  }
+  const team = tag.team, opp = other(team);
+  const labels = [];
+  if (team) labels.push(['Team', names[team]]);
+  const where = periodAt(tag.v);
+  if (where) labels.push(['Abschnitt', periodTitle(where.p)], ['Spielzeit', fmtGame(where.g)]);
+  if (tag.outcome) labels.push(['Ergebnis', outcomeLabel(def, tag.outcome, names)]);
+  if (tag.place) labels.push(['Ort', placeLabel(def, tag.place, names)]);
+  if (def.key === 'faceoff') {
+    const adv = faceoffAdvantage(tag);
+    if (adv) labels.push(['Vorteil', names[adv]]);
+    if (adv && team) labels.push(['Mit Vorteil gewonnen', team === adv ? 'ja' : 'nein']);
+  }
+  for (const side of ['home', 'guest']) {
+    const nr = tag.players && tag.players[side];
+    if (nr == null) continue;
+    const group = def.players === 'both' ? `Spieler ${names[side]}` : side === team || !team ? 'Spieler' : 'Gegenspieler';
+    labels.push([group, personLabel(side, nr)]);
+  }
+  if (tag.shootout) labels.push(['Penaltyschießen', 'ja']);
+  if (tag.comment) labels.push(['Kommentar', tag.comment]);
+  const clips = [{ code: team ? `${def.label} ${names[team]}` : def.label, kind: 'tag', tagKey: def.key,
+    color: team ? COLORS[team] : COLORS.special, start, end, labels }];
+  const derived = def.derivedAll || (def.derived && def.derived[tag.outcome]);
+  if (derived && opp) {
+    // Gegenperspektive: Team tauscht, aus „Spieler“ wird „Gegenspieler“
+    const flipped = labels.filter(([g]) => g !== 'Team').map(([g, t]) => [g === 'Spieler' ? 'Gegenspieler' : g === 'Gegenspieler' ? 'Spieler' : g, t]);
+    clips.push({ code: `${derived} ${names[opp]}`, kind: 'tag-derived', tagKey: def.key, color: COLORS[opp], start, end,
+      labels: [['Team', names[opp]], ...flipped] });
+  }
   return clips;
 }
 
@@ -112,7 +171,10 @@ export const EDL_SCOPES = {
   goal: { label: 'Tore', kinds: ['goal'] },
   goalPenalty: { label: 'Tore und Strafen', kinds: ['goal', 'penalty'] },
   all: { label: 'Alle Ereignisse', kinds: ['goal', 'penalty', 'timeout'] },
-  powerplay: { label: 'Überzahlphasen', kinds: ['powerplay'] }
+  powerplay: { label: 'Überzahlphasen', kinds: ['powerplay'] },
+  shots: { label: 'Torschüsse (Tags)', tagKeys: ['shot'] },
+  penaltyShots: { label: 'Penaltys (Tags)', tagKeys: ['penalty_shot'] },
+  tags: { label: 'Alle eigenen Tags', kinds: ['tag'] }
 };
 
 // EDL ist ein altes Format: Kommentare nur in ASCII (ü → ue, ß → ss, übrige Akzente weg)
@@ -128,11 +190,12 @@ function timecode(frames, fps) {
 }
 
 export function toEdl(clips, { fps = 25, title = 'FloorTag', clipName = 'video.mp4', scope = 'goal' } = {}) {
-  const kinds = (EDL_SCOPES[scope] || EDL_SCOPES.goal).kinds;
+  const sc = EDL_SCOPES[scope] || EDL_SCOPES.goal;
+  const included = c => (sc.kinds || []).includes(c.kind) || (c.kind === 'tag' && (sc.tagKeys || []).includes(c.tagKey));
   const out = [`TITLE: ${title}`, 'FCM: NON-DROP FRAME', ''];
   let rec = 3600 * fps, n = 0;
   for (const c of clips) {
-    if (!kinds.includes(c.kind)) continue;
+    if (!included(c)) continue;
     const srcIn = Math.round(c.start * fps), srcOut = Math.round(c.end * fps), len = srcOut - srcIn;
     if (len <= 0) continue;
     n++;

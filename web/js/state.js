@@ -17,12 +17,18 @@ export const state = {
   placed: {},          // { event_id: videoSec } manuell gesetzte Ereignisse = Ankerpunkte
   anchors: {},         // { 2: [{ g, v }, ...] } freie Anker ohne Ereignis, z. B. vor und nach einer Streamlücke
   missing: {},         // { event_id: true } Ereignisse, die nicht im Video zu sehen sind
-  gs: {}               // { event_id: Spielsekunde im Abschnitt }
+  gs: {},              // { event_id: Spielsekunde im Abschnitt }
+  counterLen: 10,      // Dauer eines Konter-Clips in Sekunden
+  tags: []             // eigene Tags (Analyse-Ebene), getrennt vom Sync gespeichert, siehe tags.js
 };
 
 // Zustand der Oberfläche, wird nicht gespeichert
 export const ui = {
   selectedId: null,
   rate: 1,             // Abspieltempo, bleibt beim Videowechsel, wird nicht gespeichert
+  tagTeam: 'home',     // Team für neue Tags
+  tagId: null,         // Tag in der Nachtragsleiste
+  shootout: false,     // Modus Penaltyschießen
+  sideTab: 'events',   // Reiter der rechten Spalte: events | tags
   anchorForm: null     // { p, v } offenes Formular „Freien Anker setzen“
 };

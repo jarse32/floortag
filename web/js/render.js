@@ -6,6 +6,8 @@ import { timeOf, bounds, suggestStart, suggestEnd, gameTimeAt, videoTimeAt } fro
 import { buildChapters } from './chapters.js';
 import { buildClips, EDL_SCOPES } from './export.js';
 import { powerPlayPhases } from './phases.js';
+import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, faceoffAdvantage } from './tags.js';
+import { personLabel } from './game.js';
 import * as yt from './player.js';
 
 export const $ = s => document.querySelector(s);
@@ -18,6 +20,8 @@ export function renderAll() {
   renderStrip();
   renderChapters();
   renderClipNote();
+  renderTagBar();
+  renderTagList();
 }
 export function renderMatchline() {
   const g = state.game;
@@ -35,6 +39,7 @@ function renderSettings() {
   $('#youthCheck').checked = state.hideYouth;
   $('#kleinfeldCheck').checked = state.kleinfeld;
   $('#leadOutInput').value = state.leadOut;
+  $('#counterLenInput').value = state.counterLen;
   $('#fpsInput').value = state.fps;
   const scope = $('#edlScopeInput');
   if (!scope.options.length) scope.innerHTML = Object.entries(EDL_SCOPES).map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('');
@@ -189,10 +194,101 @@ export function showPlayerMessage(msg) {
 function renderClipNote() {
   const clips = buildClips();
   const count = kind => clips.filter(c => c.kind === kind).length;
-  const scenes = count('goal') + count('penalty') + count('timeout'), periods = count('period'), pp = count('powerplay');
+  const scenes = count('goal') + count('penalty') + count('timeout') + count('tag'), periods = count('period'), pp = count('powerplay');
   const n = $('#clipNote');
   n.textContent = clips.length
     ? `Im Export: ${scenes} Szene(n), ${periods} Drittel und ${pp} Überzahlphase(n), jeweils auch als Unterzahl des Gegners. Szenen ohne Zeit oder „nicht im Video“ fehlen.`
     : 'Noch nichts zu exportieren. Setze zuerst Drittelgrenzen oder Ereignisse.';
   for (const id of ['#xmlBtn', '#csvBtn', '#edlBtn']) $(id).disabled = !clips.length;
+}
+
+// ===== Eigene Tags =====
+const teamNames = () => ({ home: describeTeam('home'), guest: describeTeam('guest') });
+const seg = (attr, opts, current) => opts.map(([k, l]) =>
+  `<button data-${attr}="${k}" aria-pressed="${current === k}">${esc(l)}</button>`).join('');
+
+function renderTagBar() {
+  const names = teamNames(), team = ui.tagTeam;
+  const groups = CATALOG.map((c, i) => {
+    let buttons;
+    if (c.phase) buttons = `<button class="tagbtn" data-tag="${c.key}">${openPhase(c.key, team) ? 'beenden' : 'Start'}</button>`;
+    else if (c.outcomes) buttons = c.outcomes.map(([k, l]) => `<button class="tagbtn" data-tag="${c.key}" data-outcome="${k}">${esc(fill(l, names))}</button>`).join('');
+    else if (c.places) buttons = c.places.map(([k, l]) => `<button class="tagbtn" data-tag="${c.key}" data-place="${k}">${esc(fill(l, names))}</button>`).join('');
+    else buttons = `<button class="tagbtn" data-tag="${c.key}">Taggen</button>`;
+    return `<div class="code-group"><span class="code-name"><kbd>${i + 1}</kbd> ${esc(c.label)}</span><div class="code-btns">${buttons}</div></div>`;
+  }).join('');
+  let so = '';
+  if (ui.shootout) {
+    const sc = shootoutScore();
+    so = `<span class="so-info">Stand ${sc.home}:${sc.guest} nach ${sc.attempts} Versuch${sc.attempts === 1 ? '' : 'en'}, als Nächstes ${esc(names[nextShootoutTeam(team)])}</span>`;
+  }
+  $('#tagbar').innerHTML = `
+    <div class="tagbar-head">
+      <span class="lbl">Neue Tags für</span>
+      <div class="segbtns">${seg('tagteam', [['home', names.home], ['guest', names.guest]], team)}</div>
+      <label class="check"><input type="checkbox" id="shootoutCheck" ${ui.shootout ? 'checked' : ''}> Penaltyschießen</label>
+      ${so}
+    </div>
+    <div class="codes">${groups}</div>
+    ${tagEditor(names)}`;
+}
+
+// Nachtragsleiste: Team, Ergebnis, Ort, Spieler und Kommentar zum gewählten Tag
+function tagEditor(names) {
+  const tag = ui.tagId && findTag(ui.tagId);
+  if (!tag) return '';
+  const def = codeOf(tag.code), rows = [];
+  if (!def.teamFromOutcome) {
+    const opts = [['home', names.home], ['guest', names.guest]];
+    if (def.teamOptional) opts.push(['', 'ohne Team']);
+    rows.push(['Team', seg('edit-team', opts, tag.team || '')]);
+  }
+  if (def.outcomes) rows.push(['Ergebnis', seg('edit-outcome', def.outcomes.map(([k, l]) => [k, fill(l, names)]), tag.outcome)]);
+  if (def.places) rows.push(['Ort', seg('edit-place', def.places.map(([k, l]) => [k, fill(l, names)]), tag.place)]);
+  if (def.key === 'faceoff') {
+    const adv = faceoffAdvantage(tag);
+    if (adv) rows.push(['Vorteil', `<span class="te-info">${esc(names[adv])}${tag.team ? (tag.team === adv ? ' – mit Vorteil gewonnen' : ' – gegen den Vorteil gewonnen') : ''}</span>`]);
+  }
+  const sides = def.players === 'both' ? ['home', 'guest'] : def.players && tag.team ? [tag.team] : [];
+  for (const side of sides) {
+    const roster = ((state.game.players || {})[side] || []).filter(p => p.trikot_number != null).sort((a, b) => a.trikot_number - b.trikot_number);
+    const chips = roster.map(p => `<button class="chip" data-edit-player="${side}:${p.trikot_number}" aria-pressed="${tag.players[side] === p.trikot_number}" title="${esc(personLabel(side, p.trikot_number))}">${p.trikot_number}</button>`).join('');
+    rows.push([def.players === 'both' ? `Spieler ${names[side]}` : 'Spieler', chips || '<span class="te-info">Kein Kader im Saisonmanager</span>']);
+  }
+  if (def.comment) rows.push(['Kommentar', `<input type="text" data-edit-comment value="${esc(tag.comment)}" placeholder="optional" maxlength="300">`]);
+  if (def.phase) rows.push(['Ende', tag.end != null ? `<span class="te-info">${fmt(tag.end)}</span> <button data-tagact="endnow">Auf aktuelle Zeit setzen</button>` : '<button data-tagact="endnow">Jetzt beenden</button>']);
+  const title = [def.label, tag.outcome && outcomeLabel(def, tag.outcome, names)].filter(Boolean).join(' · ');
+  return `
+    <div class="tag-editor">
+      <div class="te-head">
+        <strong>${esc(title)}</strong> <span class="te-time">bei ${fmt(tag.v)}</span>
+        <span class="te-actions">
+          <button data-tagact="nudge" data-d="-1">−1 s</button><button data-tagact="nudge" data-d="1">+1 s</button>
+          <button data-tagact="seek">Ansehen</button><button data-tagact="delete" class="danger">Löschen</button>
+          <button data-tagact="close" aria-label="Nachtrag schließen">✕</button>
+        </span>
+      </div>
+      ${rows.map(([l, c]) => `<div class="te-row"><span class="te-lbl">${esc(l)}</span><div class="te-ctl">${c}</div></div>`).join('')}
+    </div>`;
+}
+
+function renderTagList() {
+  const names = teamNames();
+  $('#tagCount').textContent = state.tags.length ? `(${state.tags.length})` : '';
+  document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.sideTab)));
+  $('#events').hidden = ui.sideTab !== 'events';
+  $('#progress').hidden = ui.sideTab !== 'events';
+  $('#tagPanel').hidden = ui.sideTab !== 'tags';
+  if (!state.tags.length) { $('#tagList').innerHTML = '<li class="empty">Noch keine Tags. Tagge über die Leiste unter dem Video.</li>'; return; }
+  $('#tagList').innerHTML = state.tags.map(t => {
+    const def = codeOf(t.code);
+    const main = [def.label, t.outcome && outcomeLabel(def, t.outcome, names), t.place && placeLabel(def, t.place, names)].filter(Boolean).join(' · ');
+    const players = ['home', 'guest'].filter(s => t.players[s] != null).map(s => personLabel(s, t.players[s])).join(', ');
+    const sub = [t.team ? names[t.team] : '', players, t.shootout ? 'Penaltyschießen' : '', def.phase ? (t.end != null ? `bis ${fmt(t.end)}` : 'läuft') : '', t.comment].filter(Boolean).join(' · ');
+    return `<li class="tagrow ${t.team || ''} ${t.id === ui.tagId ? 'sel' : ''}">
+      <button data-act="selecttag" data-id="${t.id}">
+        <span class="tr-time">${fmt(t.v)}</span>
+        <span><span class="tr-main">${esc(main)}</span>${sub ? `<br><span class="tr-sub">${esc(sub)}</span>` : ''}</span>
+      </button></li>`;
+  }).join('');
 }

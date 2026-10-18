@@ -3,7 +3,8 @@ import { state, ui } from './state.js';
 import { extractVideoId, fmt, fmtGame } from './format.js';
 import { prepareGame, events, findEvent, periodLength } from './game.js';
 import { timeOf, place, setMissing, addAnchor, removeAnchor } from './sync.js';
-import { save, restore, buildSyncFile, syncFileName, applySyncFile } from './storage.js';
+import { save, restore, buildSyncFile, syncFileName, applySyncFile, saveTags, buildTagFile, tagFileName, applyTagFile } from './storage.js';
+import { CATALOG, codeOf, addTag, findTag, updateTag, setPlayer, removeTag, openPhase, nextShootoutTeam } from './tags.js';
 import { buildClips, toSportscodeXml, toCsv, toEdl } from './export.js';
 import * as yt from './player.js';
 import { hasConsent, giveConsent, revokeConsent, isRemembered } from './consent.js';
@@ -52,7 +53,7 @@ function setVideo(id) {
 // ===== Spiel laden =====
 function loadGame(data) {
   prepareGame(data);
-  ui.selectedId = null; ui.anchorForm = null;
+  ui.selectedId = null; ui.anchorForm = null; ui.tagId = null;
   renderMatchline();
   $('#loader').hidden = true;
   $('#app').hidden = false;
@@ -213,6 +214,61 @@ $('#events').addEventListener('change', e => {
   if (ev) { place(ev, Number(e.target.value)); commit(); }
 });
 
+// ===== Eigene Tags =====
+function commitTags() { saveTags(); renderAll(); }
+// Neuer Tag an der aktuellen Videostelle; das Video läuft weiter
+function createTag(code, outcome = null, place = null) {
+  const def = codeOf(code);
+  if (def.phase) {
+    const open = openPhase(code, ui.tagTeam);
+    if (open) { updateTag(open.id, { end: yt.now() }); ui.tagId = open.id; commitTags(); return; }
+  }
+  const shootout = ui.shootout && code === 'penalty_shot';
+  const team = shootout ? nextShootoutTeam(ui.tagTeam) : ui.tagTeam;
+  ui.tagId = addTag({ code, v: yt.now(), team, outcome, place, shootout }).id;
+  commitTags();
+}
+$('#tagbar').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const d = b.dataset, tag = ui.tagId && findTag(ui.tagId);
+  if (d.tagteam) { ui.tagTeam = d.tagteam; renderAll(); return; }
+  if (d.tag) { createTag(d.tag, d.outcome || null, d.place || null); return; }
+  if (!tag) return;
+  if ('editTeam' in d) updateTag(tag.id, { team: d.editTeam || null });
+  else if (d.editOutcome) updateTag(tag.id, { outcome: tag.outcome === d.editOutcome ? null : d.editOutcome });
+  else if (d.editPlace) updateTag(tag.id, { place: tag.place === d.editPlace ? null : d.editPlace });
+  else if (d.editPlayer) { const [side, nr] = d.editPlayer.split(':'); setPlayer(tag.id, side, Number(nr)); }
+  else if (d.tagact === 'nudge') updateTag(tag.id, { v: tag.v + Number(d.d) });
+  else if (d.tagact === 'seek') { yt.seek(tag.v - 3); return; }
+  else if (d.tagact === 'endnow') updateTag(tag.id, { end: yt.now() });
+  else if (d.tagact === 'delete') { removeTag(tag.id); ui.tagId = null; }
+  else if (d.tagact === 'close') { ui.tagId = null; renderAll(); return; }
+  else return;
+  commitTags();
+});
+$('#tagbar').addEventListener('change', e => {
+  if (e.target.id === 'shootoutCheck') { ui.shootout = e.target.checked; renderAll(); return; }
+  if ('editComment' in e.target.dataset && ui.tagId) { updateTag(ui.tagId, { comment: e.target.value.trim() }); commitTags(); }
+});
+// Rechte Spalte: Reiter und Tag-Liste
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { ui.sideTab = b.dataset.tab; renderAll(); }));
+$('#tagList').addEventListener('click', e => {
+  const b = e.target.closest('[data-act="selecttag"]'); if (!b) return;
+  const tag = findTag(b.dataset.id); if (!tag) return;
+  ui.tagId = tag.id; yt.seek(tag.v - 3); renderAll();
+});
+$('#saveTagsBtn').addEventListener('click', () => download(tagFileName(), JSON.stringify(buildTagFile(), null, 2), 'application/json'));
+$('#tagsInput').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const n = $('#tagNote');
+  try {
+    const r = applyTagFile(JSON.parse(await f.text()));
+    ui.tagId = null; commitTags();
+    n.textContent = `${r.loaded} Tag(s) geladen` + (r.skipped ? `, ${r.skipped} mit unbekanntem Code übersprungen.` : '.');
+  } catch (err) { n.textContent = err.message; }
+  e.target.value = '';
+});
+
 // ===== Einstellungen =====
 $('#periodLenInput').addEventListener('change', e => { state.periodLen = Math.max(60, Number(e.target.value) * 60); commit(); });
 $('#otLenInput').addEventListener('change', e => { state.otLen = Math.max(60, Number(e.target.value) * 60); commit(); });
@@ -253,6 +309,7 @@ $('#edlBtn').addEventListener('click', () => {
   download(`${exportBase()}-${state.edlScope}.edl`, edl.text, 'text/plain');
 });
 $('#leadOutInput').addEventListener('change', e => { state.leadOut = Math.max(0, Number(e.target.value)); commit(); });
+$('#counterLenInput').addEventListener('change', e => { state.counterLen = Math.max(2, Number(e.target.value)); commit(); });
 $('#fpsInput').addEventListener('change', e => { state.fps = Number(e.target.value); commit(); });
 $('#edlScopeInput').addEventListener('change', e => { state.edlScope = e.target.value; commit(); });
 $('#syncInput').addEventListener('change', async e => {
@@ -288,6 +345,15 @@ document.addEventListener('keydown', e => {
   else if (k === '.') yt.seek(yt.now() + 1);
   else if (k === '-') stepRate(-1);
   else if (k === '+') stepRate(1);
+  // Tags: Ziffer = Code, Q/W/E = Ergebnis, T = Team, V/X im Penaltyschießen, Esc schließt den Nachtrag
+  else if (/^[1-9]$/.test(k) && CATALOG[Number(k) - 1]) createTag(CATALOG[Number(k) - 1].key);
+  else if (['q', 'w', 'e'].includes(k) && ui.tagId) {
+    const tag = findTag(ui.tagId), outcome = tag && (codeOf(tag.code).outcomes || [])[['q', 'w', 'e'].indexOf(k)];
+    if (outcome) { updateTag(tag.id, { outcome: outcome[0] }); commitTags(); }
+  }
+  else if (k === 't') { ui.tagTeam = ui.tagTeam === 'home' ? 'guest' : 'home'; renderAll(); }
+  else if (ui.shootout && (k === 'v' || k === 'x')) createTag('penalty_shot', k === 'v' ? 'goal' : 'miss');
+  else if (k === 'escape' && ui.tagId) { ui.tagId = null; renderAll(); }
   else if (k === 'enter' && ui.selectedId != null) { e.preventDefault(); const ev = findEvent(ui.selectedId); if (ev) { place(ev, yt.now()); commit(); } }
   else if (k === 'n') {
     const evs = events(), i = evs.findIndex(x => x.event_id === ui.selectedId);

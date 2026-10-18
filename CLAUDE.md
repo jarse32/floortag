@@ -23,7 +23,7 @@ php -S localhost:8000 -t web   # im Repo-Wurzelverzeichnis
 # dann http://localhost:8000/?spiel=58668
 ```
 
-Tests ohne Abhängigkeiten und ohne echten Key: `npm test` (Sync-Logik, freie Anker, Kapitel, Sync-Datei, Analyse-Export, Überzahlphasen; `node --test`) und `npm run test:proxy`. Änderungen an `sync.js`, `game.js` oder `chapters.js` immer mit `npm test` prüfen.
+Tests ohne Abhängigkeiten und ohne echten Key: `npm test` (Sync-Logik, freie Anker, Kapitel, Sync-Datei, Analyse-Export, Überzahlphasen, Tags; `node --test`) und `npm run test:proxy`. Änderungen an `sync.js`, `game.js` oder `chapters.js` immer mit `npm test` prüfen.
 
 Testfall: Spiel 58668 (2. FBL Herren Nord/West, Baltic Storms – TV Eiche Horn Bremen, 5:4), Video `lfIFpRsE55I`. Die JSON liegt in `fixtures/spiel_58668.json`.
 
@@ -100,6 +100,14 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 - **Überzahl und Unterzahl** (`web/js/phases.js`) werden aus den Strafen abgeleitet, mit denselben Regeln wie `PPCalculator.swift` im Floorball Dashboard: `penalty_2` 2 Min (durch Überzahltor beendbar), `penalty_2and2` und Matchstrafen (`penalty_ms_tech`/`_full`, Regel seit 2025) 2 + 2 Min verknüpft, `penalty_5` 5 Min (nicht beendbar), `penalty_10` nur 2 Min Unterzahl. Stapelregel max. 2 gleichzeitige Strafen pro Team, Kleinfeld 1 (Einstellung, 3 statt 5 Feldspieler). Tore zählen nur bei echter Überzahl. Abweichend vom Dashboard gilt die eingestellte Drittellänge statt fest 20 Minuten. Strafzeit läuft über Drittelgrenzen weiter, im Video entstehen dann zwei Clips.
 - Pro Phase entstehen zwei Clips, „Überzahl BAL“ und „Unterzahl TVEH“, mit Label „Stärke“ (5 gegen 4 bzw. 4 gegen 5). Die Schnittliste kann nur Überzahlphasen enthalten. Auf der Zeitleiste zeigt ein schmales Band die Überzahl (Heim oben, Gast unten).
 - Ändern sich die Strafregeln, müssen `phases.js` und `PPCalculator.swift` gemeinsam angepasst werden.
+
+## Eigene Tags (Etappe 5, begonnen)
+
+- Standard-Katalog „FloorTag-Standard v1“ in `web/js/tags.js`, beschrieben in `docs/tag-standard.md`: Torschuss, Penalty, Bully (mit Ort, beiden Spielern und abgeleitetem Vorteil), Freistoß, Ballgewinn, Konter, Torhüter raus (Phase), Besonderes Ereignis (Kommentar).
+- Grundsatz: Jede Szene wird einmal getaggt, aus Sicht des handelnden Teams; die Gegenperspektive (Save, Block, Ballverlust, Freistoßabwehr, Konterabwehr, Penalty gehalten, Bully verloren) entsteht im Export.
+- Bedienung: Tag-Leiste unter dem Video (ein Klick = Code + Ergebnis bzw. Ort, Tasten 1–8, Q/W/E, T), Nachtragsleiste für Team, Spieler (Kader-Rückennummern), Ort, Kommentar, ±1 s. Reiter „Tags“ in der rechten Spalte. Modus Penaltyschießen mit automatischem Wechsel und Stand (Tasten V/X).
+- Tags hängen an der Videozeit und liegen getrennt vom Sync (`floortag-tags:<Spiel>:<Video>` im `localStorage`, eigene Tag-Datei `floortag-tags`), weil sie zur Analyse-Ebene gehören.
+- Als Nächstes: „Torhüter raus“ in die Spielstärke einrechnen, danach eigene Codes.
 
 ## Zusammenarbeit (ab Etappe 4)
 
