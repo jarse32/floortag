@@ -9,6 +9,7 @@ const SYNC_VERSION = 2;
 function storageKey() { return `floortag:${state.game && state.game.id}:${state.videoId || 'ohne-video'}`; }
 
 export function save() {
+  if (state.sharedView) return; // geteilte Ansicht überschreibt nie den eigenen Stand
   try {
     localStorage.setItem(storageKey(), JSON.stringify({
       periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing,
@@ -54,6 +55,7 @@ export function sanitizeSettings() {
 // Getrennt vom Sync, weil Tags später pro Person oder Verein gehören (Etappe 4)
 function tagKey() { return `floortag-tags:${state.game && state.game.id}:${state.videoId || 'ohne-video'}`; }
 export function saveTags() {
+  if (state.sharedView) return;
   try { localStorage.setItem(tagKey(), JSON.stringify({ tags: state.tags, complete: state.complete, lineups: state.lineups })); } catch (e) { /* Speicher nicht verfügbar */ }
 }
 export function buildTagFile() {

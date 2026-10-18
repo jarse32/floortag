@@ -10,6 +10,7 @@ import * as yt from './player.js';
 import { hasConsent, giveConsent, revokeConsent, isRemembered } from './consent.js';
 import { $, renderAll, renderMatchline, renderStrip, updateClock, showPlayerMessage } from './render.js';
 import { statsAsTsv } from './stats.js';
+import { SHARE_PREFIX, decodeShare, applySharePayload, shareUrl } from './share.js';
 import { toggleLineupPlayer } from './lineups.js';
 
 // Zustand geändert: speichern und neu zeichnen
@@ -87,9 +88,14 @@ $('#revokeBtn').addEventListener('click', () => {
 });
 renderRevoke();
 
+// Eigenen Stand laden; in der geteilten Ansicht stattdessen den Stand aus dem Link
+function restoreState() {
+  restore();
+  if (ui.shared) applySharePayload(ui.shared);
+}
 function setVideo(id) {
   state.videoId = id;
-  restore();
+  restoreState();
   renderAll();
   showVideo(id);
 }
@@ -101,10 +107,10 @@ function loadGame(data) {
   renderMatchline();
   $('#loader').hidden = true;
   $('#app').hidden = false;
-  const link = data.vod_link || data.live_stream_link || '';
+  const link = ui.shared && ui.shared.vid ? `https://www.youtube.com/watch?v=${ui.shared.vid}` : data.vod_link || data.live_stream_link || '';
   $('#videoInput').value = link;
   const id = extractVideoId(link);
-  if (id) setVideo(id); else { state.videoId = null; restore(); renderAll(); }
+  if (id) setVideo(id); else { state.videoId = null; restoreState(); renderAll(); }
 }
 function showLoadError(msg) {
   const err = $('#loadError');
@@ -457,5 +463,40 @@ document.addEventListener('keydown', e => {
 setInterval(updateClock, 250);
 
 // Spiel aus der Adresse laden, z. B. ?spiel=58668
-const startId = extractGameId(new URLSearchParams(location.search).get('spiel'));
-if (startId) { $('#idInput').value = startId; loadById(startId); }
+// Geteilter Link (#ft=…) oder Spiel aus der Adresse (?spiel=58668)
+if (location.hash.startsWith(SHARE_PREFIX)) {
+  decodeShare(location.hash.slice(SHARE_PREFIX.length)).then(p => {
+    ui.shared = p; ui.mode = 'view'; state.sharedView = true;
+    document.body.dataset.shared = '1';
+    $('#shareBanner').hidden = false;
+    $('#idInput').value = String(p.g);
+    loadById(String(p.g));
+  }).catch(err => showLoadError(`Der geteilte Link lässt sich nicht öffnen: ${err.message}`));
+} else {
+  const startId = extractGameId(new URLSearchParams(location.search).get('spiel'));
+  if (startId) { $('#idInput').value = startId; loadById(startId); }
+}
+// Ein Link, der sich nur im #-Teil unterscheidet, lädt die Seite nicht neu: dann selbst neu laden
+window.addEventListener('hashchange', () => { if (location.hash.startsWith(SHARE_PREFIX) || state.sharedView) location.reload(); });
+// Geteilte Ansicht verlassen bzw. übernehmen
+const leaveShared = () => { const url = new URL(location.href); url.hash = ''; location.replace(url.toString().replace(/#$/, '')); };
+$('#ownStateBtn').addEventListener('click', leaveShared);
+$('#adoptBtn').addEventListener('click', () => {
+  if (!confirm('Deinen eigenen Stand für dieses Spiel durch den geteilten ersetzen? Das lässt sich nicht rückgängig machen.')) return;
+  state.sharedView = false;
+  save(); saveTags();
+  leaveShared();
+});
+// Link zum Ansehen erzeugen und kopieren
+$('#shareBtn').addEventListener('click', async () => {
+  const b = $('#shareBtn'), n = $('#shareNote');
+  try {
+    const url = await shareUrl(location.href);
+    await navigator.clipboard.writeText(url);
+    const kb = (url.length / 1024).toFixed(1).replace('.', ',');
+    n.textContent = `Link kopiert (${kb} kB). Er enthält Rückennummern, aber keine Namen; Kommentare in Tags stehen mit drin.` +
+      (url.length > 60000 ? ' Der Link ist sehr lang, manche Messenger kürzen ihn.' : '');
+    b.textContent = 'Kopiert';
+  } catch (err) { n.textContent = `Der Link ließ sich nicht kopieren: ${err.message}`; }
+  setTimeout(() => { b.textContent = 'Link zum Ansehen kopieren'; }, 1500);
+});

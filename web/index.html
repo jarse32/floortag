@@ -24,6 +24,12 @@
   </div>
 </header>
 
+<div id="shareBanner" class="sharebanner" hidden>
+  <span><strong>Geteilte Ansicht</strong> · nur zum Ansehen, nichts wird gespeichert.</span>
+  <button id="ownStateBtn" class="btn small ghost">Eigenen Stand öffnen</button>
+  <button id="adoptBtn" class="btn small ghost">Als eigenen Stand übernehmen</button>
+</div>
+
 <section id="loader" class="loader">
   <h1>Spiel laden</h1>
   <p>Gib die Spiel-ID aus dem Saisonmanager ein oder füge den Link zum Spiel ein. Das Video wird, wenn vorhanden, automatisch aus dem Livestream-Link übernommen.</p>
@@ -124,6 +130,10 @@
         <label class="btn ghost file-btn">Sync laden<input type="file" id="syncInput" accept=".json,application/json"></label>
         <button id="resetBtn" class="btn ghost">Anderes Spiel laden</button>
       </div>
+      <div class="export-actions">
+        <button id="shareBtn" class="btn ghost">Link zum Ansehen kopieren</button>
+      </div>
+      <p id="shareNote" class="note">Der Link öffnet Spiel, Sync und Tags im Modus Ansehen. Er enthält Rückennummern, aber keine Namen; Kommentare in Tags stehen mit drin. Der Teil hinter # wird nicht an den Server übertragen.</p>
     </section>
 
     <section class="export analysis" data-modes="analysis">

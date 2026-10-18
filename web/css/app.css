@@ -258,3 +258,8 @@ body[data-mode="analysis"] [data-modes]:not([data-modes~="analysis"]) { display:
 .jumpback { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; padding: .4rem .55rem; border-radius: 6px; background: var(--bg); border: 1px dashed var(--estimate); font-size: .85rem; }
 .jumpback strong { font-variant-numeric: tabular-nums; }
 body[data-mode="view"] .event .ev-head { cursor: pointer; }
+
+/* Geteilte Ansicht */
+.sharebanner { display: flex; align-items: center; gap: .5rem 1rem; flex-wrap: wrap; padding: .55rem 1.5rem; background: var(--pine-soft); border-bottom: 1px solid var(--line); font-size: .9rem; }
+.sharebanner span { margin-right: auto; }
+body[data-shared] .modes { display: none; }

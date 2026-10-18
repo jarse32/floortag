@@ -19,6 +19,7 @@ Start im Repo-Wurzelverzeichnis mit `php -S localhost:8000 -t web`, dann `http:/
 - `js/chapters.js` – YouTube-Kapitelmarken
 - `js/storage.js` – localStorage und Sync-Datei
 - `js/tags.js` – eigene Tags: Standard-Katalog, Bearbeiten, Penaltyschießen (siehe docs/tag-standard.md)
+- `js/share.js` – Teilen-Link für den Modus Ansehen (Stand komprimiert im #-Teil der Adresse)
 - `js/lineups.js` – Aufstellung bei Toren („auf dem Feld“) für Plus/Minus
 - `js/stats.js` – Statistik je Team und Abschnitt (Schüsse, Torhüter, Bully, Überzahl …) und Kopierformat
 - `js/phases.js` – Über- und Unterzahlphasen aus den Strafen (Regeln wie im Dashboard)

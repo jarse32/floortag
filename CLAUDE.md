@@ -69,6 +69,12 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 - Sichtbarkeit über `data-modes="…"` im Markup und `body[data-mode]` im CSS. Die Wahl merkt sich der Browser (`floortag:mode`), `?modus=ansehen|sync|analyse` in der Adresse hat Vorrang.
 - Klick auf ein Ereignis springt in Sync/Analyse zur Szene. War das Video vorher woanders, bietet die Zeile „Dort setzen“ (Ereignis an die vorherige Stelle) und „Zurück“ an. Ohne das ging die Position verloren, wenn man erst spulte und dann das Ereignis antippte.
 
+## Teilen-Link (Zwischenlösung bis Etappe 4)
+
+- „Link zum Ansehen kopieren“ (Sync und Analyse) schreibt Sync, Tags, Haken und Aufstellungen kompakt und komprimiert (`deflate-raw`, base64url) in den Teil hinter `#ft=` (`web/js/share.js`). Der wird nie an den Server übertragen. Namen stehen nicht im Link, nur Rückennummern.
+- Wer den Link öffnet, sieht das Spiel fest im Modus Ansehen. Es wird nichts im Browser gespeichert (`state.sharedView`), der eigene Stand bleibt unberührt. Jugendspieler erscheinen dort immer nur mit Rückennummer. Der Balken bietet „Eigenen Stand öffnen“ und „Als eigenen Stand übernehmen“ (mit Rückfrage).
+- Größe: etwa 3 kB bei 400 Tags.
+
 ## Sync-Logik
 
 Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnitten.
