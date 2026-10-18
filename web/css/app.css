@@ -251,7 +251,8 @@ table.stats.pm thead th:not(:first-child) { text-align: right; }
 body[data-mode="view"] [data-modes]:not([data-modes~="view"]),
 body[data-mode="sync"] [data-modes]:not([data-modes~="sync"]),
 body[data-mode="analysis"] [data-modes]:not([data-modes~="analysis"]) { display: none !important; }
-.topbar .modes { margin-left: auto; align-self: center; }
+.header-actions { margin-left: auto; display: flex; align-items: center; gap: .6rem; flex-wrap: nowrap; }
+.topbar .modes { align-self: center; }
 .topbar .modes button { padding: .35rem .8rem; font-size: .9rem; }
 
 /* Rücksprung nach einem Sprung zur Szene */
@@ -263,3 +264,13 @@ body[data-mode="view"] .event .ev-head { cursor: pointer; }
 .sharebanner { display: flex; align-items: center; gap: .5rem 1rem; flex-wrap: wrap; padding: .55rem 1.5rem; background: var(--pine-soft); border-bottom: 1px solid var(--line); font-size: .9rem; }
 .sharebanner span { margin-right: auto; }
 body[data-shared] .modes { display: none; }
+
+/* Marken für die Torsituation */
+.badge { display: inline-block; margin-left: .3rem; padding: 0 .4rem; border-radius: 999px; font: 600 .72rem/1.5 var(--body); vertical-align: .1em; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.badge.pp { background: var(--pine); border-color: var(--pine); color: #fff; }
+.badge.sh { background: var(--estimate); border-color: var(--estimate); color: #fff; }
+
+/* Teilen in der Kopfzeile und Meldung */
+.share-btn { align-self: center; padding: .4rem .9rem; font-weight: 600; }
+.toast { position: fixed; top: 4.2rem; right: 1.5rem; max-width: 26rem; z-index: 20; padding: .7rem .9rem; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: .88rem; box-shadow: 0 6px 24px rgba(0, 0, 0, .18); cursor: pointer; }
+@media (max-width: 600px) { .toast { left: 1rem; right: 1rem; max-width: none; } }

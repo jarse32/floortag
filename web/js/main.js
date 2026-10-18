@@ -489,14 +489,29 @@ $('#adoptBtn').addEventListener('click', () => {
 });
 // Link zum Ansehen erzeugen und kopieren
 $('#shareBtn').addEventListener('click', async () => {
-  const b = $('#shareBtn'), n = $('#shareNote');
+  const b = $('#shareBtn');
+  if (!state.game) { showToast('Lade zuerst ein Spiel.'); return; }
   try {
     const url = await shareUrl(location.href);
-    await navigator.clipboard.writeText(url);
+    try { await navigator.clipboard.writeText(url); }
+    catch (err) {
+      // Kopieren nicht erlaubt (z. B. ohne Fokus): Link zum Markieren anzeigen
+      window.prompt('Link zum Ansehen (markieren und kopieren):', url);
+      return;
+    }
     const kb = (url.length / 1024).toFixed(1).replace('.', ',');
-    n.textContent = `Link kopiert (${kb} kB). Er enthält Rückennummern, aber keine Namen; Kommentare in Tags stehen mit drin.` +
-      (url.length > 60000 ? ' Der Link ist sehr lang, manche Messenger kürzen ihn.' : '');
+    showToast(`Link kopiert (${kb} kB). Er öffnet Spiel, Sync und Tags zum Ansehen. Enthalten sind Rückennummern, aber keine Namen; Kommentare in Tags stehen mit drin.` +
+      (url.length > 60000 ? ' Der Link ist sehr lang, manche Messenger kürzen ihn.' : ''));
     b.textContent = 'Kopiert';
-  } catch (err) { n.textContent = `Der Link ließ sich nicht kopieren: ${err.message}`; }
-  setTimeout(() => { b.textContent = 'Link zum Ansehen kopieren'; }, 1500);
+  } catch (err) { showToast(`Der Link ließ sich nicht kopieren: ${err.message}`); }
+  setTimeout(() => { b.textContent = 'Link teilen'; }, 1500);
 });
+// Kurze Meldung oben, verschwindet von selbst
+let toastTimer = null;
+function showToast(text) {
+  const t = $('#toast');
+  t.textContent = text; t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 7000);
+}
+$('#toast').addEventListener('click', () => { $('#toast').hidden = true; });

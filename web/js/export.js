@@ -9,6 +9,7 @@ import { timeOf, videoTimeAt, periodAtVideo } from './sync.js';
 import { codeOf, other, outcomeLabel, placeLabel, faceoffAdvantage, goalieAt } from './tags.js';
 import { powerPlayPhases } from './phases.js';
 import { lineupOf, hasLineup } from './lineups.js';
+import { goalSituations, situationLabels } from './stats.js';
 
 // Farben der Zeilen (0–255), für Sportscode auf 0–65535 umgerechnet
 const COLORS = { home: [29, 106, 75], guest: [45, 85, 132], period: [140, 150, 145], timeout: [181, 118, 27], special: [128, 90, 150] };
@@ -22,6 +23,7 @@ export function buildClips() {
         labels: [['Abschnitt', periodTitle(p)]] });
     }
   }
+  const situations = goalSituations();
   for (const e of events()) {
     const t = timeOf(e);
     if (t == null || t < 0) continue; // ohne Zeit, nicht im Video oder vor Streambeginn
@@ -34,6 +36,8 @@ export function buildClips() {
       labels.push(['Spielstand', `${e.home_goals}:${e.guest_goals}`], ['Spieler', personLabel(e.event_team, e.number)]);
       if (e.assist) labels.push(['Vorlage', personLabel(e.event_team, e.assist)]);
       if (e.goal_type && e.goal_type !== 'regular') labels.push(['Torart', e.goal_type_string]);
+      const sit = situationLabels(situations[e.event_id]);
+      if (sit.length) labels.push(['Spielsituation', sit.join(', ')]);
       // Aufstellung, sofern erfasst
       if (hasLineup(e)) {
         const l = lineupOf(e);

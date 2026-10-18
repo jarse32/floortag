@@ -8,7 +8,7 @@ import { buildClips, EDL_SCOPES } from './export.js';
 import { powerPlayPhases } from './phases.js';
 import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, faceoffAdvantage, goalieAt, goalkeepers } from './tags.js';
 import { personLabel } from './game.js';
-import { statPeriods, statRows, computeStats, signed } from './stats.js';
+import { statPeriods, statRows, computeStats, signed, goalSituations, situationLabels } from './stats.js';
 import { lineupOf, forcedPlayers, fieldPlayers } from './lineups.js';
 import * as yt from './player.js';
 
@@ -92,7 +92,7 @@ function anchorRows(p) {
 }
 
 function renderEvents() {
-  const evs = events();
+  const evs = events(), situations = goalSituations();
   const placedCount = evs.filter(e => state.placed[e.event_id] != null).length;
   const missingCount = evs.filter(e => state.missing[e.event_id]).length;
   $('#progress').textContent = `${placedCount} von ${evs.length} gesetzt` + (missingCount ? `, ${missingCount} nicht im Video` : '');
@@ -135,7 +135,7 @@ function renderEvents() {
     return `<li class="event ${e.event_team} ${sel ? 'sel' : ''}" data-row="${e.event_id}">
       <button class="ev-head" data-act="select" data-id="${e.event_id}" aria-expanded="${sel}">
         <span class="ev-gt">${esc(periodTitle(Math.floor(e.period), true))}<br>${fmtGame(state.gs[e.event_id])}</span>
-        <span><span class="ev-title">${d.score ? `<span class="sc">${esc(d.score)}</span>` : ''}${esc(d.text)}</span>
+        <span><span class="ev-title">${d.score ? `<span class="sc">${esc(d.score)}</span>` : ''}${esc(d.text)}</span>${situationLabels(situations[e.event_id]).map(l => ` <span class="badge ${l.startsWith('Überzahl') ? 'pp' : l.startsWith('Unterzahl') ? 'sh' : ''}">${esc(l)}</span>`).join('')}
           ${d.sub ? `<br><span class="ev-sub">${esc(d.sub)}</span>` : ''}</span>
         <span class="ev-vt ${status[1]}">${fmt(t)}<small>${status[0]}</small></span>
       </button>${tools}</li>`;

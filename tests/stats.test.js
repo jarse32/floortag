@@ -168,3 +168,31 @@ test('Kopierformat: tabulatorgetrennt mit Kopfzeile und Abschnitten', () => {
   const main = lines.slice(0, lines.indexOf(''));
   assert.ok(main.every(l => l.split('\t').length === 3));
 });
+
+// ===== Torsituation in Ereignisliste und Export =====
+import { goalSituations, situationLabels } from '../web/js/stats.js';
+import { buildClips } from '../web/js/export.js';
+
+test('Torsituation im Testspiel: das Unterzahltor von BAL wird erkannt', () => {
+  setup();
+  const sit = goalSituations();
+  assert.deepEqual(situationLabels(sit[11]), ['Unterzahl 4:5']); // 4:4 durch BAL bei 13:35 im 3. Drittel
+  assert.deepEqual(situationLabels(sit[1]), []);                 // 1:0 bei gleicher Stärke
+  assert.equal(Object.values(sit).filter(x => x.powerPlay).length, 0);
+});
+
+test('Torsituation: Überzahl, leeres Tor und Penalty', () => {
+  linear([pen('guest', 1, '5:00'), goal('home', 1, '6:00'), goal('home', 3, '19:30'), goal('home', 2, '3:00', 'penalty_shot')]);
+  const t = addTag({ code: 'empty_net', v: 6100, team: 'guest' }); updateTag(t.id, { end: 6200 });
+  const sit = goalSituations();
+  const ids = Object.keys(sit).map(Number).sort((a, b) => a - b);
+  assert.deepEqual(situationLabels(sit[ids[0]]), ['Überzahl 5:4']);
+  assert.deepEqual(situationLabels(sit[ids[1]]), ['leeres Tor']); // Gast ohne Torhüter: 5 gegen 6, aber keine Strafe
+  assert.deepEqual(situationLabels(sit[ids[2]]), ['Penalty']);
+});
+
+test('Export: Tor-Clips tragen die Spielsituation', () => {
+  setup().periods[3] = { start: 4740, end: 6360 };
+  const clip = buildClips().find(c => c.code === 'Tor BAL' && Object.fromEntries(c.labels)['Spielstand'] === '4:4');
+  assert.equal(Object.fromEntries(clip.labels)['Spielsituation'], 'Unterzahl 4:5');
+});

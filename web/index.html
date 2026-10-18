@@ -17,10 +17,13 @@
 <header class="topbar">
   <div class="brand">FloorTag</div>
   <div id="matchline" class="matchline"></div>
+  <div class="header-actions">
   <div class="segbtns modes" role="group" aria-label="Modus">
     <button data-mode="view" title="Szenen ansehen, ohne etwas zu verändern">Ansehen</button>
     <button data-mode="sync" title="Drittelgrenzen und Saisonmanager-Ereignisse setzen">Sync</button>
     <button data-mode="analysis" title="Eigene Tags, Statistik und Analyse-Export">Analyse</button>
+  </div>
+  <button id="shareBtn" class="btn share-btn" data-modes="sync analysis" title="Link kopieren, der Spiel, Sync und Tags zum Ansehen öffnet">Link teilen</button>
   </div>
 </header>
 
@@ -130,10 +133,7 @@
         <label class="btn ghost file-btn">Sync laden<input type="file" id="syncInput" accept=".json,application/json"></label>
         <button id="resetBtn" class="btn ghost">Anderes Spiel laden</button>
       </div>
-      <div class="export-actions">
-        <button id="shareBtn" class="btn ghost">Link zum Ansehen kopieren</button>
-      </div>
-      <p id="shareNote" class="note">Der Link öffnet Spiel, Sync und Tags im Modus Ansehen. Er enthält Rückennummern, aber keine Namen; Kommentare in Tags stehen mit drin. Der Teil hinter # wird nicht an den Server übertragen.</p>
+
     </section>
 
     <section class="export analysis" data-modes="analysis">
@@ -157,6 +157,8 @@
     </section>
   </aside>
 </main>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
 <footer class="source">
   Daten: Saisonmanager / Floorball Deutschland ·

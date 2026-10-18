@@ -43,6 +43,39 @@ const emptyTeam = () => ({
   penalties: 0, penaltyMinutes: 0, ppChances: 0
 });
 
+// Spielsituation eines Tors: Überzahl/Unterzahl nach den laufenden Strafen (Eishockey-Regel),
+// leeres Tor nach den getaggten „Torhüter raus“-Phasen des Gegners, Feldspieler beider Teams.
+function situationOf(e, pens, empty) {
+  const team = e.event_team, opp = other(team), t = absTime(e);
+  const active = list => list.filter(w => w.start <= t && w.end >= t).length;
+  const pt = active(pens[team]), po = active(pens[opp]);
+  const en = side => empty[side].some(w => w.start <= t && w.end > t);
+  const base = state.kleinfeld ? 3 : 5;
+  return {
+    powerPlay: pt < po, shortHanded: pt > po, emptyNet: en(opp),
+    penaltyGoal: /penalty/i.test(e.goal_type || ''), ownGoal: /own|eigen/i.test(e.goal_type || ''),
+    strength: [base - pt + (en(team) ? 1 : 0), base - po + (en(opp) ? 1 : 0)]
+  };
+}
+// Situation aller Tore auf einmal (für die Ereignisliste): { event_id: situation }
+export function goalSituations() {
+  const pens = penaltyWindowsByTeam(), empty = emptyNetWindows(), out = {};
+  for (const e of events()) {
+    if (e.event_type === 'goal' && Math.floor(e.period) <= 4 && (e.event_team === 'home' || e.event_team === 'guest')) out[e.event_id] = situationOf(e, pens, empty);
+  }
+  return out;
+}
+// Kurze Texte für eine Situation, z. B. ['Überzahl 5:4', 'leeres Tor']
+export function situationLabels(sit) {
+  if (!sit) return [];
+  const out = [];
+  if (sit.powerPlay) out.push(`Überzahl ${sit.strength.join(':')}`);
+  else if (sit.shortHanded) out.push(`Unterzahl ${sit.strength.join(':')}`);
+  if (sit.emptyNet) out.push('leeres Tor');
+  if (sit.penaltyGoal) out.push('Penalty');
+  return out;
+}
+
 // Statistik für scope = 'all' oder eine Abschnittsnummer
 export function computeStats(scope = 'all') {
   const res = { home: emptyTeam(), guest: emptyTeam(), goalies: { home: {}, guest: {} }, unassigned: 0,
@@ -50,7 +83,6 @@ export function computeStats(scope = 'all') {
   const inScope = p => (scope === 'all' ? p == null || p <= 4 : p === scope);
   const goalie = (team, nr) => (res.goalies[team][nr ?? '?'] = res.goalies[team][nr ?? '?'] || { nr, saves: 0, goalsAgainst: 0 });
   const pens = penaltyWindowsByTeam(), empty = emptyNetWindows();
-  const activeAt = (list, t) => list.filter(w => w.start <= t && w.end >= t).length;
 
   // Tore aus dem Saisonmanager
   for (const e of events()) {
@@ -58,16 +90,14 @@ export function computeStats(scope = 'all') {
     if (e.event_type !== 'goal' || p > 4 || !inScope(p)) continue;
     const team = e.event_team, opp = other(team), r = res[team];
     if (!res[team]) continue;
-    const t = absTime(e);
-    const penaltyGoal = /penalty/i.test(e.goal_type || ''), ownGoal = /own|eigen/i.test(e.goal_type || '');
-    const enGoal = empty[opp].some(w => w.start <= t && w.end > t);
+    const sit = situationOf(e, pens, empty);
+    const { penaltyGoal, ownGoal, emptyNet: enGoal } = sit;
     r.goals++;
-    const pt = activeAt(pens[team], t), po = activeAt(pens[opp], t);
-    if (pt < po) r.ppGoals++;
-    else if (pt > po) r.shGoals++;
+    if (sit.powerPlay) r.ppGoals++;
+    else if (sit.shortHanded) r.shGoals++;
     if (enGoal) r.enGoals++;
     // Plus/Minus nach Eishockey-Regel: kein Überzahltor, kein Penaltytor; Unterzahl und leeres Tor zählen
-    if (!penaltyGoal && !(pt < po)) {
+    if (!penaltyGoal && !sit.powerPlay) {
       res.pmGoals++;
       if (hasLineup(e)) {
         res.pmCovered++;
