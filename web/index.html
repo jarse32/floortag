@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FloorTag – Sync</title>
+<title>FloorTag</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%231D6A4B'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/barlow-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -15,8 +15,13 @@
 <body>
 
 <header class="topbar">
-  <div class="brand">FloorTag<span class="brand-sub">Sync-Prototyp</span></div>
+  <div class="brand">FloorTag</div>
   <div id="matchline" class="matchline"></div>
+  <div class="segbtns modes" role="group" aria-label="Modus">
+    <button data-mode="view" title="Szenen ansehen, ohne etwas zu verändern">Ansehen</button>
+    <button data-mode="sync" title="Drittelgrenzen und Saisonmanager-Ereignisse setzen">Sync</button>
+    <button data-mode="analysis" title="Eigene Tags, Statistik und Analyse-Export">Analyse</button>
+  </div>
 </header>
 
 <section id="loader" class="loader">
@@ -73,17 +78,18 @@
       </div>
     </div>
     <div id="strip" class="strip" hidden aria-label="Zeitleiste des Videos"></div>
-    <section id="tagbar" class="tagbar" aria-label="Taggen"></section>
-    <div id="periods" class="periods"></div>
-    <p class="keys">Tastatur: <kbd>K</kbd> oder <kbd>Leertaste</kbd> Play/Pause, <kbd>J</kbd>/<kbd>L</kbd> ±5 s, <kbd>,</kbd>/<kbd>.</kbd> ±1 s, <kbd>-</kbd>/<kbd>+</kbd> Tempo, <kbd>Enter</kbd> setzt das gewählte Ereignis auf die aktuelle Videozeit, <kbd>N</kbd> wählt das nächste Ereignis (ohne zu springen). Tags: <kbd>1</kbd>–<kbd>9</kbd> Code an der aktuellen Stelle, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd> Ergebnis, <kbd>T</kbd> Team wechseln, <kbd>Esc</kbd> Nachtrag schließen, im Penaltyschießen <kbd>V</kbd>/<kbd>X</kbd>.</p>
+    <section id="tagbar" class="tagbar" aria-label="Taggen" data-modes="analysis"></section>
+    <div id="periods" class="periods" data-modes="sync analysis"></div>
+    <p class="keys" data-modes="view">Klick auf ein Ereignis oder einen Tag spielt die Szene ab. Tastatur: <kbd>K</kbd> oder <kbd>Leertaste</kbd> Play/Pause, <kbd>J</kbd>/<kbd>L</kbd> ±5 s, <kbd>-</kbd>/<kbd>+</kbd> Tempo, <kbd>N</kbd> nächstes Ereignis.</p>
+    <p class="keys" data-modes="sync analysis">Tastatur: <kbd>K</kbd> oder <kbd>Leertaste</kbd> Play/Pause, <kbd>J</kbd>/<kbd>L</kbd> ±5 s, <kbd>,</kbd>/<kbd>.</kbd> ±1 s, <kbd>-</kbd>/<kbd>+</kbd> Tempo, <kbd>Enter</kbd> setzt das gewählte Ereignis auf die aktuelle Videozeit, <kbd>N</kbd> nächstes Ereignis.<span data-modes="analysis"> Tags: <kbd>1</kbd>–<kbd>9</kbd> Code an der aktuellen Stelle, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd> Ergebnis, <kbd>T</kbd> Team wechseln, <kbd>Esc</kbd> Nachtrag schließen, im Penaltyschießen <kbd>V</kbd>/<kbd>X</kbd>.</span></p>
   </section>
 
   <aside class="side">
     <div class="side-head">
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-tab="events" aria-selected="true">Ereignisse</button>
-        <button class="tab" role="tab" data-tab="tags" aria-selected="false">Tags <span id="tagCount"></span></button>
-        <button class="tab" role="tab" data-tab="stats" aria-selected="false">Statistik</button>
+        <button class="tab" role="tab" data-tab="tags" aria-selected="false" data-modes="view analysis">Tags <span id="tagCount"></span></button>
+        <button class="tab" role="tab" data-tab="stats" aria-selected="false" data-modes="view analysis">Statistik</button>
       </div>
       <span id="progress"></span>
     </div>
@@ -91,14 +97,14 @@
     <div id="statsPanel" class="statspanel" hidden></div>
     <div id="tagPanel" class="tagpanel" hidden>
       <ol id="tagList" class="taglist"></ol>
-      <div class="export-actions">
+      <div class="export-actions" data-modes="analysis">
         <button id="saveTagsBtn" class="btn ghost">Tags speichern</button>
         <label class="btn ghost file-btn">Tags laden<input type="file" id="tagsInput" accept=".json,application/json"></label>
       </div>
-      <p id="tagNote" class="note">Tags gehören dir und liegen getrennt vom Sync. Sie fließen in den Export für Videoanalyse und Schnitt ein.</p>
+      <p id="tagNote" class="note" data-modes="analysis">Tags gehören dir und liegen getrennt vom Sync. Sie fließen in den Export für Videoanalyse und Schnitt ein.</p>
     </div>
 
-    <section class="export">
+    <section class="export" data-modes="sync analysis">
       <h2>Export</h2>
       <div class="settings">
         <label>Drittellänge (Min.)<input type="number" id="periodLenInput" min="5" max="30" step="1"></label>
@@ -120,7 +126,7 @@
       </div>
     </section>
 
-    <section class="export analysis">
+    <section class="export analysis" data-modes="analysis">
       <h2>Videoanalyse und Schnitt</h2>
       <p class="note">Jede Szene wird ein Clip mit Vor- und Nachlauf, Drittel werden als Phasen exportiert. Die Zeiten beziehen sich auf das YouTube-Video. In Spiideo Perform legst du beim Import ein Tag als Bezugspunkt fest, dann passen die Zeiten auch zur eigenen Aufnahme.</p>
       <div class="settings">

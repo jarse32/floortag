@@ -23,6 +23,48 @@ yt.initPlayer('player', {
   onError: showPlayerMessage
 });
 
+// ===== Modus: Ansehen, Sync, Analyse =====
+// Wahl wird im Browser gemerkt; ?modus=ansehen|sync|analyse in der Adresse hat Vorrang
+const MODES = { ansehen: 'view', sync: 'sync', analyse: 'analysis' };
+function initMode() {
+  let saved = null;
+  try { saved = localStorage.getItem('floortag:mode'); } catch (e) { /* ignorieren */ }
+  const fromUrl = MODES[new URLSearchParams(location.search).get('modus')];
+  ui.mode = fromUrl || (Object.values(MODES).includes(saved) ? saved : 'sync');
+}
+document.querySelectorAll('.modes [data-mode]').forEach(b => b.addEventListener('click', () => {
+  ui.mode = b.dataset.mode;
+  try { localStorage.setItem('floortag:mode', ui.mode); } catch (e) { /* ignorieren */ }
+  if (ui.mode !== 'analysis') ui.tagId = null;
+  if (ui.mode === 'sync') ui.sideTab = 'events';
+  ui.jumpFrom = null;
+  const url = new URL(location.href); url.searchParams.delete('modus'); history.replaceState(null, '', url);
+  renderAll();
+}));
+initMode();
+renderAll();
+
+// Ereignis auswählen. Ansehen: Szene ab Vorlauf abspielen. Sync/Analyse: zur Szene springen und
+// die vorherige Stelle merken, damit man das Ereignis dort setzen kann („Dort setzen“).
+function selectEvent(ev, toggleOff) {
+  const t = timeOf(ev);
+  if (ui.mode === 'view') {
+    ui.selectedId = ev.event_id;
+    if (t != null) { yt.seek(t - state.leadIn); yt.play(); }
+    renderAll();
+    return;
+  }
+  ui.selectedId = toggleOff ? null : ev.event_id;
+  ui.jumpFrom = null;
+  if (ui.selectedId && t != null) {
+    const from = yt.now();
+    if (yt.isReady() && Math.abs(from - (t - 3)) > 5) ui.jumpFrom = Math.round(from * 10) / 10;
+    yt.seek(t - 3);
+  }
+  renderAll();
+  const row = document.querySelector(`[data-row="${ev.event_id}"]`); if (row) row.scrollIntoView({ block: 'nearest' });
+}
+
 // ===== Zwei-Klick-Lösung =====
 let consentVideo = null;
 // Einziger Weg zum YouTube-Player: lädt nur mit Zustimmung, sonst Hinweis
@@ -178,18 +220,23 @@ function focusAnchorInput() {
 }
 
 // ===== Ereignisse =====
-function handleEventAction(e, fromStrip = false) {
+function handleEventAction(e) {
   const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act !== 'select' && b.dataset.act !== 'placeback' && b.dataset.act !== 'goback') ui.jumpFrom = null;
   const ev = findEvent(b.dataset.id); if (!ev) return;
   const t = timeOf(ev);
   switch (b.dataset.act) {
     case 'select':
-      // Kein Sprung beim Auswählen in der Liste: Man steht oft schon an der richtigen Stelle,
-      // um das Ereignis zu setzen. Nur ein Klick auf den Punkt in der Zeitleiste springt.
-      ui.selectedId = ui.selectedId === ev.event_id ? null : ev.event_id;
-      if (ui.selectedId && t != null && fromStrip) yt.seek(t - 3);
-      renderAll();
+      selectEvent(ev, ui.selectedId === ev.event_id);
       break;
+    case 'placeback': {
+      // Ereignis an die Stelle vor dem Sprung setzen und dorthin zurück
+      const back = ui.jumpFrom;
+      if (back == null) break;
+      place(ev, back); ui.jumpFrom = null; commit(); yt.seek(back);
+      break;
+    }
+    case 'goback': if (ui.jumpFrom != null) { yt.seek(ui.jumpFrom); ui.jumpFrom = null; renderAll(); } break;
     case 'setnow': place(ev, yt.now()); commit(); break;
     case 'jump': yt.seek(t - state.leadIn); yt.play(); break;
     case 'nudge': place(ev, t + Number(b.dataset.d)); commit(); yt.seek(timeOf(ev) - 3); break;
@@ -210,7 +257,7 @@ $('#events').addEventListener('click', e => {
   handleEventAction(e);
 });
 $('#strip').addEventListener('click', e => {
-  if (e.target.closest('[data-act]')) { handleEventAction(e, true); return; }
+  if (e.target.closest('[data-act]')) { handleEventAction(e); return; }
   // Klick auf freie Fläche springt an diese Stelle im Video
   const r = $('#strip').getBoundingClientRect();
   if (yt.isReady()) yt.seek((e.clientX - r.left) / r.width * yt.duration());
@@ -269,7 +316,8 @@ document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click',
 $('#tagList').addEventListener('click', e => {
   const b = e.target.closest('[data-act="selecttag"]'); if (!b) return;
   const tag = findTag(b.dataset.id); if (!tag) return;
-  ui.tagId = tag.id; renderAll(); // kein Sprung, „Ansehen“ in der Nachtragsleiste springt
+  if (ui.mode === 'view') { yt.seek(tag.v - state.leadIn); yt.play(); return; }
+  ui.tagId = tag.id; yt.seek(tag.v - 3); renderAll();
 });
 // Statistik: Abschnitt wählen, Vollständigkeit abhaken, kopieren
 $('#statsPanel').addEventListener('click', async e => {
@@ -377,6 +425,9 @@ document.addEventListener('keydown', e => {
   const tag = e.target.tagName;
   if (tag === 'TEXTAREA' || (tag === 'INPUT' && !['range', 'checkbox'].includes(e.target.type))) return;
   const k = e.key.toLowerCase();
+  // Ansehen: nur Abspielen und Blättern; Sync: keine Tag-Kürzel
+  if (ui.mode === 'view' && !['k', ' ', 'j', 'l', ',', '.', '-', '+', 'n'].includes(k)) return;
+  if (ui.mode === 'sync' && (/^[1-9]$/.test(k) || ['q', 'w', 'e', 't', 'v', 'x'].includes(k))) return;
   if (k === 'k' || k === ' ') { e.preventDefault(); yt.togglePlay(); }
   else if (k === 'j') yt.seek(yt.now() - 5);
   else if (k === 'l') yt.seek(yt.now() + 5);
@@ -397,8 +448,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'n') {
     const evs = events(), i = evs.findIndex(x => x.event_id === ui.selectedId);
     const next = evs[(i + 1) % evs.length];
-    ui.selectedId = next.event_id;
-    renderAll();
+    selectEvent(next, false);
     const row = document.querySelector(`[data-row="${ui.selectedId}"]`); if (row) row.scrollIntoView({ block: 'nearest' });
   }
 });

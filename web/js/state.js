@@ -28,6 +28,8 @@ export const state = {
 export const ui = {
   selectedId: null,
   rate: 1,             // Abspieltempo, bleibt beim Videowechsel, wird nicht gespeichert
+  mode: 'sync',        // Modus: view (Ansehen) | sync | analysis
+  jumpFrom: null,      // Videozeit vor dem Sprung zu einem Ereignis (für „Dort setzen“)
   tagTeam: 'home',     // Team für neue Tags
   tagId: null,         // Tag in der Nachtragsleiste
   shootout: false,     // Modus Penaltyschießen

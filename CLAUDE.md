@@ -61,6 +61,14 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 - `result.overtime`: ob es eine Verlängerung gab.
 - **Nicht enthalten:** die Drittellänge. Sie ist eine Einstellung (Standard 20 Minuten) und soll später pro Liga hinterlegbar sein.
 
+## Modi der Oberfläche
+
+- **Sync** (Standard): Saisonmanager-Ereignisse, Drittelgrenzen, freie Anker, Kapitel und Sync-Datei. Keine Tags.
+- **Analyse:** zusätzlich Tag-Leiste, Tags, Statistik, Aufstellung bei Toren und der Export für Analyse und Schnitt.
+- **Ansehen:** nur Video, Ereignisse, Tags und Statistik. Ein Klick spielt die Szene ab Vorlauf ab, nichts lässt sich verändern. Gedacht für Spielerinnen und Spieler, die Szenen eines Trainers ansehen.
+- Sichtbarkeit über `data-modes="…"` im Markup und `body[data-mode]` im CSS. Die Wahl merkt sich der Browser (`floortag:mode`), `?modus=ansehen|sync|analyse` in der Adresse hat Vorrang.
+- Klick auf ein Ereignis springt in Sync/Analyse zur Szene. War das Video vorher woanders, bietet die Zeile „Dort setzen“ (Ereignis an die vorherige Stelle) und „Zurück“ an. Ohne das ging die Position verloren, wenn man erst spulte und dann das Ereignis antippte.
+
 ## Sync-Logik
 
 Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnitten.

@@ -246,3 +246,15 @@ table.stats tr.sec th { font: 700 .95rem var(--display); color: var(--ink); back
 .pm-grid { display: grid; gap: .6rem; }
 table.stats.pm td { text-align: right; }
 table.stats.pm thead th:not(:first-child) { text-align: right; }
+
+/* Modi: Elemente mit data-modes erscheinen nur in den genannten Modi */
+body[data-mode="view"] [data-modes]:not([data-modes~="view"]),
+body[data-mode="sync"] [data-modes]:not([data-modes~="sync"]),
+body[data-mode="analysis"] [data-modes]:not([data-modes~="analysis"]) { display: none !important; }
+.topbar .modes { margin-left: auto; align-self: center; }
+.topbar .modes button { padding: .35rem .8rem; font-size: .9rem; }
+
+/* Rücksprung nach einem Sprung zur Szene */
+.jumpback { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; padding: .4rem .55rem; border-radius: 6px; background: var(--bg); border: 1px dashed var(--estimate); font-size: .85rem; }
+.jumpback strong { font-variant-numeric: tabular-nums; }
+body[data-mode="view"] .event .ev-head { cursor: pointer; }

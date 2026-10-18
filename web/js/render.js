@@ -15,6 +15,8 @@ import * as yt from './player.js';
 export const $ = s => document.querySelector(s);
 
 export function renderAll() {
+  document.body.dataset.mode = ui.mode;
+  document.querySelectorAll('.modes [data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === ui.mode)));
   if (!state.game) return;
   renderSettings();
   renderPeriods();
@@ -99,16 +101,20 @@ function renderEvents() {
     const status = isMissing ? ['nicht im Video', 'st-missing'] : isPlaced ? ['gesetzt', 'st-placed'] : t != null ? ['geschätzt', 'st-est'] : ['offen', 'st-open'];
     const sel = e.event_id === ui.selectedId;
     let tools = '';
-    if (sel && isMissing) {
+    const editable = ui.mode !== 'view';
+    if (sel && editable && isMissing) {
       tools = `<div class="ev-tools">
         <div class="row"><button class="btn small" data-act="unmissing" data-id="${e.event_id}">Doch im Video</button></div>
         <span class="hint">Dieses Ereignis fehlt im Video, zum Beispiel wegen einer Streamlücke. Es bekommt keine Zeit und kein Kapitel.</span>
       </div>`;
-    } else if (sel) {
+    } else if (sel && editable) {
       const { lo, hi } = bounds(e);
       const c = t != null ? t : yt.now();
       const min = Math.max(isFinite(lo) ? lo : 0, c - 90), max = Math.min(isFinite(hi) ? hi : c + 90, c + 90);
       tools = `<div class="ev-tools">
+        ${ui.jumpFrom != null ? `<div class="jumpback">Vor dem Sprung warst du bei <strong>${fmt(ui.jumpFrom)}</strong>
+          <button class="btn small" data-act="placeback" data-id="${e.event_id}">Dort setzen</button>
+          <button class="btn small ghost" data-act="goback" data-id="${e.event_id}">Zurück</button></div>` : ''}
         <div class="row">
           <button class="btn small" data-act="setnow" data-id="${e.event_id}">Auf aktuelle Videozeit setzen</button>
           <button class="btn small ghost" data-act="jump" data-id="${e.event_id}" ${t == null ? 'disabled' : ''}>Ab ${state.leadIn} s vorher abspielen</button>
@@ -123,7 +129,7 @@ function renderEvents() {
         </div>
         ${t != null && max > min ? `<input type="range" data-id="${e.event_id}" min="${min}" max="${max}" step="0.5" value="${c}" aria-label="Videozeit feinjustieren">
         <span class="hint">Der Regler bleibt zwischen den benachbarten gesetzten Punkten.</span>` : '<span class="hint">Setze zuerst den Anpfiff des Abschnitts, dann wird die Position geschätzt.</span>'}
-        ${e.event_type === 'goal' && Math.floor(e.period) <= 4 ? lineupHtml(e) : ''}
+        ${ui.mode === 'analysis' && e.event_type === 'goal' && Math.floor(e.period) <= 4 ? lineupHtml(e) : ''}
       </div>`;
     }
     return `<li class="event ${e.event_team} ${sel ? 'sel' : ''}" data-row="${e.event_id}">
@@ -290,6 +296,7 @@ function tagEditor(names) {
 
 function renderTagList() {
   const names = teamNames();
+  if (ui.mode === 'sync' && ui.sideTab !== 'events') ui.sideTab = 'events';
   $('#tagCount').textContent = state.tags.length ? `(${state.tags.length})` : '';
   document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.sideTab)));
   $('#events').hidden = ui.sideTab !== 'events';
@@ -322,7 +329,7 @@ function renderStats() {
     completeHtml = `<p class="note">Schüsse vollständig erfasst: ${['home', 'guest'].map(t => `${esc(names[t])} ${done(t)} von ${periods.length} Abschnitten`).join(' · ')}. Abhaken je Drittel.</p>`;
   } else {
     completeHtml = `<div class="complete">Schüsse vollständig erfasst: ${['home', 'guest'].map(t =>
-      `<label class="check"><input type="checkbox" data-complete="${t}" ${state.complete[scope] && state.complete[scope][t] ? 'checked' : ''}> ${esc(names[t])}</label>`).join('')}</div>`;
+      `<label class="check"><input type="checkbox" data-complete="${t}" ${state.complete[scope] && state.complete[scope][t] ? 'checked' : ''} ${ui.mode === 'view' ? 'disabled' : ''}> ${esc(names[t])}</label>`).join('')}</div>`;
   }
   const cell = v => (Array.isArray(v) ? v.map(esc).join('<br>') : esc(v));
   const body = rows.map(r => r.length === 1
