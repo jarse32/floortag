@@ -3,6 +3,15 @@
 // Geladen wird erst nach Zustimmung (Zwei-Klick-Lösung, siehe consent.js und showVideo in main.js).
 
 let player = null, playerReady = false, apiReady = false, pendingVideo = null;
+// YouTube schaltet bei manchen Videos die automatisch erzeugten Untertitel von selbst ein.
+// Sobald das Untertitelmodul geladen ist, wird die Spur einmal pro Video abgewählt
+// (unloadModule reicht dafür nicht). Über das CC-Symbol lassen sie sich wieder einschalten.
+let captionsHandled = false;
+function hideCaptionsOnce() {
+  if (captionsHandled || !playerReady || !player.getOptions().includes('captions')) return;
+  captionsHandled = true;
+  try { player.setOption('captions', 'track', {}); } catch (e) { /* Modul nicht bereit */ }
+}
 let mountId = 'player';
 const handlers = { onReady() {}, onStateChange() {}, onError() {}, onLoad() {} };
 
@@ -38,6 +47,7 @@ export function loadVideo(id) {
 }
 function createPlayer(id) {
   handlers.onLoad();
+  captionsHandled = false;
   if (player && playerReady) { player.cueVideoById(id); return; }
   player = new YT.Player(mountId, {
     videoId: id,
@@ -46,6 +56,7 @@ function createPlayer(id) {
     events: {
       onReady: () => { playerReady = true; handlers.onReady(); },
       onStateChange: () => handlers.onStateChange(),
+      onApiChange: hideCaptionsOnce,
       onPlaybackRateChange: () => handlers.onRateChange && handlers.onRateChange(),
       onError: ev => handlers.onError(ERRORS[ev.data] || `YouTube meldet Fehler ${ev.data}.`)
     }
