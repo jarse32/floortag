@@ -14,16 +14,16 @@ import { events, periodList, periodLength } from './game.js';
 import { periodAtVideo } from './sync.js';
 
 // Spielzeit über alle Abschnitte hinweg (Drittel 2 beginnt bei Drittellänge usw.)
-function offset(p) {
+export function offset(p) {
   let o = 0;
   for (let q = 1; q < p; q++) o += periodLength(q);
   return o;
 }
-function absTime(e) {
+export function absTime(e) {
   return offset(Math.floor(e.period)) + state.gs[e.event_id];
 }
 // Abschnitte mit Spielzeit (ohne Penaltyschießen) und ihre Grenzen auf der Gesamtspielzeit
-function playedPeriods() {
+export function playedPeriods() {
   return periodList().filter(p => p <= 4 && periodLength(p) > 0).map(p => ({ p, from: offset(p), to: offset(p) + periodLength(p) }));
 }
 

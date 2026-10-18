@@ -8,6 +8,7 @@ import { buildClips, EDL_SCOPES } from './export.js';
 import { powerPlayPhases } from './phases.js';
 import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, faceoffAdvantage, goalieAt, goalkeepers } from './tags.js';
 import { personLabel } from './game.js';
+import { statPeriods, statRows } from './stats.js';
 import * as yt from './player.js';
 
 export const $ = s => document.querySelector(s);
@@ -292,6 +293,8 @@ function renderTagList() {
   $('#events').hidden = ui.sideTab !== 'events';
   $('#progress').hidden = ui.sideTab !== 'events';
   $('#tagPanel').hidden = ui.sideTab !== 'tags';
+  $('#statsPanel').hidden = ui.sideTab !== 'stats';
+  if (ui.sideTab === 'stats') renderStats();
   if (!state.tags.length) { $('#tagList').innerHTML = '<li class="empty">Noch keine Tags. Tagge über die Leiste unter dem Video.</li>'; return; }
   $('#tagList').innerHTML = state.tags.map(t => {
     const def = codeOf(t.code);
@@ -304,4 +307,30 @@ function renderTagList() {
         <span><span class="tr-main">${esc(main)}</span>${sub ? `<br><span class="tr-sub">${esc(sub)}</span>` : ''}</span>
       </button></li>`;
   }).join('');
+}
+
+// ===== Statistik =====
+function renderStats() {
+  const scope = ui.statScope, periods = statPeriods();
+  const { rows, stats, names } = statRows(scope);
+  const scopes = [['all', 'Gesamt'], ...periods.map(p => [String(p), periodTitle(p, true)])];
+  let completeHtml;
+  if (scope === 'all') {
+    const done = t => periods.filter(p => state.complete[p] && state.complete[p][t]).length;
+    completeHtml = `<p class="note">Schüsse vollständig erfasst: ${['home', 'guest'].map(t => `${esc(names[t])} ${done(t)} von ${periods.length} Abschnitten`).join(' · ')}. Abhaken je Drittel.</p>`;
+  } else {
+    completeHtml = `<div class="complete">Schüsse vollständig erfasst: ${['home', 'guest'].map(t =>
+      `<label class="check"><input type="checkbox" data-complete="${t}" ${state.complete[scope] && state.complete[scope][t] ? 'checked' : ''}> ${esc(names[t])}</label>`).join('')}</div>`;
+  }
+  const cell = v => (Array.isArray(v) ? v.map(esc).join('<br>') : esc(v));
+  const body = rows.map(r => r.length === 1
+    ? `<tr class="sec"><th colspan="3">${esc(r[0])}</th></tr>`
+    : `<tr><th scope="row">${esc(r[0])}</th><td>${cell(r[1])}</td><td>${cell(r[2])}</td></tr>`).join('');
+  $('#statsPanel').innerHTML = `
+    <div class="segbtns stat-scopes">${scopes.map(([k, l]) => `<button data-scope="${k}" aria-pressed="${String(scope) === k}">${esc(l)}</button>`).join('')}</div>
+    ${completeHtml}
+    ${stats.unassigned ? `<p class="note warn">${stats.unassigned} Tag(s) liegen in keinem markierten Drittel und zählen nur in „Gesamt“.</p>` : ''}
+    <table class="stats"><thead><tr><th></th><th>${esc(names.home)}</th><th>${esc(names.guest)}</th></tr></thead><tbody>${body}</tbody></table>
+    <div class="export-actions"><button id="copyStatsBtn" class="btn ghost">Als Tabelle kopieren</button></div>
+    <p class="note">Tore, Strafen und Überzahl stammen aus dem Saisonmanager, alles Übrige aus deinen Tags. Die Fangquote erscheint erst, wenn die Schüsse des Gegners vollständig erfasst sind.</p>`;
 }

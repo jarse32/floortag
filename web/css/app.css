@@ -221,3 +221,14 @@ main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr
 .tr-main { font-weight: 600; }
 .tr-sub { color: var(--muted); font-size: .85rem; }
 .taglist .empty { color: var(--muted); padding: .8rem .2rem; list-style: none; }
+
+/* Statistik */
+.stat-scopes { margin-bottom: .6rem; flex-wrap: wrap; }
+.complete { display: flex; gap: .4rem 1rem; flex-wrap: wrap; align-items: center; font-size: .88rem; color: var(--muted); margin-bottom: .6rem; }
+.complete .check { display: flex; gap: .35rem; align-items: center; color: var(--ink); }
+table.stats { width: 100%; border-collapse: collapse; font-size: .9rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+table.stats th, table.stats td { padding: .35rem .55rem; text-align: left; vertical-align: top; border-top: 1px solid var(--line); }
+table.stats thead th { font: 700 1rem var(--display); border-top: 0; }
+table.stats tbody th { font-weight: 400; color: var(--muted); }
+table.stats td { font-variant-numeric: tabular-nums; }
+table.stats tr.sec th { font: 700 .95rem var(--display); color: var(--ink); background: var(--period); }

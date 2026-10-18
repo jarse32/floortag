@@ -19,7 +19,8 @@ export const state = {
   missing: {},         // { event_id: true } Ereignisse, die nicht im Video zu sehen sind
   gs: {},              // { event_id: Spielsekunde im Abschnitt }
   counterLen: 10,      // Dauer eines Konter-Clips in Sekunden
-  tags: []             // eigene Tags (Analyse-Ebene), getrennt vom Sync gespeichert, siehe tags.js
+  tags: [],            // eigene Tags (Analyse-Ebene), getrennt vom Sync gespeichert, siehe tags.js
+  complete: {}         // { 1: { home: true, guest: false } } Schüsse vollständig erfasst, gehört zur Tag-Ebene
 };
 
 // Zustand der Oberfläche, wird nicht gespeichert
@@ -29,6 +30,7 @@ export const ui = {
   tagTeam: 'home',     // Team für neue Tags
   tagId: null,         // Tag in der Nachtragsleiste
   shootout: false,     // Modus Penaltyschießen
-  sideTab: 'events',   // Reiter der rechten Spalte: events | tags
+  sideTab: 'events',   // Reiter der rechten Spalte: events | tags | stats
+  statScope: 'all',    // Statistik: 'all' oder Abschnittsnummer
   anchorForm: null     // { p, v } offenes Formular „Freien Anker setzen“
 };

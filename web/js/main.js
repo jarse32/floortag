@@ -9,6 +9,7 @@ import { buildClips, toSportscodeXml, toCsv, toEdl } from './export.js';
 import * as yt from './player.js';
 import { hasConsent, giveConsent, revokeConsent, isRemembered } from './consent.js';
 import { $, renderAll, renderMatchline, renderStrip, updateClock, showPlayerMessage } from './render.js';
+import { statsAsTsv } from './stats.js';
 
 // Zustand geändert: speichern und neu zeichnen
 function commit() { save(); renderAll(); }
@@ -256,6 +257,23 @@ $('#tagList').addEventListener('click', e => {
   const b = e.target.closest('[data-act="selecttag"]'); if (!b) return;
   const tag = findTag(b.dataset.id); if (!tag) return;
   ui.tagId = tag.id; yt.seek(tag.v - 3); renderAll();
+});
+// Statistik: Abschnitt wählen, Vollständigkeit abhaken, kopieren
+$('#statsPanel').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.scope) { ui.statScope = b.dataset.scope === 'all' ? 'all' : Number(b.dataset.scope); renderAll(); }
+  if (b.id === 'copyStatsBtn') {
+    const text = statsAsTsv(ui.statScope);
+    try { await navigator.clipboard.writeText(text); b.textContent = 'Kopiert'; }
+    catch (err) { b.textContent = 'Kopieren nicht möglich'; }
+    setTimeout(() => { b.textContent = 'Als Tabelle kopieren'; }, 1500);
+  }
+});
+$('#statsPanel').addEventListener('change', e => {
+  const team = e.target.dataset.complete; if (!team) return;
+  const p = ui.statScope;
+  state.complete[p] = { ...(state.complete[p] || {}), [team]: e.target.checked };
+  commitTags();
 });
 $('#saveTagsBtn').addEventListener('click', () => download(tagFileName(), JSON.stringify(buildTagFile(), null, 2), 'application/json'));
 $('#tagsInput').addEventListener('change', async e => {

@@ -46,6 +46,10 @@ Im Modus Penaltyschießen wechselt das Team automatisch ab. Das Team des ersten 
 
 Tor, Strafe, Auszeit und die Drittel kommen aus dem Saisonmanager. Über- und Unterzahl berechnet FloorTag aus den Strafen. Tore zählen in Auswertungen als „Torschuss: Tor“.
 
+## Statistik
+
+Die Ansicht „Statistik“ wertet Tags und Saisonmanager-Daten je Team und Abschnitt aus. Die Fangquote erscheint nur, wenn die Schüsse des Gegners für alle gewählten Abschnitte als „vollständig erfasst“ abgehakt sind. Die Haken gehören zur Tag-Ebene und stehen in der Tag-Datei (`complete`). Festlegungen nach Eishockey-Vorbild: Penaltytore und Eigentore sind keine Torschüsse, Tore ins leere Tor und Penaltytore zählen nicht gegen den Torhüter, Überzahl und Unterzahl ergeben sich aus den Strafen.
+
 ## Labels im Export
 
 Team, Abschnitt, Spielzeit, Ergebnis, Ort, Spieler / Gegenspieler (bzw. „Spieler <Team>“ beim Bully), Vorteil, Mit Vorteil gewonnen, Penaltyschießen, Kommentar. In der Gegenperspektive tauschen „Spieler“ und „Gegenspieler“.
