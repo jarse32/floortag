@@ -20,3 +20,6 @@ dist/
 web/api/config.php
 web/api/cache/*
 !web/api/cache/.htaccess
+
+# Upload-Archive
+*.zip
