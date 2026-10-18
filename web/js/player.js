@@ -3,15 +3,6 @@
 // Hier gehört später die Zwei-Klick-Lösung hin (API erst nach Zustimmung laden).
 
 let player = null, playerReady = false, apiReady = false, pendingVideo = null;
-// Automatische Untertitel einmal pro Video abschalten; schaltet man sie selbst ein, bleiben sie an
-let captionsHandled = false;
-function hideCaptionsOnce() {
-  if (captionsHandled || !playerReady) return;
-  const modules = player.getOptions ? player.getOptions() : [];
-  if (!modules.includes('captions') && !modules.includes('cc')) return;
-  captionsHandled = true;
-  try { player.unloadModule('captions'); player.unloadModule('cc'); } catch (e) { /* Modul nicht geladen */ }
-}
 let mountId = 'player';
 const handlers = { onReady() {}, onStateChange() {}, onError() {}, onLoad() {} };
 
@@ -47,7 +38,6 @@ export function loadVideo(id) {
 }
 function createPlayer(id) {
   handlers.onLoad();
-  captionsHandled = false;
   if (player && playerReady) { player.cueVideoById(id); return; }
   player = new YT.Player(mountId, {
     videoId: id,
@@ -55,9 +45,7 @@ function createPlayer(id) {
     playerVars: { rel: 0, playsinline: 1 },
     events: {
       onReady: () => { playerReady = true; handlers.onReady(); },
-      onStateChange: () => { hideCaptionsOnce(); handlers.onStateChange(); },
-      // Das Untertitelmodul lädt YouTube erst beim Abspielen nach
-      onApiChange: hideCaptionsOnce,
+      onStateChange: () => handlers.onStateChange(),
       onError: ev => handlers.onError(ERRORS[ev.data] || `YouTube meldet Fehler ${ev.data}.`)
     }
   });
