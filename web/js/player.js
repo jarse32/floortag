@@ -1,6 +1,6 @@
 // ===== YouTube-Player =====
 // Kapselt die IFrame Player API; die Oberfläche hängt sich über Callbacks an.
-// Hier gehört später die Zwei-Klick-Lösung hin (API erst nach Zustimmung laden).
+// Geladen wird erst nach Zustimmung (Zwei-Klick-Lösung, siehe consent.js und showVideo in main.js).
 
 let player = null, playerReady = false, apiReady = false, pendingVideo = null;
 let mountId = 'player';
