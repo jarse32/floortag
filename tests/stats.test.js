@@ -164,5 +164,7 @@ test('Kopierformat: tabulatorgetrennt mit Kopfzeile und Abschnitten', () => {
   assert.equal(lines[0], 'Kennzahl\tBAL\tTVEH');
   assert.equal(lines[1], 'Tore und Schüsse\t\t');
   assert.equal(lines[2], 'Tore\t5\t4');
-  assert.ok(lines.every(l => l.split('\t').length === 3));
+  // Hauptblock bis zur Leerzeile hat drei Spalten, danach folgt der Plus/Minus-Block
+  const main = lines.slice(0, lines.indexOf(''));
+  assert.ok(main.every(l => l.split('\t').length === 3));
 });

@@ -8,7 +8,8 @@ import { buildClips, EDL_SCOPES } from './export.js';
 import { powerPlayPhases } from './phases.js';
 import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, faceoffAdvantage, goalieAt, goalkeepers } from './tags.js';
 import { personLabel } from './game.js';
-import { statPeriods, statRows } from './stats.js';
+import { statPeriods, statRows, computeStats, signed } from './stats.js';
+import { lineupOf, forcedPlayers, fieldPlayers } from './lineups.js';
 import * as yt from './player.js';
 
 export const $ = s => document.querySelector(s);
@@ -122,6 +123,7 @@ function renderEvents() {
         </div>
         ${t != null && max > min ? `<input type="range" data-id="${e.event_id}" min="${min}" max="${max}" step="0.5" value="${c}" aria-label="Videozeit feinjustieren">
         <span class="hint">Der Regler bleibt zwischen den benachbarten gesetzten Punkten.</span>` : '<span class="hint">Setze zuerst den Anpfiff des Abschnitts, dann wird die Position geschätzt.</span>'}
+        ${e.event_type === 'goal' && Math.floor(e.period) <= 4 ? lineupHtml(e) : ''}
       </div>`;
     }
     return `<li class="event ${e.event_team} ${sel ? 'sel' : ''}" data-row="${e.event_id}">
@@ -331,6 +333,36 @@ function renderStats() {
     ${completeHtml}
     ${stats.unassigned ? `<p class="note warn">${stats.unassigned} Tag(s) liegen in keinem markierten Drittel und zählen nur in „Gesamt“.</p>` : ''}
     <table class="stats"><thead><tr><th></th><th>${esc(names.home)}</th><th>${esc(names.guest)}</th></tr></thead><tbody>${body}</tbody></table>
+    ${plusMinusHtml(scope, names)}
     <div class="export-actions"><button id="copyStatsBtn" class="btn ghost">Als Tabelle kopieren</button></div>
     <p class="note">Tore, Strafen und Überzahl stammen aus dem Saisonmanager, alles Übrige aus deinen Tags. Die Fangquote erscheint erst, wenn die Schüsse des Gegners vollständig erfasst sind.</p>`;
+}
+
+// Aufstellung bei einem Tor: Feldspieler beider Teams zum Antippen, Schütze und Vorlage fest
+function lineupHtml(e) {
+  const names = teamNames(), lineup = lineupOf(e), forced = forcedPlayers(e), base = state.kleinfeld ? 3 : 5;
+  const rows = ['home', 'guest'].map(side => {
+    const chips = fieldPlayers(side).map(p => {
+      const nr = p.trikot_number, on = lineup[side].includes(nr), fixed = forced[side].includes(nr);
+      return `<button class="chip" data-lineup="${side}:${nr}" aria-pressed="${on}" ${fixed ? 'disabled title="Schütze oder Vorlage, immer auf dem Feld"' : `title="${esc(personLabel(side, nr))}"`}>${nr}</button>`;
+    }).join('');
+    const n = lineup[side].length;
+    return `<div class="lineup-row"><span class="lr-team">${esc(names[side])} <small class="${n > base + 1 ? 'warn' : ''}">${n} von ${base}</small></span><div class="te-ctl">${chips || '<span class="te-info">Kein Kader</span>'}</div></div>`;
+  }).join('');
+  const tooMany = ['home', 'guest'].some(side => lineup[side].length > base + 1);
+  return `<div class="lineup"><span class="hint">Auf dem Feld (für Plus/Minus). Schütze und Vorlage sind fest markiert.</span>${rows}
+    ${tooMany ? `<span class="hint warn">Mehr als ${base + 1} Feldspieler ausgewählt.</span>` : ''}</div>`;
+}
+
+function plusMinusHtml(scope, names) {
+  const st = computeStats(scope);
+  if (!st.pmGoals) return '';
+  const note = `<p class="note ${st.pmCovered < st.pmGoals ? 'warn' : ''}">Aufstellung bei ${st.pmCovered} von ${st.pmGoals} zählenden Toren erfasst. Eintragen in der Ereignisliste beim jeweiligen Tor.</p>`;
+  const table = side => {
+    const list = st.plusMinus[side];
+    if (!list.length) return '';
+    return `<table class="stats pm"><thead><tr><th>${esc(names[side])}</th><th>+</th><th>−</th><th>±</th></tr></thead><tbody>${
+      list.map(x => `<tr><th scope="row">${esc(personLabel(side, x.nr))}</th><td>${x.plus}</td><td>${x.minus}</td><td><strong>${signed(x.net)}</strong></td></tr>`).join('')}</tbody></table>`;
+  };
+  return `<h3 class="pm-title">Plus/Minus</h3>${note}<div class="pm-grid">${table('home')}${table('guest')}</div>`;
 }

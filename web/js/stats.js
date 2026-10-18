@@ -10,8 +10,10 @@ import { events, personLabel, teamShort } from './game.js';
 import { timeOf, periodAtVideo } from './sync.js';
 import { goalieAt, faceoffAdvantage } from './tags.js';
 import { penaltyWindowsByTeam, emptyNetWindows, absTime, playedPeriods } from './phases.js';
+import { lineupOf, hasLineup } from './lineups.js';
 
 const TEAMS = ['home', 'guest'];
+const isGoalkeeper = (side, nr) => ((state.game.players || {})[side] || []).some(p => p.trikot_number === nr && p.goalkeeper);
 const other = t => (t === 'home' ? 'guest' : 'home');
 const PENALTY_MINUTES = { penalty_2: 2, penalty_2and2: 4, penalty_5: 5, penalty_10: 10 };
 
@@ -43,7 +45,8 @@ const emptyTeam = () => ({
 
 // Statistik für scope = 'all' oder eine Abschnittsnummer
 export function computeStats(scope = 'all') {
-  const res = { home: emptyTeam(), guest: emptyTeam(), goalies: { home: {}, guest: {} }, unassigned: 0 };
+  const res = { home: emptyTeam(), guest: emptyTeam(), goalies: { home: {}, guest: {} }, unassigned: 0,
+    plusMinus: { home: {}, guest: {} }, pmGoals: 0, pmCovered: 0 };
   const inScope = p => (scope === 'all' ? p == null || p <= 4 : p === scope);
   const goalie = (team, nr) => (res.goalies[team][nr ?? '?'] = res.goalies[team][nr ?? '?'] || { nr, saves: 0, goalsAgainst: 0 });
   const pens = penaltyWindowsByTeam(), empty = emptyNetWindows();
@@ -63,6 +66,19 @@ export function computeStats(scope = 'all') {
     if (pt < po) r.ppGoals++;
     else if (pt > po) r.shGoals++;
     if (enGoal) r.enGoals++;
+    // Plus/Minus nach Eishockey-Regel: kein Überzahltor, kein Penaltytor; Unterzahl und leeres Tor zählen
+    if (!penaltyGoal && !(pt < po)) {
+      res.pmGoals++;
+      if (hasLineup(e)) {
+        res.pmCovered++;
+        const lineup = lineupOf(e);
+        for (const side of TEAMS) for (const nr of lineup[side]) {
+          if (isGoalkeeper(side, nr)) continue;
+          const pm = res.plusMinus[side][nr] = res.plusMinus[side][nr] || { nr, plus: 0, minus: 0 };
+          if (side === team) pm.plus++; else pm.minus++;
+        }
+      }
+    }
     if (!penaltyGoal && !ownGoal) {
       r.shotGoals++;
       if (!enGoal) {
@@ -131,6 +147,8 @@ export function computeStats(scope = 'all') {
     r.complete = isComplete(team, scope);
     r.savePctComplete = isComplete(other(team), scope); // Fangquote braucht alle Schüsse des Gegners
     res.goalies[team] = Object.values(res.goalies[team]).sort((a, b) => (a.nr ?? 999) - (b.nr ?? 999));
+    res.plusMinus[team] = Object.values(res.plusMinus[team]).map(x => ({ ...x, net: x.plus - x.minus }))
+      .sort((a, b) => b.net - a.net || b.plus - a.plus || a.nr - b.nr);
   }
   return res;
 }
@@ -196,5 +214,14 @@ export function statRows(scope) {
 export function statsAsTsv(scope) {
   const { rows, names } = statRows(scope);
   const flat = v => (Array.isArray(v) ? v.join('; ') : String(v));
-  return [['Kennzahl', names.home, names.guest], ...rows.map(r => (r.length === 1 ? [r[0], '', ''] : r.map(flat)))].map(r => r.join('\t')).join('\n');
+  const main = [['Kennzahl', names.home, names.guest], ...rows.map(r => (r.length === 1 ? [r[0], '', ''] : r.map(flat)))];
+  const st = computeStats(scope), pm = [];
+  if (st.pmGoals) {
+    pm.push([], ['Plus/Minus', `Aufstellung bei ${st.pmCovered} von ${st.pmGoals} zählenden Toren erfasst`], ['Team', 'Spieler', '+', '−', '±']);
+    for (const side of TEAMS) for (const x of st.plusMinus[side]) pm.push([names[side], personLabel(side, x.nr), x.plus, x.minus, signed(x.net)]);
+  }
+  return [...main, ...pm].map(r => r.join('\t')).join('\n');
 }
+
+// Plus/Minus mit Vorzeichen: +2, 0, −1
+export const signed = n => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');

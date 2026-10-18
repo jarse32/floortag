@@ -10,6 +10,7 @@ import * as yt from './player.js';
 import { hasConsent, giveConsent, revokeConsent, isRemembered } from './consent.js';
 import { $, renderAll, renderMatchline, renderStrip, updateClock, showPlayerMessage } from './render.js';
 import { statsAsTsv } from './stats.js';
+import { toggleLineupPlayer } from './lineups.js';
 
 // Zustand geändert: speichern und neu zeichnen
 function commit() { save(); renderAll(); }
@@ -195,7 +196,17 @@ function handleEventAction(e) {
     case 'unmissing': setMissing(ev, false); commit(); break;
   }
 }
-$('#events').addEventListener('click', handleEventAction);
+$('#events').addEventListener('click', e => {
+  // Aufstellung bei einem Tor
+  const chip = e.target.closest('[data-lineup]');
+  if (chip) {
+    const [side, nr] = chip.dataset.lineup.split(':');
+    toggleLineupPlayer(Number(chip.closest('[data-row]').dataset.row), side, Number(nr));
+    commitTags();
+    return;
+  }
+  handleEventAction(e);
+});
 $('#strip').addEventListener('click', e => {
   if (e.target.closest('[data-act]')) { handleEventAction(e); return; }
   // Klick auf freie Fläche springt an diese Stelle im Video

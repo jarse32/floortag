@@ -114,8 +114,8 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 
 1. Torhüter-Einsatz und „Torhüter raus“ in der Spielstärke – erledigt.
 2. Auswertungsansicht „Statistik“ – erledigt (`web/js/stats.js`, Reiter „Statistik“, „Als Tabelle kopieren“). Je Team und Drittel: Schüsse (aufs Tor/daneben/geblockt/Tore), Saves und Fangquote je Torhüter (Tore ins leere Tor zählen nicht gegen den Torhüter), Bully-Quote (auch mit/ohne Vorteil), Ballgewinne, Penaltys, Überzahl-Effizienz. Pro Drittel und Team ein Haken „Schüsse vollständig erfasst“; ohne ihn zeigt die Statistik „unvollständig“ statt einer Quote.
-3. **Als Nächstes:** Aufstellung bei Toren („auf dem Feld“, beide Teams) und Plus/Minus nach Eishockey-Regel: Tore bei gleicher Stärke und Unterzahltore zählen (+1 für die Feldspieler des erzielenden Teams, −1 für die des Gegners), Überzahltore und Penaltytore nicht, Tore ins leere Tor schon.
-4. Eigene Codes mit Farbe und Tastenkürzel, später als Katalog pro Verein.
+3. Aufstellung bei Toren und Plus/Minus – erledigt (`web/js/lineups.js`, Auswahl beim Tor in der Ereignisliste, Tabelle in der Statistik). Schütze und Vorlage sind automatisch auf dem Feld, Torhüter bekommen kein Plus/Minus, Aufstellungen liegen auf der Tag-Ebene. Regel: Tore bei gleicher Stärke und Unterzahltore zählen (+1 für die Feldspieler des erzielenden Teams, −1 für die des Gegners), Überzahltore und Penaltytore nicht, Tore ins leere Tor schon.
+4. **Als Nächstes:** Eigene Codes mit Farbe und Tastenkürzel, später als Katalog pro Verein.
 
 Grundsatz: Standards aus dem Eishockey übernehmen, wo nichts Floorball-Eigenes dagegen spricht.
 

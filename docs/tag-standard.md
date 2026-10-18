@@ -50,6 +50,10 @@ Tor, Strafe, Auszeit und die Drittel kommen aus dem Saisonmanager. Über- und Un
 
 Die Ansicht „Statistik“ wertet Tags und Saisonmanager-Daten je Team und Abschnitt aus. Die Fangquote erscheint nur, wenn die Schüsse des Gegners für alle gewählten Abschnitte als „vollständig erfasst“ abgehakt sind. Die Haken gehören zur Tag-Ebene und stehen in der Tag-Datei (`complete`). Festlegungen nach Eishockey-Vorbild: Penaltytore und Eigentore sind keine Torschüsse, Tore ins leere Tor und Penaltytore zählen nicht gegen den Torhüter, Überzahl und Unterzahl ergeben sich aus den Strafen.
 
+## Aufstellung bei Toren und Plus/Minus
+
+Bei jedem Tor aus dem Saisonmanager lassen sich die Feldspieler beider Teams eintragen, die auf dem Feld standen. Schütze und Vorlage sind automatisch dabei, Torhüter bekommen kein Plus/Minus. Es zählen Tore bei gleicher Stärke, Unterzahltore und Tore ins leere Tor (+1 für das erzielende Team, −1 für den Gegner). Überzahltore, Penaltytore und das Penaltyschießen zählen nicht. Ein Tor gilt als erfasst, wenn für beide Teams Spieler ausgewählt sind. Die Statistik zeigt, bei wie vielen zählenden Toren das der Fall ist. Aufstellungen gehören zur Tag-Ebene (`lineups` in der Tag-Datei), Tor-Clips tragen sie als Label „Auf dem Feld <Team>“.
+
 ## Labels im Export
 
 Team, Abschnitt, Spielzeit, Ergebnis, Ort, Spieler / Gegenspieler (bzw. „Spieler <Team>“ beim Bully), Vorteil, Mit Vorteil gewonnen, Penaltyschießen, Kommentar. In der Gegenperspektive tauschen „Spieler“ und „Gegenspieler“.

@@ -8,6 +8,7 @@ import { events, periodList, periodTitle, teamShort, personLabel } from './game.
 import { timeOf, videoTimeAt, periodAtVideo } from './sync.js';
 import { codeOf, other, outcomeLabel, placeLabel, faceoffAdvantage, goalieAt } from './tags.js';
 import { powerPlayPhases } from './phases.js';
+import { lineupOf, hasLineup } from './lineups.js';
 
 // Farben der Zeilen (0–255), für Sportscode auf 0–65535 umgerechnet
 const COLORS = { home: [29, 106, 75], guest: [45, 85, 132], period: [140, 150, 145], timeout: [181, 118, 27], special: [128, 90, 150] };
@@ -33,6 +34,11 @@ export function buildClips() {
       labels.push(['Spielstand', `${e.home_goals}:${e.guest_goals}`], ['Spieler', personLabel(e.event_team, e.number)]);
       if (e.assist) labels.push(['Vorlage', personLabel(e.event_team, e.assist)]);
       if (e.goal_type && e.goal_type !== 'regular') labels.push(['Torart', e.goal_type_string]);
+      // Aufstellung, sofern erfasst
+      if (hasLineup(e)) {
+        const l = lineupOf(e);
+        for (const side of ['home', 'guest']) labels.push([`Auf dem Feld ${teamShort(side)}`, l[side].map(nr => `#${nr}`).join(' ')]);
+      }
     } else if (e.event_type === 'penalty') {
       code = `Strafe ${team}`;
       labels.push(['Spieler', personLabel(e.event_team, e.number)], ['Strafe', e.penalty_type_string], ['Grund', e.penalty_reason_string]);

@@ -20,7 +20,8 @@ export const state = {
   gs: {},              // { event_id: Spielsekunde im Abschnitt }
   counterLen: 10,      // Dauer eines Konter-Clips in Sekunden
   tags: [],            // eigene Tags (Analyse-Ebene), getrennt vom Sync gespeichert, siehe tags.js
-  complete: {}         // { 1: { home: true, guest: false } } Schüsse vollständig erfasst, gehört zur Tag-Ebene
+  complete: {},        // { 1: { home: true, guest: false } } Schüsse vollständig erfasst, gehört zur Tag-Ebene
+  lineups: {}          // { event_id: { home: [nr], guest: [nr] } } auf dem Feld bei Toren, gehört zur Tag-Ebene
 };
 
 // Zustand der Oberfläche, wird nicht gespeichert

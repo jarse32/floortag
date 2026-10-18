@@ -19,7 +19,7 @@ export function save() {
   } catch (e) { /* Speicher nicht verfügbar */ }
 }
 export function restore() {
-  state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.tags = []; state.complete = {};
+  state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.tags = []; state.complete = {}; state.lineups = {};
   try {
     const raw = localStorage.getItem(storageKey());
     if (raw) { const { tags, ...rest } = JSON.parse(raw); Object.assign(state, rest); }
@@ -29,6 +29,7 @@ export function restore() {
       // Früher nur die Tag-Liste, jetzt { tags, complete }
       state.tags = Array.isArray(d) ? d : d.tags || [];
       state.complete = Array.isArray(d) ? {} : d.complete || {};
+      state.lineups = Array.isArray(d) ? {} : d.lineups || {};
     }
   } catch (e) { /* ignorieren */ }
 }
@@ -37,13 +38,13 @@ export function restore() {
 // Getrennt vom Sync, weil Tags später pro Person oder Verein gehören (Etappe 4)
 function tagKey() { return `floortag-tags:${state.game && state.game.id}:${state.videoId || 'ohne-video'}`; }
 export function saveTags() {
-  try { localStorage.setItem(tagKey(), JSON.stringify({ tags: state.tags, complete: state.complete })); } catch (e) { /* Speicher nicht verfügbar */ }
+  try { localStorage.setItem(tagKey(), JSON.stringify({ tags: state.tags, complete: state.complete, lineups: state.lineups })); } catch (e) { /* Speicher nicht verfügbar */ }
 }
 export function buildTagFile() {
   return {
     format: 'floortag-tags', version: 1, standard: TAG_STANDARD_VERSION,
     game_id: state.game.id, video_id: state.videoId, created: new Date().toISOString(),
-    tags: state.tags, complete: state.complete
+    tags: state.tags, complete: state.complete, lineups: state.lineups
   };
 }
 export function tagFileName() {
@@ -58,6 +59,7 @@ export function applyTagFile(d) {
   state.tags = tags.map(t => ({ players: { home: null, guest: null }, comment: '', place: null, outcome: null, ...t }))
     .sort((a, b) => a.v - b.v);
   state.complete = d.complete || {};
+  state.lineups = d.lineups || {};
   return { loaded: state.tags.length, skipped: (d.tags || []).length - state.tags.length };
 }
 

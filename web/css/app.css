@@ -232,3 +232,17 @@ table.stats thead th { font: 700 1rem var(--display); border-top: 0; }
 table.stats tbody th { font-weight: 400; color: var(--muted); }
 table.stats td { font-variant-numeric: tabular-nums; }
 table.stats tr.sec th { font: 700 .95rem var(--display); color: var(--ink); background: var(--period); }
+
+/* Aufstellung bei Toren und Plus/Minus */
+.lineup { display: grid; gap: .35rem; margin-top: .3rem; padding-top: .5rem; border-top: 1px dashed var(--line); }
+.lineup-row { display: grid; grid-template-columns: 5.5rem 1fr; gap: .4rem; align-items: start; }
+.lr-team { font: 600 .9rem var(--display); padding-top: .2rem; }
+.lr-team small { display: block; font: 400 .78rem var(--body); color: var(--muted); }
+.lr-team small.warn, .hint.warn { color: var(--estimate); }
+.lineup .chip[aria-pressed="true"] { background: var(--pine); color: #fff; border-color: var(--pine); }
+.lineup .chip:disabled { cursor: default; opacity: .8; }
+.lineup .chip { border: 1px solid var(--line); border-radius: 6px; }
+.pm-title { font: 700 1.2rem var(--display); margin: 1.2rem 0 .3rem; }
+.pm-grid { display: grid; gap: .6rem; }
+table.stats.pm td { text-align: right; }
+table.stats.pm thead th:not(:first-child) { text-align: right; }
