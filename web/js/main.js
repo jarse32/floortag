@@ -475,11 +475,13 @@ document.addEventListener('keydown', e => {
   if (tag === 'TEXTAREA' || (tag === 'INPUT' && !['range', 'checkbox'].includes(e.target.type))) return;
   const k = e.key.toLowerCase();
   // Ansehen: nur Abspielen und Blättern; Sync: keine Tag-Kürzel
-  if (ui.mode === 'view' && !['k', ' ', 'j', 'l', ',', '.', '-', '+', 'n'].includes(k)) return;
+  if (ui.mode === 'view' && !['k', ' ', 'j', 'l', 'h', 'ö', ',', '.', '-', '+', 'n'].includes(k)) return;
   if (ui.mode === 'sync' && (/^[1-9]$/.test(k) || ['q', 'w', 'e', 't', 'v', 'x'].includes(k))) return;
   if (k === 'k' || k === ' ') { e.preventDefault(); yt.togglePlay(); }
   else if (k === 'j') yt.seek(yt.now() - 5);
   else if (k === 'l') yt.seek(yt.now() + 5);
+  else if (k === 'h') yt.seek(yt.now() - 30); // H und Ö liegen außen neben J und L
+  else if (k === 'ö') yt.seek(yt.now() + 30);
   else if (k === ',') yt.seek(yt.now() - 1);
   else if (k === '.') yt.seek(yt.now() + 1);
   else if (k === '-') stepRate(-1);

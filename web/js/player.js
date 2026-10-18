@@ -64,9 +64,21 @@ function createPlayer(id) {
 }
 
 export function isReady() { return playerReady; }
-export function now() { return playerReady ? player.getCurrentTime() : 0; }
+// Direkt nach einem Sprung meldet der Player kurz noch die alte Zeit. Bis er aufgeholt hat,
+// gilt das Sprungziel, damit schnell wiederholte Sprünge (H, H, H) sich aufaddieren.
+let seekTarget = null, seekAt = 0;
+export function now() {
+  if (!playerReady) return 0;
+  const real = player.getCurrentTime();
+  if (seekTarget != null && Date.now() - seekAt < 1000 && Math.abs(real - seekTarget) > 1.5) return seekTarget;
+  return real;
+}
 export function duration() { return playerReady ? player.getDuration() : 0; }
-export function seek(t) { if (playerReady) player.seekTo(Math.max(0, t), true); }
+export function seek(t) {
+  if (!playerReady) return;
+  seekTarget = Math.max(0, t); seekAt = Date.now();
+  player.seekTo(seekTarget, true);
+}
 export function play() { if (playerReady) player.playVideo(); }
 export function pause() { if (playerReady) player.pauseVideo(); }
 // Abspieltempo; YouTube bietet je nach Video nicht jedes Tempo an

@@ -14,7 +14,7 @@ export const GUIDES = {
       { title: 'Kapitel und Link', text: 'Unter „Export“ kopierst du die YouTube-Kapitel für die Videobeschreibung. Mit „Link teilen“ schickst du Spiel und Szenen an andere.', target: '#chapters' }
     ],
     tips: [
-      'Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, Komma/Punkt ±1 s, − / + Tempo, Enter setzt das gewählte Ereignis.',
+      'Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, Komma/Punkt ±1 s, − / + Tempo, Enter setzt das gewählte Ereignis.',
       'Streamlücke? Setz in der Drittelkarte je einen „freien Anker“ vor und nach der Lücke. Ereignisse in der Lücke markierst du als „Nicht im Video“.',
       'Dein Stand wird automatisch im Browser gespeichert. „Sync speichern“ legt zusätzlich eine Datei an.'
     ]
@@ -46,7 +46,7 @@ export const GUIDES = {
       { title: 'Tags und Statistik', text: 'In den Reitern „Tags“ und „Statistik“ findest du die zusätzlichen Szenen und Auswertungen, sofern sie getaggt wurden.', target: '.tabs' },
       { title: 'Tempo', text: 'Mit 0,5× bis 2× siehst du Szenen langsamer oder schneller.', target: '.rates' }
     ],
-    tips: ['Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, − / + Tempo, N nächstes Ereignis.']
+    tips: ['Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, − / + Tempo, N nächstes Ereignis.']
   }
 };
 
