@@ -42,7 +42,7 @@ export const GUIDES = {
     intro: 'Im Modus Ansehen schaust du dir die Szenen eines Spiels an. Verändern lässt sich hier nichts.',
     steps: [
       { title: 'Video freigeben', text: 'Klick auf „YouTube-Video laden“.', target: '.player-wrap' },
-      { title: 'Szenen abspielen', text: 'Klick auf ein Tor, eine Strafe oder einen Tag in der Liste rechts. Das Video springt kurz vor die Szene und spielt sie ab.', target: '#events' },
+      { title: 'Szenen abspielen', text: 'Klick auf ein Tor, eine Strafe oder einen Tag in der Ereignis- bzw. Tag-Liste. Das Video springt kurz vor die Szene und spielt sie ab.', target: '#events' },
       { title: 'Tags und Statistik', text: 'In den Reitern „Tags“ und „Statistik“ findest du die zusätzlichen Szenen und Auswertungen, sofern sie getaggt wurden.', target: '.tabs' },
       { title: 'Tempo', text: 'Mit 0,5× bis 2× siehst du Szenen langsamer oder schneller.', target: '.rates' }
     ],
