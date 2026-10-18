@@ -24,6 +24,7 @@
     <button data-mode="analysis" title="Eigene Tags, Statistik und Analyse-Export">Analyse</button>
   </div>
   <button id="shareBtn" class="btn share-btn" data-modes="sync analysis" title="Link kopieren, der Spiel, Sync und Tags zum Ansehen öffnet">Link teilen</button>
+  <button id="helpBtn" class="btn ghost help-btn" aria-label="Anleitung öffnen" title="Anleitung">?</button>
   </div>
 </header>
 
@@ -36,6 +37,11 @@
 <section id="loader" class="loader">
   <h1>Spiel laden</h1>
   <p>Gib die Spiel-ID aus dem Saisonmanager ein oder füge den Link zum Spiel ein. Das Video wird, wenn vorhanden, automatisch aus dem Livestream-Link übernommen.</p>
+  <ol class="intro">
+    <li><strong>Spiel laden:</strong> Spiel-ID oder Link aus dem Saisonmanager eingeben.</li>
+    <li><strong>Szenen verorten:</strong> Drittelgrenzen setzen, dann springen Tore und Strafen direkt an die richtige Stelle im Video.</li>
+    <li><strong>Weitergeben:</strong> YouTube-Kapitel kopieren, Szenen taggen oder alles per Link teilen.</li>
+  </ol>
   <form id="idForm" class="idform">
     <input id="idInput" type="text" inputmode="numeric" placeholder="z. B. 58668 oder Link zum Spiel" aria-label="Spiel-ID oder Saisonmanager-Link" autocomplete="off">
     <button id="idBtn" class="btn" type="submit">Spiel laden</button>
@@ -157,6 +163,8 @@
     </section>
   </aside>
 </main>
+
+<dialog id="helpDialog" class="help" aria-labelledby="helpTitle"><div id="helpBody"></div></dialog>
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 

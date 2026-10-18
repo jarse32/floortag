@@ -1,6 +1,6 @@
 // ===== Einstieg: Spiel laden und Bedienung verdrahten =====
 import { state, ui } from './state.js';
-import { extractVideoId, fmt, fmtGame } from './format.js';
+import { extractVideoId, fmt, fmtGame, esc } from './format.js';
 import { prepareGame, events, findEvent, periodLength } from './game.js';
 import { timeOf, place, setMissing, addAnchor, removeAnchor } from './sync.js';
 import { save, restore, buildSyncFile, syncFileName, applySyncFile, saveTags, buildTagFile, tagFileName, applyTagFile } from './storage.js';
@@ -11,6 +11,7 @@ import { hasConsent, giveConsent, revokeConsent, isRemembered } from './consent.
 import { $, renderAll, renderMatchline, renderStrip, updateClock, showPlayerMessage } from './render.js';
 import { statsAsTsv } from './stats.js';
 import { SHARE_PREFIX, decodeShare, applySharePayload, shareUrl } from './share.js';
+import { GUIDES, introSeen, markIntroSeen } from './help.js';
 import { toggleLineupPlayer } from './lineups.js';
 
 // Zustand geändert: speichern und neu zeichnen
@@ -41,6 +42,7 @@ document.querySelectorAll('.modes [data-mode]').forEach(b => b.addEventListener(
   ui.jumpFrom = null;
   const url = new URL(location.href); url.searchParams.delete('modus'); history.replaceState(null, '', url);
   renderAll();
+  if (state.game && !introSeen(ui.mode)) openHelp(ui.mode);
 }));
 initMode();
 renderAll();
@@ -65,6 +67,45 @@ function selectEvent(ev, toggleOff) {
   renderAll();
   const row = document.querySelector(`[data-row="${ev.event_id}"]`); if (row) row.scrollIntoView({ block: 'nearest' });
 }
+
+// ===== Anleitung =====
+let helpMode = 'sync';
+function openHelp(mode = ui.mode) {
+  helpMode = GUIDES[mode] ? mode : 'sync';
+  renderHelp();
+  const d = $('#helpDialog');
+  if (!d.open) d.showModal();
+  markIntroSeen(helpMode);
+}
+function renderHelp() {
+  const g = GUIDES[helpMode];
+  // „Zeigen“ nur für Stellen, die im aktuellen Modus sichtbar sind
+  const visible = sel => { const el = document.querySelector(sel); return !!el && el.offsetParent !== null; };
+  $('#helpBody').innerHTML = `
+    <div class="help-head"><h2 id="helpTitle">So funktioniert FloorTag</h2><button class="help-close" data-help-close aria-label="Anleitung schließen">✕</button></div>
+    <div class="segbtns help-tabs">${Object.entries(GUIDES).map(([k, v]) => `<button data-help-mode="${k}" aria-pressed="${k === helpMode}">${esc(v.label)}</button>`).join('')}</div>
+    <p class="help-intro">${esc(g.intro)}</p>
+    <ol class="help-steps">${g.steps.map((s, i) => `<li><div class="step"><div><strong>${esc(s.title)}</strong><p>${esc(s.text)}</p></div>${
+      s.target && visible(s.target) ? `<button class="btn small ghost" data-help-show="${i}">Zeigen</button>` : ''}</div></li>`).join('')}</ol>
+    ${g.tips.length ? `<h3>Tipps</h3><ul class="help-tips">${g.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    <div class="help-foot"><button class="btn" data-help-close>Los geht’s</button></div>`;
+}
+$('#helpBtn').addEventListener('click', () => openHelp(ui.mode));
+$('#helpDialog').addEventListener('click', e => {
+  const d = $('#helpDialog');
+  if (e.target === d || e.target.closest('[data-help-close]')) { d.close(); return; } // Klick auf den Hintergrund schließt
+  const tab = e.target.closest('[data-help-mode]');
+  if (tab) { helpMode = tab.dataset.helpMode; renderHelp(); return; }
+  const show = e.target.closest('[data-help-show]');
+  if (show) {
+    const el = document.querySelector(GUIDES[helpMode].steps[Number(show.dataset.helpShow)].target);
+    d.close();
+    if (!el) return;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el.classList.remove('spotlight'); void el.offsetWidth; el.classList.add('spotlight');
+    setTimeout(() => el.classList.remove('spotlight'), 2600);
+  }
+});
 
 // ===== Zwei-Klick-Lösung =====
 let consentVideo = null;
@@ -111,6 +152,8 @@ function loadGame(data) {
   $('#videoInput').value = link;
   const id = extractVideoId(link);
   if (id) setVideo(id); else { state.videoId = null; restoreState(); renderAll(); }
+  // Beim ersten Spiel in diesem Modus die Anleitung zeigen
+  if (!introSeen(ui.mode)) openHelp(ui.mode);
 }
 function showLoadError(msg) {
   const err = $('#loadError');

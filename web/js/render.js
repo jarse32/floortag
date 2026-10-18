@@ -17,6 +17,7 @@ export const $ = s => document.querySelector(s);
 export function renderAll() {
   document.body.dataset.mode = ui.mode;
   document.querySelectorAll('.modes [data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === ui.mode)));
+  $('#shareBtn').hidden = !state.game; // Teilen erst, wenn ein Spiel geladen ist
   if (!state.game) return;
   renderSettings();
   renderPeriods();

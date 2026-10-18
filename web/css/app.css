@@ -274,3 +274,31 @@ body[data-shared] .modes { display: none; }
 .share-btn { align-self: center; padding: .4rem .9rem; font-weight: 600; }
 .toast { position: fixed; top: 4.2rem; right: 1.5rem; max-width: 26rem; z-index: 20; padding: .7rem .9rem; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: .88rem; box-shadow: 0 6px 24px rgba(0, 0, 0, .18); cursor: pointer; }
 @media (max-width: 600px) { .toast { left: 1rem; right: 1rem; max-width: none; } }
+
+/* Anleitung */
+.help-btn { align-self: center; width: 2.2rem; padding: .35rem 0; font-weight: 700; }
+dialog.help { width: min(40rem, calc(100vw - 2rem)); max-height: calc(100vh - 3rem); padding: 1.1rem 1.3rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgba(0, 0, 0, .3); }
+dialog.help::backdrop { background: rgba(10, 20, 15, .55); }
+.help-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.help-head h2 { margin: 0; font: 700 1.5rem var(--display); }
+.help-close { background: none; border: 0; font-size: 1.1rem; cursor: pointer; color: var(--muted); }
+.help-tabs { margin: .7rem 0 .5rem; }
+.help-intro { color: var(--muted); margin: .4rem 0 .8rem; }
+.help-steps { margin: 0; padding-left: 1.4rem; display: grid; gap: .55rem; }
+.help-steps li { padding-left: .2rem; }
+.help-steps li::marker { font: 700 1rem var(--display); color: var(--pine); }
+.help-steps .step { display: grid; grid-template-columns: 1fr auto; gap: .2rem .8rem; align-items: start; }
+.help-steps p { margin: .1rem 0 0; font-size: .92rem; }
+.help h3 { font: 700 1.05rem var(--display); margin: 1rem 0 .3rem; }
+.help-tips { margin: 0; padding-left: 1.2rem; color: var(--muted); font-size: .88rem; display: grid; gap: .25rem; }
+.help-foot { display: flex; justify-content: flex-end; margin-top: 1rem; }
+@media (max-width: 520px) { .help-steps .step { grid-template-columns: 1fr; } }
+
+/* „Zeigen“: kurze Hervorhebung */
+.spotlight { outline: 3px solid var(--estimate); outline-offset: 4px; border-radius: 8px; animation: spotlight 2.4s ease-out; }
+@keyframes spotlight { 0%, 40% { outline-color: var(--estimate); } 100% { outline-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .spotlight { animation: none; } }
+
+/* Dreizeiler auf der Startseite */
+.loader .intro { margin: 1.2rem 0 0; padding-left: 1.3rem; display: grid; gap: .35rem; color: var(--muted); }
+.loader .intro strong { color: var(--ink); }
