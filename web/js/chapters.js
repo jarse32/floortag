@@ -3,10 +3,12 @@ import { state } from './state.js';
 import { fmt } from './format.js';
 import { events, periodList, periodTitle, pauseTitle, describe } from './game.js';
 import { timeOf } from './sync.js';
+import { goalSituations, situationLabels } from './stats.js';
 
 export function buildChapters() {
   const items = [];
   let missing = 0, notInVideo = 0;
+  const situations = goalSituations();
   const ps = periodList();
   ps.forEach((p, i) => {
     const st = state.periods[p] || {};
@@ -18,7 +20,9 @@ export function buildChapters() {
       if (state.missing[e.event_id]) { notInVideo++; continue; }
       const t = timeOf(e);
       if (t == null) { missing++; continue; }
-      items.push({ t: Math.max(0, t - state.leadIn), label: d.chapter });
+      // Spielsituation bei Toren, z. B. [Überzahl 5:4]; Penalty steht schon als Torart im Text
+      const sit = situationLabels(situations[e.event_id]).filter(l => l !== 'Penalty');
+      items.push({ t: Math.max(0, t - state.leadIn), label: sit.length ? `${d.chapter} [${sit.join(', ')}]` : d.chapter });
     }
     if (st.end != null) {
       const last = i === ps.length - 1;

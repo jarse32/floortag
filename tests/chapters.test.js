@@ -101,3 +101,19 @@ test('Besondere Torarten werden angehängt', () => {
   // Anpfiff 60 s + 5:00 Spielzeit − 8 s Vorlauf = 5:52
   assert.ok(lines(buildChapters()).includes('5:52 1:0 HEIM – #9 [Penalty]'));
 });
+
+test('Tor-Kapitel tragen die Spielsituation', () => {
+  fullySynced();
+  const line = lines(buildChapters()).find(l => l.includes('4:4 BAL'));
+  assert.match(line, / \[Unterzahl 4:5\]$/);
+  // Tore bei gleicher Stärke bleiben ohne Zusatz
+  assert.ok(!lines(buildChapters()).find(l => l.includes('1:0 BAL')).includes('['));
+});
+
+test('Penaltytore bekommen keinen doppelten Hinweis', () => {
+  const s = setup(miniGame([
+    { event_id: 1, event_type: 'goal', event_team: 'home', period: 1, time: '5:00', home_goals: 1, guest_goals: 0, number: 9, goal_type: 'penalty_shot', goal_type_string: 'Penalty' }
+  ]));
+  s.periods[1] = { start: 60 };
+  assert.ok(lines(buildChapters()).includes('5:52 1:0 HEIM – #9 [Penalty]'));
+});
