@@ -65,10 +65,16 @@
       <button class="btn" id="playBtn">Play / Pause</button>
       <button class="btn ghost" data-seek="1">+1 s</button>
       <button class="btn ghost" data-seek="5">+5 s</button>
+      <div class="rates" role="group" aria-label="Abspieltempo">
+        <button class="rate" data-rate="0.5" aria-pressed="false">0,5×</button>
+        <button class="rate" data-rate="1" aria-pressed="true">1×</button>
+        <button class="rate" data-rate="1.5" aria-pressed="false">1,5×</button>
+        <button class="rate" data-rate="2" aria-pressed="false">2×</button>
+      </div>
     </div>
     <div id="strip" class="strip" hidden aria-label="Zeitleiste des Videos"></div>
     <div id="periods" class="periods"></div>
-    <p class="keys">Tastatur: <kbd>K</kbd> oder <kbd>Leertaste</kbd> Play/Pause, <kbd>J</kbd>/<kbd>L</kbd> ±5 s, <kbd>,</kbd>/<kbd>.</kbd> ±1 s, <kbd>Enter</kbd> setzt das gewählte Ereignis auf die aktuelle Videozeit, <kbd>N</kbd> wählt das nächste Ereignis.</p>
+    <p class="keys">Tastatur: <kbd>K</kbd> oder <kbd>Leertaste</kbd> Play/Pause, <kbd>J</kbd>/<kbd>L</kbd> ±5 s, <kbd>,</kbd>/<kbd>.</kbd> ±1 s, <kbd>-</kbd>/<kbd>+</kbd> Tempo, <kbd>Enter</kbd> setzt das gewählte Ereignis auf die aktuelle Videozeit, <kbd>N</kbd> wählt das nächste Ereignis.</p>
   </section>
 
   <aside class="side">

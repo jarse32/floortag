@@ -23,5 +23,6 @@ export const state = {
 // Zustand der Oberfläche, wird nicht gespeichert
 export const ui = {
   selectedId: null,
+  rate: 1,             // Abspieltempo, bleibt beim Videowechsel, wird nicht gespeichert
   anchorForm: null     // { p, v } offenes Formular „Freien Anker setzen“
 };

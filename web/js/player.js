@@ -46,6 +46,7 @@ function createPlayer(id) {
     events: {
       onReady: () => { playerReady = true; handlers.onReady(); },
       onStateChange: () => handlers.onStateChange(),
+      onPlaybackRateChange: () => handlers.onRateChange && handlers.onRateChange(),
       onError: ev => handlers.onError(ERRORS[ev.data] || `YouTube meldet Fehler ${ev.data}.`)
     }
   });
@@ -57,4 +58,8 @@ export function duration() { return playerReady ? player.getDuration() : 0; }
 export function seek(t) { if (playerReady) player.seekTo(Math.max(0, t), true); }
 export function play() { if (playerReady) player.playVideo(); }
 export function pause() { if (playerReady) player.pauseVideo(); }
+// Abspieltempo; YouTube bietet je nach Video nicht jedes Tempo an
+export function setRate(r) { if (playerReady) player.setPlaybackRate(r); }
+export function getRate() { return playerReady ? player.getPlaybackRate() : 1; }
+export function availableRates() { return playerReady ? player.getAvailablePlaybackRates() : []; }
 export function togglePlay() { if (!playerReady) return; player.getPlayerState() === 1 ? player.pauseVideo() : player.playVideo(); }

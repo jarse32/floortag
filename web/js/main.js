@@ -14,7 +14,8 @@ function commit() { save(); renderAll(); }
 
 yt.initPlayer('player', {
   onLoad: () => { $('#playerEmpty').hidden = true; $('#consent').hidden = true; },
-  onReady: renderAll,
+  onReady: () => { yt.setRate(ui.rate); renderAll(); renderRates(); },
+  onRateChange: () => { ui.rate = yt.getRate(); renderRates(); },
   onStateChange: renderStrip,
   onError: showPlayerMessage
 });
@@ -119,6 +120,26 @@ $('#videoBtn').addEventListener('click', () => {
 });
 document.querySelectorAll('[data-seek]').forEach(b => b.addEventListener('click', () => yt.seek(yt.now() + Number(b.dataset.seek))));
 $('#playBtn').addEventListener('click', yt.togglePlay);
+
+// ===== Abspieltempo =====
+const RATES = [0.5, 1, 1.5, 2];
+function setRate(r) { ui.rate = r; yt.setRate(r); renderRates(); }
+function stepRate(dir) {
+  const i = RATES.indexOf(ui.rate), next = RATES[Math.min(RATES.length - 1, Math.max(0, (i < 0 ? 1 : i) + dir))];
+  if (next !== ui.rate && isRateAvailable(next)) setRate(next);
+}
+function isRateAvailable(r) {
+  const avail = yt.availableRates();
+  return !avail.length || avail.includes(r);
+}
+function renderRates() {
+  document.querySelectorAll('[data-rate]').forEach(b => {
+    const r = Number(b.dataset.rate);
+    b.setAttribute('aria-pressed', String(r === ui.rate));
+    b.disabled = !isRateAvailable(r);
+  });
+}
+document.querySelectorAll('[data-rate]').forEach(b => b.addEventListener('click', () => setRate(Number(b.dataset.rate))));
 
 // ===== Drittelgrenzen =====
 $('#periods').addEventListener('click', e => {
@@ -265,6 +286,8 @@ document.addEventListener('keydown', e => {
   else if (k === 'l') yt.seek(yt.now() + 5);
   else if (k === ',') yt.seek(yt.now() - 1);
   else if (k === '.') yt.seek(yt.now() + 1);
+  else if (k === '-') stepRate(-1);
+  else if (k === '+') stepRate(1);
   else if (k === 'enter' && ui.selectedId != null) { e.preventDefault(); const ev = findEvent(ui.selectedId); if (ev) { place(ev, yt.now()); commit(); } }
   else if (k === 'n') {
     const evs = events(), i = evs.findIndex(x => x.event_id === ui.selectedId);

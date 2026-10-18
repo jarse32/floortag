@@ -156,3 +156,12 @@ main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr
 .pp-band { position: absolute; height: 4px; pointer-events: none; z-index: 1; opacity: .85; }
 .pp-band.home { top: 0; background: var(--pine); }
 .pp-band.guest { bottom: 0; background: var(--guest); }
+
+/* Abspieltempo */
+.rates { display: inline-flex; margin-left: auto; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.rate { background: transparent; border: 0; border-left: 1px solid var(--line); padding: .4rem .6rem; cursor: pointer; font-variant-numeric: tabular-nums; }
+.rate:first-child { border-left: 0; }
+.rate:hover { background: var(--pine-soft); }
+.rate[aria-pressed="true"] { background: var(--pine); color: #fff; }
+.rate:disabled { color: var(--muted); opacity: .5; cursor: default; background: transparent; }
+@media (max-width: 600px) { .rates { margin-left: 0; } }
