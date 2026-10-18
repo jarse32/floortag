@@ -16,7 +16,7 @@ export const GUIDES = {
     tips: [
       'Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, Komma/Punkt ±1 s, − / + Tempo, Enter setzt das gewählte Ereignis.',
       'Streamlücke? Setz in der Drittelkarte je einen „freien Anker“ vor und nach der Lücke. Ereignisse in der Lücke markierst du als „Nicht im Video“.',
-      'Dein Stand wird automatisch im Browser gespeichert. „Sync speichern“ legt zusätzlich eine Datei an.'
+      'Dein Stand wird automatisch in diesem Browser gespeichert, nicht auf anderen Geräten. Fürs Handy oder für andere schickst du einen Link über „Link teilen“. „Sync speichern“ legt zusätzlich eine Datei an.'
     ]
   },
   analysis: {
@@ -46,7 +46,7 @@ export const GUIDES = {
       { title: 'Tags und Statistik', text: 'In den Reitern „Tags“ und „Statistik“ findest du die zusätzlichen Szenen und Auswertungen, sofern sie getaggt wurden.', target: '.tabs' },
       { title: 'Tempo', text: 'Mit 0,5× bis 2× siehst du Szenen langsamer oder schneller.', target: '.rates' }
     ],
-    tips: ['Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, − / + Tempo, N nächstes Ereignis.']
+    tips: ['Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, − / + Tempo, N nächstes Ereignis.', 'Szenen und Tags sind nur dort zu sehen, wo sie gesetzt wurden, oder über einen geteilten Link. Fehlt beides, bekommst du einen Hinweis in der Ereignisliste.']
   }
 };
 

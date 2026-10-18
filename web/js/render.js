@@ -97,7 +97,12 @@ function renderEvents() {
   const placedCount = evs.filter(e => state.placed[e.event_id] != null).length;
   const missingCount = evs.filter(e => state.missing[e.event_id]).length;
   $('#progress').textContent = `${placedCount} von ${evs.length} gesetzt` + (missingCount ? `, ${missingCount} nicht im Video` : '');
-  $('#events').innerHTML = evs.map(e => {
+  // Ohne jeden Sync haben Ereignisse keine Zeit: oben erklären, was zu tun ist
+  const synced = Object.values(state.periods).some(p => p && p.start != null) || Object.keys(state.placed).length > 0 || Object.keys(state.anchors).length > 0;
+  const notice = synced ? '' : `<li class="events-notice">${ui.mode === 'view'
+    ? 'Auf diesem Gerät gibt es noch keinen Sync für dieses Video. Sync und Tags liegen nur im Browser, in dem sie gesetzt wurden. Öffne dort „Link teilen“ und schick dir den Link, dann sind Szenen und Tags hier verfügbar.'
+    : 'Noch kein Sync für dieses Video. Spul zum Anpfiff des 1. Drittels und klick in der Drittelkarte bei „Anpfiff“ auf „Jetzt“. Danach springt ein Klick auf ein Ereignis zur geschätzten Szene.'}</li>`;
+  $('#events').innerHTML = notice + evs.map(e => {
     const d = describe(e), t = timeOf(e), isPlaced = state.placed[e.event_id] != null, isMissing = !!state.missing[e.event_id];
     const status = isMissing ? ['nicht im Video', 'st-missing'] : isPlaced ? ['gesetzt', 'st-placed'] : t != null ? ['geschätzt', 'st-est'] : ['offen', 'st-open'];
     const sel = e.event_id === ui.selectedId;

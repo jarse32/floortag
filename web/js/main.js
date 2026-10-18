@@ -51,6 +51,13 @@ renderAll();
 // die vorherige Stelle merken, damit man das Ereignis dort setzen kann („Dort setzen“).
 function selectEvent(ev, toggleOff) {
   const t = timeOf(ev);
+  // Ohne Zeit gibt es kein Sprungziel: erklären statt stumm nichts zu tun
+  if (t == null && !toggleOff) {
+    showToast(state.missing[ev.event_id] ? 'Dieses Ereignis ist als „nicht im Video“ markiert.'
+      : hasSync() ? 'Für dieses Ereignis gibt es noch keine Zeit. Setz den Anpfiff dieses Abschnitts.'
+      : ui.mode === 'view' ? 'Auf diesem Gerät gibt es noch keinen Sync für dieses Video. Sync und Tags liegen im Browser, in dem sie gesetzt wurden. Schick dir von dort einen Link über „Link teilen“.'
+      : 'Setz zuerst die Drittelgrenzen (Anpfiff in der Drittelkarte), dann springt ein Klick zur Szene.');
+  }
   if (ui.mode === 'view') {
     ui.selectedId = ev.event_id;
     if (t != null) { yt.seek(t - state.leadIn); yt.play(); }
@@ -106,6 +113,11 @@ $('#helpDialog').addEventListener('click', e => {
     setTimeout(() => el.classList.remove('spotlight'), 2600);
   }
 });
+
+// Gibt es überhaupt einen Sync (mindestens einen Anpfiff oder ein gesetztes Ereignis)?
+function hasSync() {
+  return Object.values(state.periods).some(p => p && p.start != null) || Object.keys(state.placed).length > 0 || Object.keys(state.anchors).length > 0;
+}
 
 // ===== Zwei-Klick-Lösung =====
 let consentVideo = null;
