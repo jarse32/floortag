@@ -104,6 +104,7 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 
 - IFrame Player API, Einbindung über `youtube-nocookie.com`, mit Zwei-Klick-Lösung (`web/js/consent.js`): Vor der Zustimmung wird nichts von YouTube geladen, auch kein Vorschaubild. Alle Wege zum Player laufen über `showVideo()` in `main.js`. Die Zustimmung wird nur auf Wunsch gemerkt (`localStorage`, Schlüssel `floortag:youtube-consent`) und lässt sich in der Fußzeile widerrufen.
 - `getCurrentTime()`/`seekTo()` sind nicht framegenau; für Szenen reicht das.
+- iOS ignoriert `seekTo()`, solange das Video noch nie lief. `player.js` setzt dann stattdessen die Startzeit (`cueVideoById` mit `startSeconds`); Play beginnt an der Szene. Auf echtem iPhone zu prüfen, im eingebauten Browser nicht nachstellbar.
 - Kapitelmarken-Regeln: erstes Kapitel bei `0:00`, mindestens drei Kapitel, mindestens 10 Sekunden pro Kapitel. Kapitel zu Ereignissen beginnen mit einem einstellbaren Vorlauf (Standard 8 Sekunden) vor dem Ereignis.
 
 ## Export für Videoanalyse und Schnitt
