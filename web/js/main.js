@@ -178,14 +178,16 @@ function focusAnchorInput() {
 }
 
 // ===== Ereignisse =====
-function handleEventAction(e) {
+function handleEventAction(e, fromStrip = false) {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const ev = findEvent(b.dataset.id); if (!ev) return;
   const t = timeOf(ev);
   switch (b.dataset.act) {
     case 'select':
+      // Kein Sprung beim Auswählen in der Liste: Man steht oft schon an der richtigen Stelle,
+      // um das Ereignis zu setzen. Nur ein Klick auf den Punkt in der Zeitleiste springt.
       ui.selectedId = ui.selectedId === ev.event_id ? null : ev.event_id;
-      if (ui.selectedId && t != null) yt.seek(t - 3);
+      if (ui.selectedId && t != null && fromStrip) yt.seek(t - 3);
       renderAll();
       break;
     case 'setnow': place(ev, yt.now()); commit(); break;
@@ -208,7 +210,7 @@ $('#events').addEventListener('click', e => {
   handleEventAction(e);
 });
 $('#strip').addEventListener('click', e => {
-  if (e.target.closest('[data-act]')) { handleEventAction(e); return; }
+  if (e.target.closest('[data-act]')) { handleEventAction(e, true); return; }
   // Klick auf freie Fläche springt an diese Stelle im Video
   const r = $('#strip').getBoundingClientRect();
   if (yt.isReady()) yt.seek((e.clientX - r.left) / r.width * yt.duration());
@@ -267,7 +269,7 @@ document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click',
 $('#tagList').addEventListener('click', e => {
   const b = e.target.closest('[data-act="selecttag"]'); if (!b) return;
   const tag = findTag(b.dataset.id); if (!tag) return;
-  ui.tagId = tag.id; yt.seek(tag.v - 3); renderAll();
+  ui.tagId = tag.id; renderAll(); // kein Sprung, „Ansehen“ in der Nachtragsleiste springt
 });
 // Statistik: Abschnitt wählen, Vollständigkeit abhaken, kopieren
 $('#statsPanel').addEventListener('click', async e => {
@@ -299,10 +301,18 @@ $('#tagsInput').addEventListener('change', async e => {
 });
 
 // ===== Einstellungen =====
-$('#periodLenInput').addEventListener('change', e => { state.periodLen = Math.max(60, Number(e.target.value) * 60); commit(); });
-$('#otLenInput').addEventListener('change', e => { state.otLen = Math.max(60, Number(e.target.value) * 60); commit(); });
-$('#pauseLenInput').addEventListener('change', e => { state.pauseLen = Math.max(60, Number(e.target.value) * 60); commit(); });
-$('#leadInput').addEventListener('change', e => { state.leadIn = Math.max(0, Number(e.target.value)); commit(); });
+// Zahl aus einem Eingabefeld übernehmen; leere oder ungültige Eingaben stellen den alten Wert wieder her
+function numberSetting(sel, key, factor = 1) {
+  $(sel).addEventListener('change', e => {
+    const v = e.target.value.trim().replace(',', '.'), n = Number(v);
+    const ok = v !== '' && isFinite(n) && n >= Number(e.target.min) && n <= Number(e.target.max);
+    if (ok) { state[key] = Math.round(n * factor); commit(); } else renderAll();
+  });
+}
+numberSetting('#periodLenInput', 'periodLen', 60);
+numberSetting('#otLenInput', 'otLen', 60);
+numberSetting('#pauseLenInput', 'pauseLen', 60);
+numberSetting('#leadInput', 'leadIn');
 $('#penaltyCheck').addEventListener('change', e => { state.includePenalties = e.target.checked; commit(); });
 $('#youthCheck').addEventListener('change', e => { state.hideYouth = e.target.checked; commit(); });
 $('#kleinfeldCheck').addEventListener('change', e => { state.kleinfeld = e.target.checked; commit(); });
@@ -337,8 +347,8 @@ $('#edlBtn').addEventListener('click', () => {
   if (!edl.count) { const n = $('#clipNote'); n.textContent = 'Für diese Auswahl gibt es noch keine Szenen mit Zeit.'; return; }
   download(`${exportBase()}-${state.edlScope}.edl`, edl.text, 'text/plain');
 });
-$('#leadOutInput').addEventListener('change', e => { state.leadOut = Math.max(0, Number(e.target.value)); commit(); });
-$('#counterLenInput').addEventListener('change', e => { state.counterLen = Math.max(2, Number(e.target.value)); commit(); });
+numberSetting('#leadOutInput', 'leadOut');
+numberSetting('#counterLenInput', 'counterLen');
 $('#fpsInput').addEventListener('change', e => { state.fps = Number(e.target.value); commit(); });
 $('#edlScopeInput').addEventListener('change', e => { state.edlScope = e.target.value; commit(); });
 $('#syncInput').addEventListener('change', async e => {
@@ -388,7 +398,6 @@ document.addEventListener('keydown', e => {
     const evs = events(), i = evs.findIndex(x => x.event_id === ui.selectedId);
     const next = evs[(i + 1) % evs.length];
     ui.selectedId = next.event_id;
-    const t = timeOf(next); if (t != null) yt.seek(t - 3);
     renderAll();
     const row = document.querySelector(`[data-row="${ui.selectedId}"]`); if (row) row.scrollIntoView({ block: 'nearest' });
   }

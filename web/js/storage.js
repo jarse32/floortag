@@ -22,7 +22,7 @@ export function restore() {
   state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.tags = []; state.complete = {}; state.lineups = {};
   try {
     const raw = localStorage.getItem(storageKey());
-    if (raw) { const { tags, ...rest } = JSON.parse(raw); Object.assign(state, rest); }
+    if (raw) { const { tags, ...rest } = JSON.parse(raw); Object.assign(state, rest); sanitizeSettings(); }
     const rawTags = localStorage.getItem(tagKey());
     if (rawTags) {
       const d = JSON.parse(rawTags);
@@ -32,6 +32,22 @@ export function restore() {
       state.lineups = Array.isArray(d) ? {} : d.lineups || {};
     }
   } catch (e) { /* ignorieren */ }
+}
+
+// Einstellungen auf gültige Werte bringen (z. B. nach einem leeren Eingabefeld in einer älteren Version).
+// Ohne gültige Drittellänge fehlt das Drittelende als Anker und alle Schätzungen verrutschen.
+const SETTING_RULES = {
+  periodLen: [300, 1800, 1200], otLen: [60, 1200, 600], pauseLen: [60, 1800, 600],
+  leadIn: [0, 30, 8], leadOut: [0, 60, 5], counterLen: [2, 60, 10]
+};
+export function sanitizeSettings() {
+  const fixed = [];
+  for (const [key, [min, max, def]] of Object.entries(SETTING_RULES)) {
+    const v = state[key];
+    if (typeof v !== 'number' || !isFinite(v) || v < min || v > max) { state[key] = def; fixed.push(key); }
+  }
+  if (![24, 25, 30, 50, 60].includes(state.fps)) { state.fps = 25; fixed.push('fps'); }
+  return fixed;
 }
 
 // ===== Eigene Tags: eigene Ebene, eigener Speicherplatz und eigene Datei =====
@@ -103,4 +119,5 @@ export function applySyncFile(d) {
   if (d.period_length_sec) state.periodLen = d.period_length_sec;
   if (d.overtime_length_sec) state.otLen = d.overtime_length_sec;
   if (d.pause_length_sec) state.pauseLen = d.pause_length_sec;
+  sanitizeSettings();
 }
