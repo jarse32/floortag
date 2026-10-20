@@ -17,7 +17,7 @@ export function save() {
       periodLen: state.periodLen, otLen: state.otLen, pauseLen: state.pauseLen,
       leadIn: state.leadIn, leadOut: state.leadOut, fps: state.fps, edlScope: state.edlScope, counterLen: state.counterLen,
       kleinfeld: state.kleinfeld, includePenalties: state.includePenalties, hideYouth: state.hideYouth,
-      syncSource: state.syncSource
+      syncSource: state.syncSource, lengthSource: state.lengthSource
     }));
   } catch (e) { /* Speicher nicht verfügbar */ }
   saveMeta();
@@ -37,7 +37,7 @@ export function saveMeta() {
 // Liefert true, wenn es für dieses Spiel und Video einen eigenen Sync-Stand gab
 export function restore() {
   state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.tags = []; state.complete = {}; state.lineups = {};
-  state.syncSource = null;
+  state.syncSource = null; state.lengthSource = null;
   let hadLocal = false;
   try {
     const raw = localStorage.getItem(storageKey());

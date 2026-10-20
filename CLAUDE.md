@@ -59,7 +59,7 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 - `players.home[]`/`players.guest[]`: Zuordnung über `trikot_number`; Felder `player_name`, `player_firstname`, `youth`, `goalkeeper`, `captain`.
 - `period_titles[]`: Titel der Abschnitte und Pausen (`period` 1, 1.5, 2, …), `optional` für Verlängerung und Penaltyschießen.
 - `result.overtime`: ob es eine Verlängerung gab.
-- **Nicht enthalten:** die Drittellänge. Sie ist eine Einstellung (Standard 20 Minuten) und soll später pro Liga hinterlegbar sein.
+- **Nicht enthalten:** die Drittellänge. Sie steht in den Ligadaten (`league_id` → `leagues/{id}.json`: `periods`, `period_length`, `overtime_length` in Minuten) und wird beim Laden automatisch übernommen (`web/js/leagueinfo.js`, im Browser einen Tag zwischengespeichert unter `floortag-league:<Liga>`). `state.lengthSource` merkt sich die Herkunft: `league` oder `manual`; von Hand eingestellte Längen werden nie überschrieben, im geteilten Link wird nichts übernommen. Ein Hinweis unter den Einstellungen nennt die Herkunft. Ligen mit zwei Halbzeiten bekommen die Länge, FloorTag rechnet aber weiter mit drei Dritteln (Hinweis).
 
 ## Modi der Oberfläche
 
@@ -187,6 +187,6 @@ floortag/
 
 ## Offene Fragen
 
-- Drittellänge pro Liga: Die Ligadaten des Saisonmanagers enthalten `periods`, `period_length` und `overtime_length` (Minuten), `league.php` liefert sie bereits mit. Noch offen: beim Laden eines Spiels automatisch übernehmen. Die Pausenlänge liefert der Saisonmanager nicht.
+- Pausenlänge pro Liga: liefert der Saisonmanager nicht (Drittellänge kommt inzwischen aus den Ligadaten). Spiele mit zwei Halbzeiten (`periods: 2`) sind noch nicht abgebildet.
 - Server für Etappe 4: PocketBase läuft nicht auf All-Inkl. Optionen: kleiner VPS in der EU (z. B. Hetzner), gehostetes PocketBase oder ein PHP- und MySQL-Backend auf All-Inkl.
 - Öffentliches Repo ja oder nein; bei ja Fixtures anonymisieren.

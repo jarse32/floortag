@@ -12,6 +12,7 @@ import { $, renderAll, renderMatchline, renderStrip, updateClock, showPlayerMess
 import { statsAsTsv } from './stats.js';
 import { SHARE_PREFIX, decodeShare, applySharePayload, shareUrl } from './share.js';
 import { GUIDES, introSeen, markIntroSeen } from './help.js';
+import { leagueLengths, shouldApplyLeague, applyLeagueLengths, fetchLeagueInfo } from './leagueinfo.js';
 import { decideOnLoad, adoptPublished, publishSync, fetchPublished, fetchVersions, setToken, getToken, tokenValid } from './publish.js';
 import { toggleLineupPlayer } from './lineups.js';
 
@@ -158,7 +159,20 @@ function setVideo(id) {
   ui.published = null; ui.publishOffer = false; ui.pubVersions = null;
   renderAll();
   showVideo(id);
+  checkLeague(hadLocal);
   checkPublished(id, hadLocal);
+}
+
+// Drittellänge und Verlängerung aus den Ligadaten übernehmen, sofern nicht von Hand eingestellt
+async function checkLeague(hadLocal) {
+  const game = state.game;
+  if (!game || !game.league_id) return;
+  let info = null;
+  try { info = await fetchLeagueInfo(game.league_id); } catch (e) { return; }
+  if (state.game !== game) return;
+  ui.leagueInfo = info;
+  if (shouldApplyLeague({ hadLocal, lengthSource: state.lengthSource, shared: !!ui.shared }) && applyLeagueLengths(leagueLengths(info))) save();
+  renderAll();
 }
 
 // ===== Veröffentlichter Sync =====
@@ -228,7 +242,8 @@ function loadGame(data) {
   const link = ui.shared && ui.shared.vid ? `https://www.youtube.com/watch?v=${ui.shared.vid}` : data.vod_link || data.live_stream_link || '';
   $('#videoInput').value = link;
   const id = extractVideoId(link);
-  if (id) setVideo(id); else { state.videoId = null; restoreState(); renderAll(); }
+  ui.leagueInfo = null;
+  if (id) setVideo(id); else { state.videoId = null; const had = restoreState(); renderAll(); checkLeague(had); }
   // Beim ersten Spiel in diesem Modus die Anleitung zeigen
   if (!introSeen(ui.mode)) openHelp(ui.mode);
 }
@@ -480,7 +495,11 @@ function numberSetting(sel, key, factor = 1) {
   $(sel).addEventListener('change', e => {
     const v = e.target.value.trim().replace(',', '.'), n = Number(v);
     const ok = v !== '' && isFinite(n) && n >= Number(e.target.min) && n <= Number(e.target.max);
-    if (ok) { state[key] = Math.round(n * factor); commit(); } else renderAll();
+    if (ok) {
+      state[key] = Math.round(n * factor);
+      if (key === 'periodLen' || key === 'otLen') state.lengthSource = 'manual'; // Ligadaten nicht mehr übernehmen
+      commit();
+    } else renderAll();
   });
 }
 numberSetting('#periodLenInput', 'periodLen', 60);

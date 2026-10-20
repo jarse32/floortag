@@ -46,6 +46,14 @@ function renderSettings() {
   $('#youthCheck').checked = state.hideYouth;
   $('#kleinfeldCheck').checked = state.kleinfeld;
   $('#leadOutInput').value = state.leadOut;
+  // Herkunft der Drittellänge
+  const li = ui.leagueInfo, n = $('#lengthNote');
+  if (n) {
+    const ligaText = li && li.period_length ? `${esc(li.name || 'Liga')}: ${li.periods || 3} × ${li.period_length} Min.${li.overtime_length ? `, Verlängerung ${li.overtime_length} Min.` : ''}` : '';
+    n.innerHTML = state.lengthSource === 'league' && ligaText ? `Drittellänge und Verlängerung aus den Ligadaten (${ligaText}).`
+      : state.lengthSource === 'manual' ? `Drittellänge von Hand eingestellt${ligaText ? ` (laut Ligadaten ${ligaText})` : ''}.` : '';
+    if (li && li.periods && li.periods !== 3) n.innerHTML += ` Diese Liga spielt ${li.periods} Abschnitte; FloorTag rechnet bisher mit drei Dritteln.`;
+  }
   $('#counterLenInput').value = state.counterLen;
   $('#fpsInput').value = state.fps;
   const scope = $('#edlScopeInput');

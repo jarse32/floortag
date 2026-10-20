@@ -23,7 +23,8 @@ export const state = {
   complete: {},        // { 1: { home: true, guest: false } } Schüsse vollständig erfasst, gehört zur Tag-Ebene
   lineups: {},         // { event_id: { home: [nr], guest: [nr] } } auf dem Feld bei Toren, gehört zur Tag-Ebene
   sharedView: false,   // geteilte Ansicht aus einem Link: nur ansehen, nichts im Browser speichern
-  syncSource: null     // { version, edited } Bezug zur veröffentlichten Version, siehe publish.js
+  syncSource: null,    // { version, edited } Bezug zur veröffentlichten Version, siehe publish.js
+  lengthSource: null   // Herkunft von Drittellänge/Verlängerung: 'league' | 'manual' | null, siehe leagueinfo.js
 };
 
 // Zustand der Oberfläche, wird nicht gespeichert
@@ -33,6 +34,7 @@ export const ui = {
   mode: 'sync',        // Modus: view (Ansehen) | sync | analysis
   jumpFrom: null,      // Videozeit vor dem Sprung zu einem Ereignis (für „Dort setzen“)
   published: null,     // veröffentlichter Sync dieses Videos (neueste Version) oder null
+  leagueInfo: null,    // Ligadaten des geladenen Spiels (Name, Drittellänge …)
   publishOffer: false, // neuere veröffentlichte Version anbieten
   pubVersions: null,   // Liste der veröffentlichten Versionen, wenn aufgeklappt
   tagTeam: 'home',     // Team für neue Tags
