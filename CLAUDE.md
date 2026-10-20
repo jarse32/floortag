@@ -75,7 +75,7 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 
 - Eigene Seite `web/uebersicht.html` (`js/overview.js`), erreichbar über „Übersicht“ in der Kopfzeile.
 - **Deine Spiele:** alle Spiele mit Stand in diesem Browser, nach Stufen filterbar: 0 · Video, 1 · Sync (Fortschritt Ereignisse und Abschnitte), 2 · Tags, 3 · Vollständig analysiert (Schüsse aller Drittel vollständig und Aufstellung bei allen zählenden Toren). Berechnung in `js/progress.js`, beim Speichern als `floortag-meta:<Spiel>:<Video>` abgelegt; ältere Stände werden beim Öffnen der Übersicht einmal über den Proxy nachberechnet.
-- **Liga-Spielplan:** über `api/league.php?id=…` (kompakter Spielplan plus Liganame, Cache 1 Stunde, gemeinsames Abrufbudget mit `game.php`). Der Spielplan des Saisonmanagers enthält **keine Video-Links**; die Spalte „Video“ erscheint deshalb nur, wenn sie geliefert würden. Standardmäßig nur gespielte Spiele, kommende auf Wunsch. `?liga=2449` öffnet direkt den Spielplan.
+- **Liga-Spielplan:** Buttons für alle Ligen von Floorball Deutschland der aktuellen Saison (Bundesligen, Pokal; `api/league.php?list=1` über `game_operations/1/leagues`, Cache 1 Tag), weitere Ligen per ID. Spielplan über `api/league.php?id=…` (kompakt mit Spieltag und Ligadaten, Cache 1 Stunde, gemeinsames Abrufbudget mit `game.php`), angezeigt **pro Spieltag** mit ‹ › bzw. Pfeiltasten und Auswahlliste; zuerst der letzte Spieltag mit Ergebnissen (`js/schedule.js`). `?liga=2449&spieltag=5` öffnet direkt. Ohne eigene Spiele öffnet die Übersicht gleich den Liga-Spielplan. Der Spielplan des Saisonmanagers enthält **keine Video-Links**.
 - Mit dem Backend (Etappe 4) kommen veröffentlichte Syncs anderer dazu; die Stufen-Logik bleibt.
 
 ## Veröffentlichte Syncs (gemeinsamer Sync pro Video, Zwischenlösung bis Etappe 4)
@@ -187,6 +187,6 @@ floortag/
 
 ## Offene Fragen
 
-- Drittellänge und Pausenlänge pro Liga: Woher kommen die Werte (Tabelle im Projekt, Einstellung pro Liga, Ableitung aus Altersklasse)?
+- Drittellänge pro Liga: Die Ligadaten des Saisonmanagers enthalten `periods`, `period_length` und `overtime_length` (Minuten), `league.php` liefert sie bereits mit. Noch offen: beim Laden eines Spiels automatisch übernehmen. Die Pausenlänge liefert der Saisonmanager nicht.
 - Server für Etappe 4: PocketBase läuft nicht auf All-Inkl. Optionen: kleiner VPS in der EU (z. B. Hetzner), gehostetes PocketBase oder ein PHP- und MySQL-Backend auf All-Inkl.
 - Öffentliches Repo ja oder nein; bei ja Fixtures anonymisieren.

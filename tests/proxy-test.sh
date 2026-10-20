@@ -61,12 +61,20 @@ check "Spielplan: erster Abruf"    200 MISS "/api/league.php?id=2449"
 python3 -I - "$TMP/body" <<'PY' && echo "ok    Spielplan kompakt mit Liganame" || { echo "FEHLER Spielplan-Inhalt"; FAILS=$((FAILS+1)); }
 import json, sys
 d = json.load(open(sys.argv[1]))
-assert d['league'] == {'id': 2449, 'name': '2. FBL Herren Nord/West'}, d['league']
+assert d['league']['name'] == '2. FBL Herren Nord/West' and d['league']['period_length'] == 20, d['league']
+assert d['league']['day_titles'] == {'3': '3. Spieltag', '9': '9. Spieltag'}
 assert [g['id'] for g in d['games']] == [58668, 58700]
-assert d['games'][0] == {'id': 58668, 'date': '2026-10-10', 'time': '18:00', 'home': 'Baltic Storms', 'guest': 'TV Eiche Horn Bremen', 'result': '5:4', 'video': None}, d['games'][0]
+assert d['games'][0] == {'id': 58668, 'date': '2026-10-10', 'time': '18:00', 'home': 'Baltic Storms', 'guest': 'TV Eiche Horn Bremen', 'result': '5:4', 'video': None, 'day': 3}, d['games'][0]
 assert d['games'][1]['result'] is None
-assert 'referees' not in json.dumps(d) and 'logo' not in json.dumps(d)
+assert 'referees' not in json.dumps(d) and 'logo' not in json.dumps(d) and 'banner' not in json.dumps(d)
 PY
+check "Ligenliste"                  200 MISS "/api/league.php?list=1"
+python3 -I - "$TMP/body" <<'PY' && echo "ok    Ligenliste: aktuelle Saison, sortiert" || { echo "FEHLER Ligenliste $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+import json, sys
+d = json.load(open(sys.argv[1]))
+assert [l['id'] for l in d['leagues']] == [2447, 2449], d
+PY
+check "Ligenliste aus dem Cache"    200 HIT  "/api/league.php?list=1"
 check "Spielplan aus dem Cache"     200 HIT  "/api/league.php?id=2449"
 check "Spielplan: ungültige ID"     400 -    "/api/league.php?id=abc"
 check "Spielplan: unbekannte Liga"  404 -    "/api/league.php?id=1"

@@ -35,11 +35,14 @@
   </section>
 
   <section id="leaguePanel" class="ov-panel" hidden>
-    <form id="leagueForm" class="idform">
-      <input id="leagueInput" type="text" inputmode="numeric" placeholder="Liga-ID oder Link zur Liga im Saisonmanager" aria-label="Liga-ID oder Saisonmanager-Link" autocomplete="off">
-      <button class="btn" type="submit">Spielplan laden</button>
-    </form>
-    <div id="leagueQuick" class="ov-quick"></div>
+    <div id="leagueButtons" class="ov-leagues"></div>
+    <details class="ov-other">
+      <summary>Andere Liga per ID oder Link</summary>
+      <form id="leagueForm" class="idform">
+        <input id="leagueInput" type="text" inputmode="numeric" placeholder="Liga-ID oder Link zur Liga im Saisonmanager" aria-label="Liga-ID oder Saisonmanager-Link" autocomplete="off">
+        <button class="btn" type="submit">Spielplan laden</button>
+      </form>
+    </details>
     <p id="leagueError" class="error" hidden></p>
     <div id="leagueResult"></div>
   </section>

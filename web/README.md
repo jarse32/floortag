@@ -24,6 +24,7 @@ Start im Repo-Wurzelverzeichnis mit `php -S localhost:8000 -t web`, dann `http:/
 - `js/tags.js` – eigene Tags: Standard-Katalog, Bearbeiten, Penaltyschießen (siehe docs/tag-standard.md)
 - `js/help.js` – Anleitung je Modus (Texte, einmalig automatisch)
 - `js/overview.js` – Übersichtsseite
+- `js/schedule.js` – Spielplan nach Spieltagen (Gruppieren, Startspieltag)
 - `js/progress.js` – Fortschritt eines Spiels in Stufen (für die Übersicht)
 - `js/publish.js` – Sync veröffentlichen, beim Laden übernehmen oder anbieten
 - `js/share.js` – Teilen-Link für den Modus Ansehen (Stand komprimiert im #-Teil der Adresse)

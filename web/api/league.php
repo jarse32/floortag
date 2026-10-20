@@ -2,9 +2,9 @@
 /**
  * FloorTag – Saisonmanager-Proxy für den Spielplan einer Liga
  *
- * Aufruf: GET api/league.php?id=2449
- * Liefert eine kompakte Fassung von https://saisonmanager.de/api/v2/leagues/{id}/schedule.json
- * (nur die Felder, die die Übersicht braucht) und, soweit verfügbar, den Liganamen.
+ * Aufruf: GET api/league.php?id=2449   kompakter Spielplan (mit Spieltag) und Ligadaten
+ *        GET api/league.php?list=1     Ligen von Floorball Deutschland der aktuellen Saison (Cache 1 Tag)
+ * Quelle: https://saisonmanager.de/api/v2/leagues/{id}/schedule.json, leagues/{id}.json, game_operations/1/leagues
  *
  * Gleiche Regeln wie game.php: Key nur im Backend, Dateicache (1 Stunde, bei Ausfall alte Kopie),
  * gemeinsames Abrufbudget pro Minute (budget.json), kein CORS-Header.
@@ -14,6 +14,8 @@ if (is_file(__DIR__ . '/config.php')) require_once __DIR__ . '/config.php';
 
 const CACHE_DIR = __DIR__ . '/cache';
 const TTL_SCHEDULE = 3600;           // Spielplan ändert sich mit jedem gespielten Spiel
+const TTL_LIST = 24 * 3600;          // Ligenliste ändert sich nur zum Saisonwechsel
+const GAME_OPERATION = 1;            // Floorball Deutschland
 const UPSTREAM_TIMEOUT = 8;
 const UPSTREAM_BUDGET_PER_MIN = 30;  // gemeinsam mit game.php
 
@@ -77,46 +79,76 @@ function compact_game(array $g): array {
         'guest' => $g['guest_team_name'] ?? '',
         'result' => is_string($result) ? $result : null,
         'video' => $g['vod_link'] ?? ($g['live_stream_link'] ?? null),
+        'day' => is_int($g['game_day'] ?? null) ? $g['game_day'] : (is_array($g['game_day'] ?? null) ? ($g['game_day']['game_day_number'] ?? null) : null),
     ];
+}
+// Ligadaten, die die Übersicht braucht (auch Drittellänge für später)
+function compact_league(array $l): array {
+    $titles = [];
+    foreach ((array) ($l['game_day_titles'] ?? []) as $t) if (is_array($t) && isset($t['game_day_number'])) $titles[(string) $t['game_day_number']] = (string) ($t['title'] ?? '');
+    return [
+        'id' => $l['id'] ?? null, 'name' => $l['name'] ?? null, 'short' => $l['short_name'] ?? null,
+        'class' => $l['league_class_name'] ?? null, 'order' => $l['order_key'] ?? null, 'season' => $l['season_id'] ?? null,
+        'periods' => $l['periods'] ?? null, 'period_length' => $l['period_length'] ?? null, 'overtime_length' => $l['overtime_length'] ?? null,
+        'day_titles' => (object) $titles,
+    ];
+}
+function cached_or_fetch(string $cacheFile, int $ttl, callable $build): never {
+    $cached = is_file($cacheFile) ? file_get_contents($cacheFile) : false;
+    if ($cached !== false && time() - filemtime($cacheFile) < $ttl) send($cached, 'HIT');
+    $key = api_key();
+    if ($key === '') fail(500, 'Der Proxy ist nicht eingerichtet (API-Key fehlt).');
+    if (!take_budget()) {
+        if ($cached !== false) send($cached, 'STALE');
+        fail(429, 'Gerade kommen zu viele Anfragen an. Versuch es in einer Minute noch einmal.');
+    }
+    set_time_limit(2 * UPSTREAM_TIMEOUT + 5);
+    [$status, $body] = $build($key);
+    if ($body !== null) {
+        $tmp = $cacheFile . '.' . getmypid() . '.tmp';
+        if (@file_put_contents($tmp, $body) !== false) @rename($tmp, $cacheFile);
+        send($body, 'MISS');
+    }
+    if ($cached !== false) send($cached, 'STALE');
+    if ($status === 404) fail(404, 'Diese Liga gibt es im Saisonmanager nicht.');
+    if ($status === 401 || $status === 403) fail(502, 'Der Saisonmanager hat den API-Key abgelehnt.');
+    fail(502, 'Der Saisonmanager ist gerade nicht erreichbar.');
 }
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') fail(405, 'Nur GET-Anfragen sind erlaubt.');
+if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+$enc = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+
+// Ligen von Floorball Deutschland (aktuelle Saison)
+if (isset($_GET['list'])) {
+    cached_or_fetch(CACHE_DIR . '/leagues-fd.json', TTL_LIST, function (string $key) use ($enc) {
+        [$status, $list] = upstream('game_operations/' . GAME_OPERATION . '/leagues', $key);
+        if ($status !== 200 || !is_array($list)) return [$status, null];
+        $leagues = array_map('compact_league', array_values(array_filter($list, 'is_array')));
+        $season = max(array_map(fn($l) => (int) $l['season'], $leagues) ?: [0]);
+        $leagues = array_values(array_filter($leagues, fn($l) => (int) $l['season'] === $season));
+        usort($leagues, fn($a, $b) => ($a['order'] ?? 999) <=> ($b['order'] ?? 999));
+        return [200, json_encode(['leagues' => $leagues], $enc)];
+    });
+}
+
 $id = $_GET['id'] ?? '';
 if (!preg_match('/^\d{1,9}$/', $id)) fail(400, 'Die Liga-ID muss eine Zahl sein.');
 
-if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
-$cacheFile = CACHE_DIR . "/league-$id.json";
-$cached = is_file($cacheFile) ? file_get_contents($cacheFile) : false;
-if ($cached !== false && time() - filemtime($cacheFile) < TTL_SCHEDULE) send($cached, 'HIT');
-
-$key = api_key();
-if ($key === '') fail(500, 'Der Proxy ist nicht eingerichtet (API-Key fehlt).');
-if (!take_budget()) {
-    if ($cached !== false) send($cached, 'STALE');
-    fail(429, 'Gerade kommen zu viele Anfragen an. Versuch es in einer Minute noch einmal.');
-}
-
-set_time_limit(2 * UPSTREAM_TIMEOUT + 5);
-[$status, $schedule] = upstream("leagues/$id/schedule.json", $key);
-if ($status === 200 && is_array($schedule)) {
+// Spielplan einer Liga (Cache-Datei mit Formatversion, damit alte Fassungen ohne Spieltag nicht greifen)
+cached_or_fetch(CACHE_DIR . "/league2-$id.json", TTL_SCHEDULE, function (string $key) use ($id, $enc) {
+    [$status, $schedule] = upstream("leagues/$id/schedule.json", $key);
+    if ($status !== 200 || !is_array($schedule)) return [$status, null];
     $list = isset($schedule['games']) && is_array($schedule['games']) ? $schedule['games'] : $schedule;
     $games = array_values(array_filter(array_map('compact_game', array_filter($list, 'is_array')), fn($g) => $g['id'] !== null));
-    // Liganame: eigener kleiner Abruf, darf fehlen
-    $name = null;
+    // Ligadaten: eigener kleiner Abruf, darf fehlen
+    $league = ['id' => (int) $id, 'name' => null];
     if (take_budget()) {
-        [$ls, $league] = upstream("leagues/$id.json", $key);
-        if ($ls === 200 && is_array($league)) $name = $league['name'] ?? ($league['league_name'] ?? null);
+        [$ls, $l] = upstream("leagues/$id.json", $key);
+        if ($ls === 200 && is_array($l)) $league = ['id' => (int) $id] + array_diff_key(compact_league($l), ['id' => 1]);
     }
-    $body = json_encode(['league' => ['id' => (int) $id, 'name' => $name], 'games' => $games], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    $tmp = $cacheFile . '.' . getmypid() . '.tmp';
-    if (@file_put_contents($tmp, $body) !== false) @rename($tmp, $cacheFile);
-    send($body, 'MISS');
-}
-
-if ($cached !== false) send($cached, 'STALE');
-if ($status === 404) fail(404, "Liga $id gibt es im Saisonmanager nicht.");
-if ($status === 401 || $status === 403) fail(502, 'Der Saisonmanager hat den API-Key abgelehnt.');
-fail(502, 'Der Saisonmanager ist gerade nicht erreichbar.');
+    return [200, json_encode(['league' => $league, 'games' => $games], $enc)];
+});
