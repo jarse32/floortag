@@ -38,6 +38,8 @@ Im Export stehen „Vorteil“ und „Mit Vorteil gewonnen: ja/nein“, dazu die
 
 Ein Torhüter-Tag legt fest, wer ab dieser Szene im Tor steht, z. B. nach einem Wechsel. Ohne Tag gilt der einzige Torhüter laut Kader. Saves und gehaltene Penaltys tragen im Export das Label „Torhüter“. „Torhüter raus“ fließt in die Spielstärke ein: Ein Team ohne Torhüter hat einen Feldspieler mehr (6 gegen 5, mit Strafen auch 6 gegen 4). Nimmt ein Team in Unterzahl den Torhüter raus, ist die Stärke ausgeglichen.
 
+Tore werden dabei unterschieden: Trifft das Team **ohne** Torhüter (6. Feldspieler), trägt das Tor „6:5 ohne Torhüter“ und zählt in der Statistik unter „davon mit 6. Feldspieler“. Trifft der Gegner ins leere Tor, heißt es „leeres Tor“ und zählt nicht gegen den Torhüter. Getaggt wird in beiden Fällen dieselbe Phase „Torhüter raus“ beim Team, das den Torhüter herausnimmt.
+
 ### Penaltyschießen
 
 Im Modus Penaltyschießen wechselt das Team automatisch ab. Das Team des ersten Versuchs wählt man über „Neue Tags für“. Der Stand wird mitgezählt. Die Tags tragen das Label „Penaltyschießen: ja“. Der Saisonmanager liefert davon meist nur den entscheidenden Treffer.

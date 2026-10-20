@@ -34,7 +34,7 @@ export function isComplete(team, scope) {
 }
 
 const emptyTeam = () => ({
-  goals: 0, ppGoals: 0, shGoals: 0, enGoals: 0,
+  goals: 0, ppGoals: 0, shGoals: 0, enGoals: 0, eaGoals: 0,
   shotsOn: 0, shotsOff: 0, shotsBlocked: 0, shotGoals: 0,
   saves: 0, goalsAgainst: 0,
   faceoffs: 0, faceoffsWon: 0, faceoffsLost: 0, faceoffsDraw: 0, advAttempts: 0, advWon: 0, noAdvAttempts: 0, noAdvWon: 0,
@@ -52,7 +52,8 @@ function situationOf(e, pens, empty) {
   const en = side => empty[side].some(w => w.start <= t && w.end > t);
   const base = state.kleinfeld ? 3 : 5;
   return {
-    powerPlay: pt < po, shortHanded: pt > po, emptyNet: en(opp),
+    // emptyNet: Tor ins leere Tor des Gegners; extraAttacker: erzielendes Team ohne Torhüter (6. Feldspieler)
+    powerPlay: pt < po, shortHanded: pt > po, emptyNet: en(opp), extraAttacker: en(team),
     penaltyGoal: /penalty/i.test(e.goal_type || ''), ownGoal: /own|eigen/i.test(e.goal_type || ''),
     strength: [base - pt + (en(team) ? 1 : 0), base - po + (en(opp) ? 1 : 0)]
   };
@@ -71,6 +72,8 @@ export function situationLabels(sit) {
   const out = [];
   if (sit.powerPlay) out.push(`Überzahl ${sit.strength.join(':')}`);
   else if (sit.shortHanded) out.push(`Unterzahl ${sit.strength.join(':')}`);
+  // Mit 6. Feldspieler: die Stärke steht schon in Über-/Unterzahl, sonst hier (z. B. 6:5)
+  if (sit.extraAttacker) out.push(sit.powerPlay || sit.shortHanded ? 'ohne Torhüter' : `${sit.strength.join(':')} ohne Torhüter`);
   if (sit.emptyNet) out.push('leeres Tor');
   if (sit.penaltyGoal) out.push('Penalty');
   return out;
@@ -96,6 +99,7 @@ export function computeStats(scope = 'all') {
     if (sit.powerPlay) r.ppGoals++;
     else if (sit.shortHanded) r.shGoals++;
     if (enGoal) r.enGoals++;
+    if (sit.extraAttacker) r.eaGoals++;
     // Plus/Minus nach Eishockey-Regel: kein Überzahltor, kein Penaltytor; Unterzahl und leeres Tor zählen
     if (!penaltyGoal && !sit.powerPlay) {
       res.pmGoals++;
@@ -206,6 +210,7 @@ export function statRows(scope) {
     ['davon in Überzahl', ...both(r => r.ppGoals)],
     ['davon in Unterzahl', ...both(r => r.shGoals)],
     ['davon ins leere Tor', ...both(r => r.enGoals)],
+    ['davon mit 6. Feldspieler', ...both(r => r.eaGoals)],
     ['Torschüsse', ...both(r => r.shots)],
     ['aufs Tor (inkl. Tore)', ...both(r => r.shotsOnTarget)],
     ['daneben', ...both(r => r.shotsOff)],

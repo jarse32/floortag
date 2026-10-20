@@ -196,3 +196,25 @@ test('Export: Tor-Clips tragen die Spielsituation', () => {
   const clip = buildClips().find(c => c.code === 'Tor BAL' && Object.fromEntries(c.labels)['Spielstand'] === '4:4');
   assert.equal(Object.fromEntries(clip.labels)['Spielsituation'], 'Unterzahl 4:5');
 });
+
+// ===== Tor mit 6. Feldspieler (wie das 5:6 in Spiel 58667) =====
+test('Tor des Teams ohne Torhüter: „6:5 ohne Torhüter“, kein leeres Tor', () => {
+  // Strafe gegen Heim bei 12:06 im 3. Drittel (abgelaufen), Heim nimmt den Torhüter raus und trifft bei 16:54
+  linear([pen('home', 3, '12:06'), goal('home', 3, '16:54')]);
+  const t = addTag({ code: 'empty_net', v: 5000 + 990, team: 'home' }); updateTag(t.id, { end: 5000 + 1020 }); // 16:30–17:00
+  const sit = Object.values(goalSituations())[0];
+  assert.equal(sit.extraAttacker, true);
+  assert.equal(sit.emptyNet, false);
+  assert.deepEqual(situationLabels(sit), ['6:5 ohne Torhüter']);
+  const st = computeStats('all');
+  assert.equal(st.home.eaGoals, 1);
+  assert.equal(st.home.enGoals, 0);
+  assert.equal(st.home.ppGoals, 0);
+  assert.equal(row(statRows('all').rows, 'davon mit 6. Feldspieler')[1], 1);
+});
+
+test('Überzahl und ohne Torhüter: „Überzahl 6:4“ plus „ohne Torhüter“', () => {
+  linear([pen('guest', 3, '16:00'), goal('home', 3, '16:54')]);
+  const t = addTag({ code: 'empty_net', v: 5000 + 990, team: 'home' }); updateTag(t.id, { end: 5000 + 1020 });
+  assert.deepEqual(situationLabels(Object.values(goalSituations())[0]), ['Überzahl 6:4', 'ohne Torhüter']);
+});

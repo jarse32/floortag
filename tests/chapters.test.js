@@ -117,3 +117,11 @@ test('Penaltytore bekommen keinen doppelten Hinweis', () => {
   s.periods[1] = { start: 60 };
   assert.ok(lines(buildChapters()).includes('5:52 1:0 HEIM – #9 [Penalty]'));
 });
+
+test('Tor mit 6. Feldspieler im Kapitel', async () => {
+  const { addTag, updateTag } = await import('../web/js/tags.js');
+  const s = setup(miniGame([{ event_id: 1, event_type: 'goal', event_team: 'home', period: 3, time: '16:54', home_goals: 5, guest_goals: 6, number: 9 }]));
+  s.periods = { 3: { start: 5000, end: 6200 } };
+  const t = addTag({ code: 'empty_net', v: 5990, team: 'home' }); updateTag(t.id, { end: 6020 });
+  assert.ok(lines(buildChapters()).some(l => l.endsWith('[6:5 ohne Torhüter]')));
+});
