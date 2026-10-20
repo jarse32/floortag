@@ -49,7 +49,10 @@ function situationOf(e, pens, empty) {
   const team = e.event_team, opp = other(team), t = absTime(e);
   const active = list => list.filter(w => w.start <= t && w.end >= t).length;
   const pt = active(pens[team]), po = active(pens[opp]);
-  const en = side => empty[side].some(w => w.start <= t && w.end > t);
+  // Leeres Tor in Videozeit prüfen, wenn das Tor eine hat: Die Spielzeit steht nach dem Tor still,
+  // ein Phasenende kurz nach dem Tor fiele sonst auf dieselbe Sekunde. Ende genau beim Tor zählt mit.
+  const gv = timeOf(e);
+  const en = side => empty[side].some(w => gv != null ? w.v <= gv && w.vEnd >= gv : w.start <= t && w.end > t);
   const base = state.kleinfeld ? 3 : 5;
   return {
     // emptyNet: Tor ins leere Tor des Gegners; extraAttacker: erzielendes Team ohne Torhüter (6. Feldspieler)

@@ -67,14 +67,14 @@ test('Saves und gehaltene Penaltys tragen den Torhüter, der gerade im Tor stand
 test('Torhüter-raus-Phase wird in Spielzeit umgerechnet', () => {
   linear();
   emptyNet('guest', 2140, 2190); // 1. Drittel 19:00–19:50
-  assert.deepEqual(emptyNetWindows(), { home: [], guest: [{ start: 1140, end: 1190 }] });
+  assert.deepEqual(emptyNetWindows(), { home: [], guest: [{ start: 1140, end: 1190, v: 2140, vEnd: 2190 }] });
 });
 
-test('Offene oder nicht zuordenbare Phasen zählen nicht', () => {
+test('Nicht zuordenbare Phasen zählen nicht, laufende bis Spielende', () => {
   linear();
-  addTag({ code: 'empty_net', v: 2100, team: 'guest' });      // ohne Ende
+  addTag({ code: 'empty_net', v: 2100, team: 'guest' });      // ohne Ende: läuft bis Spielende (3 × 20 Min.)
   emptyNet('home', 2500, 2600);                                 // in der Drittelpause
-  assert.deepEqual(emptyNetWindows(), { home: [], guest: [] });
+  assert.deepEqual(emptyNetWindows(), { home: [], guest: [{ start: 1100, end: 3600, v: 2100, vEnd: Infinity }] });
 });
 
 test('6 gegen 5 ohne Strafen', () => {

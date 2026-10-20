@@ -218,3 +218,38 @@ test('Überzahl und ohne Torhüter: „Überzahl 6:4“ plus „ohne Torhüter�
   const t = addTag({ code: 'empty_net', v: 5000 + 990, team: 'home' }); updateTag(t.id, { end: 5000 + 1020 });
   assert.deepEqual(situationLabels(Object.values(goalSituations())[0]), ['Überzahl 6:4', 'ohne Torhüter']);
 });
+
+// Fall aus Spiel 58957: Auszeit Heim 18:33, Heim nimmt den Torhüter raus, Gast trifft 18:50 ins leere Tor.
+// Nach dem Tor steht die Uhr: 18:53 liegt im Video eine Minute später.
+function emptyNetAtGoal() {
+  const s = linear([{ event_id: 9001, event_type: 'timeout', event_team: 'home', period: 3, time: '18:33' }, goal('guest', 3, '18:50'), pen('home', 3, '18:53')]);
+  const ids = Object.keys(s.gs).map(Number);
+  const g = ids.find(i => s.gs[i] === 1130), p = ids.find(i => s.gs[i] === 1133);
+  s.placed[g] = 6100; s.placed[p] = 6160; s.periods[3] = { start: 5000, end: 6300 };
+  return { s, g };
+}
+
+test('Phase endet kurz nach dem Tor in der Unterbrechung: trotzdem leeres Tor', () => {
+  const { g } = emptyNetAtGoal();
+  const t = addTag({ code: 'empty_net', v: 6080, team: 'home' }); updateTag(t.id, { end: 6110 });
+  assert.deepEqual(situationLabels(goalSituations()[g]), ['leeres Tor']);
+});
+
+test('Phase endet genau mit dem Tor: leeres Tor', () => {
+  const { g } = emptyNetAtGoal();
+  const t = addTag({ code: 'empty_net', v: 6080, team: 'home' }); updateTag(t.id, { end: 6100 });
+  assert.deepEqual(situationLabels(goalSituations()[g]), ['leeres Tor']);
+});
+
+test('Phase läuft noch (nicht beendet): gilt bis Spielende', () => {
+  const { g } = emptyNetAtGoal();
+  addTag({ code: 'empty_net', v: 6080, team: 'home' });
+  assert.deepEqual(situationLabels(goalSituations()[g]), ['leeres Tor']);
+  assert.equal(computeStats('all').guest.enGoals, 1);
+});
+
+test('Phase beginnt erst nach dem Tor: kein leeres Tor', () => {
+  const { g } = emptyNetAtGoal();
+  const t = addTag({ code: 'empty_net', v: 6120, team: 'home' }); updateTag(t.id, { end: 6200 });
+  assert.deepEqual(situationLabels(goalSituations()[g]), []);
+});

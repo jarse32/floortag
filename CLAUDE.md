@@ -139,7 +139,7 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 - Bedienung: Tag-Leiste unter dem Video (ein Klick = Code + Ergebnis bzw. Ort, Tasten 1–8, Q/W/E, T), Nachtragsleiste für Team, Spieler (Kader-Rückennummern), Ort, Kommentar, ±1 s. Reiter „Tags“ in der rechten Spalte. Modus Penaltyschießen mit automatischem Wechsel und Stand (Tasten V/X).
 - Tags hängen an der Videozeit und liegen getrennt vom Sync (`floortag-tags:<Spiel>:<Video>` im `localStorage`, eigene Tag-Datei `floortag-tags`), weil sie zur Analyse-Ebene gehören.
 - Code **Torhüter** (Taste 9): „ab dieser Szene steht #x im Tor“, für Torhüterwechsel. Ohne Tag gilt der einzige Torhüter laut Kader (`goalkeeper`). Saves und gehaltene Penaltys tragen im Export das Label „Torhüter“.
-- **Torhüter raus** fließt in die Spielstärke ein (Feldspieler: Grundzahl − Strafen + 1 ohne Torhüter), z. B. 6 gegen 5 oder 6 gegen 4. Unterzahl mit Torhüter raus ist ausgeglichen und keine Überzahlphase. Das Beenden von Strafen durch Tore regelt weiter nur die Strafzählung wie im Dashboard.
+- **Torhüter raus** fließt in die Spielstärke ein (Feldspieler: Grundzahl − Strafen + 1 ohne Torhüter), z. B. 6 gegen 5 oder 6 gegen 4. Unterzahl mit Torhüter raus ist ausgeglichen und keine Überzahlphase. Ob ein Tor ins leere Tor ging, wird in Videozeit geprüft (Phasenende genau beim Tor zählt mit), weil die Spieluhr nach dem Tor steht; eine nicht beendete Phase gilt bis Spielende. Das Beenden von Strafen durch Tore regelt weiter nur die Strafzählung wie im Dashboard.
 
 ### Fahrplan Etappe 5
 
