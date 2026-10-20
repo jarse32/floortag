@@ -13,7 +13,7 @@ BACKUP="$TMP/cache-backup"; mkdir -p "$BACKUP"
 find "$CACHE" -maxdepth 1 -name '*.json' -exec mv {} "$BACKUP/" \;
 
 HITS_FILE="$HITS" php -S 127.0.0.1:$UP tests/fake-upstream.php >/dev/null 2>&1 & UPID=$!; disown
-SM_KEY=test-key SM_UPSTREAM="http://127.0.0.1:$UP/" php -S 127.0.0.1:$PX -t web >/dev/null 2>&1 & PXPID=$!; disown
+SM_KEY=test-key SM_UPSTREAM="http://127.0.0.1:$UP/" FLOORTAG_DATA_DIR="$TMP/syncs" php -S 127.0.0.1:$PX -t web >/dev/null 2>&1 & PXPID=$!; disown
 cleanup() {
   kill $UPID $PXPID 2>/dev/null
   rm -f "$CACHE"/*.json "$CACHE"/*.tmp
@@ -70,6 +70,48 @@ PY
 check "Spielplan aus dem Cache"     200 HIT  "/api/league.php?id=2449"
 check "Spielplan: ungültige ID"     400 -    "/api/league.php?id=abc"
 check "Spielplan: unbekannte Liga"  404 -    "/api/league.php?id=1"
+
+# Veröffentlichte Syncs
+# post <Name> <erwarteter Status> <JSON-Datei>
+post() {
+  local status
+  status=$(curl -s -o "$TMP/body" -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data-binary "@$3" "http://127.0.0.1:$PX/api/sync.php")
+  if [[ $status == "$2" ]]; then echo "ok    $1 ($status)"; else echo "FEHLER $1: erwartet $2, bekommen $status $(cat "$TMP/body")"; FAILS=$((FAILS+1)); fi
+}
+json() { python3 -I -c "import json,sys; d=json.load(open('$TMP/body')); print($1)"; }
+cat > "$TMP/pub1.json" <<'J'
+{"game_id": 58668, "video_id": "lfIFpRsE55I", "sync": {"format": "floortag-sync", "version": 2, "periods": {"1": {"start": 300, "end": 1920}, "9": {"start": 1}},
+ "events": [{"event_id": 1, "period": 1, "time": "6:04", "video_sec": 900}, {"event_id": "x", "video_sec": 5}], "free_anchors": [], "not_in_video": [6],
+ "period_length_sec": 1200, "tags": [{"code": "shot"}], "kommentar": "Max Mustermann"}}
+J
+post "Sync veröffentlichen"                 200 "$TMP/pub1.json"
+TOKEN=$(json "d.get('token','')")
+[[ ${#TOKEN} == 32 ]] && echo "ok    Bearbeitungsschlüssel erhalten" || { echo "FEHLER kein Schlüssel"; FAILS=$((FAILS+1)); }
+check "Veröffentlichten Sync lesen"          200 - "/api/sync.php?video=lfIFpRsE55I"
+python3 -I - "$TMP/body" <<'PY' && echo "ok    Nur Sync-Felder gespeichert" || { echo "FEHLER gespeicherter Inhalt"; FAILS=$((FAILS+1)); }
+import json, sys
+d = json.load(open(sys.argv[1])); s = d['sync']; raw = json.dumps(d)
+assert d['version'] == 1 and d['game_id'] == 58668
+assert list(s['periods']) == ['1'] and [e['event_id'] for e in s['events']] == [1] and s['not_in_video'] == [6]
+assert 'tags' not in s and 'Mustermann' not in raw and 'token' not in raw
+PY
+post "Ändern ohne Schlüssel"                403 "$TMP/pub1.json"
+python3 -I -c "import json;d=json.load(open('$TMP/pub1.json'));d['token']='$TOKEN';d['sync']['events'].append({'event_id':2,'video_sec':1100});json.dump(d,open('$TMP/pub2.json','w'))"
+post "Ändern mit Schlüssel"                 200 "$TMP/pub2.json"
+[[ $(json "d['version']") == 2 && -z $(json "d.get('token','')") ]] && echo "ok    Version 2, kein neuer Schlüssel" || { echo "FEHLER Version 2"; FAILS=$((FAILS+1)); }
+check "Versionen auflisten"                  200 - "/api/sync.php?video=lfIFpRsE55I&versions=1"
+[[ $(json "[v['version'] for v in d['versions']]") == "[2, 1]" ]] && echo "ok    Versionen 2 und 1" || { echo "FEHLER Versionsliste"; FAILS=$((FAILS+1)); }
+check "Ältere Version lesen"                 200 - "/api/sync.php?video=lfIFpRsE55I&v=1"
+[[ $(json "len(d['sync']['events'])") == 1 ]] && echo "ok    Version 1 unverändert" || { echo "FEHLER Version 1"; FAILS=$((FAILS+1)); }
+check "Übersicht der Syncs"                  200 - "/api/sync.php?index=1"
+[[ $(json "d['lfIFpRsE55I']['game_id'], d['lfIFpRsE55I']['version'], d['lfIFpRsE55I']['periods']") == "58668 2 1" ]] && echo "ok    Index aktuell" || { echo "FEHLER Index $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+check "Ohne Sync: 404"                       404 - "/api/sync.php?video=aaaaaaaaaaa"
+check "Ungültige Video-ID"                   400 - "/api/sync.php?video=x"
+python3 -I -c "import json;d=json.load(open('$TMP/pub1.json'));d['game_id']=123;d['video_id']='bbbbbbbbbbb';json.dump(d,open('$TMP/pub3.json','w'))"
+post "Unbekanntes Spiel"                    404 "$TMP/pub3.json"
+python3 -I -c "import json;d=json.load(open('$TMP/pub1.json'));d['video_id']='ccccccccccc';d['sync']['pad']='x'*250000;json.dump(d,open('$TMP/pub4.json','w'))"
+post "Zu groß"                              413 "$TMP/pub4.json"
+[[ -z $(find "$TMP/syncs" -name '*.json' -exec grep -l "$TOKEN" {} +) ]] && echo "ok    Schlüssel nicht im Klartext gespeichert" || { echo "FEHLER Schlüssel im Klartext"; FAILS=$((FAILS+1)); }
 
 # Ausfall des Saisonmanagers: alte Kopie ausliefern
 touch -t "$(date -v-2M +%Y%m%d%H%M.%S)" "$CACHE/game-77.json"

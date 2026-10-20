@@ -22,7 +22,8 @@ export const state = {
   tags: [],            // eigene Tags (Analyse-Ebene), getrennt vom Sync gespeichert, siehe tags.js
   complete: {},        // { 1: { home: true, guest: false } } Schüsse vollständig erfasst, gehört zur Tag-Ebene
   lineups: {},         // { event_id: { home: [nr], guest: [nr] } } auf dem Feld bei Toren, gehört zur Tag-Ebene
-  sharedView: false    // geteilte Ansicht aus einem Link: nur ansehen, nichts im Browser speichern
+  sharedView: false,   // geteilte Ansicht aus einem Link: nur ansehen, nichts im Browser speichern
+  syncSource: null     // { version, edited } Bezug zur veröffentlichten Version, siehe publish.js
 };
 
 // Zustand der Oberfläche, wird nicht gespeichert
@@ -31,6 +32,9 @@ export const ui = {
   rate: 1,             // Abspieltempo, bleibt beim Videowechsel, wird nicht gespeichert
   mode: 'sync',        // Modus: view (Ansehen) | sync | analysis
   jumpFrom: null,      // Videozeit vor dem Sprung zu einem Ereignis (für „Dort setzen“)
+  published: null,     // veröffentlichter Sync dieses Videos (neueste Version) oder null
+  publishOffer: false, // neuere veröffentlichte Version anbieten
+  pubVersions: null,   // Liste der veröffentlichten Versionen, wenn aufgeklappt
   tagTeam: 'home',     // Team für neue Tags
   tagId: null,         // Tag in der Nachtragsleiste
   shootout: false,     // Modus Penaltyschießen

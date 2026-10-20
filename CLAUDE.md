@@ -78,6 +78,13 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 - **Liga-Spielplan:** über `api/league.php?id=…` (kompakter Spielplan plus Liganame, Cache 1 Stunde, gemeinsames Abrufbudget mit `game.php`). Der Spielplan des Saisonmanagers enthält **keine Video-Links**; die Spalte „Video“ erscheint deshalb nur, wenn sie geliefert würden. Standardmäßig nur gespielte Spiele, kommende auf Wunsch. `?liga=2449` öffnet direkt den Spielplan.
 - Mit dem Backend (Etappe 4) kommen veröffentlichte Syncs anderer dazu; die Stufen-Logik bleibt.
 
+## Veröffentlichte Syncs (gemeinsamer Sync pro Video, Zwischenlösung bis Etappe 4)
+
+- `api/sync.php` speichert pro Video den veröffentlichten Sync mit allen Versionen (max. 50) in `api/data/syncs/<Video>/` (per `.htaccess` gesperrt, gitignored), dazu `index.json` für die Übersicht. Lesen darf jeder, ändern nur mit **Bearbeitungsschlüssel** (beim ersten Veröffentlichen erzeugt, auf dem Server nur als SHA-256-Hash; im Browser unter `floortag-publish:<Video>`).
+- Gespeichert wird nur die Sync-Ebene (Drittelgrenzen, Positionen der Saisonmanager-Ereignisse, freie Anker, „nicht im Video“, Längen); der Server verwirft alle anderen Felder. Keine Tags, keine Namen, keine IP-Adressen. Schutz: Spiel muss im Saisonmanager existieren, max. 200 kB, Schreibbudget 20/min.
+- Beim Laden eines Spiels (`checkPublished` in `main.js`, Entscheidung `decideOnLoad` in `publish.js`): kein eigener Stand → übernehmen; eigener Stand unverändert auf älterer Version (`state.syncSource`) → still aktualisieren; eigener Stand verändert oder unabhängig → nur „Übernehmen“ anbieten. Tags bleiben immer unberührt.
+- Bereich „Veröffentlichen“ (Sync und Analyse): veröffentlichen/aktualisieren, Schlüssel kopieren oder eingeben (zweites Gerät, Co-Trainer), ältere Versionen laden (gilt als eigene Änderung, lässt sich neu veröffentlichen). Der Liga-Spielplan der Übersicht zeigt öffentliche Syncs.
+
 ## Teilen-Link (Zwischenlösung bis Etappe 4)
 
 - „Link teilen“ (Kopfzeile, Sync und Analyse) schreibt Sync, Tags, Haken und Aufstellungen kompakt und komprimiert (`deflate-raw`, base64url) in den Teil hinter `#ft=` (`web/js/share.js`). Der wird nie an den Server übertragen. Namen stehen nicht im Link, nur Rückennummern.

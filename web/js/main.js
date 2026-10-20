@@ -12,10 +12,15 @@ import { $, renderAll, renderMatchline, renderStrip, updateClock, showPlayerMess
 import { statsAsTsv } from './stats.js';
 import { SHARE_PREFIX, decodeShare, applySharePayload, shareUrl } from './share.js';
 import { GUIDES, introSeen, markIntroSeen } from './help.js';
+import { decideOnLoad, adoptPublished, publishSync, fetchPublished, fetchVersions, setToken, getToken, tokenValid } from './publish.js';
 import { toggleLineupPlayer } from './lineups.js';
 
 // Zustand geändert: speichern und neu zeichnen
-function commit() { save(); renderAll(); }
+function commit() {
+  // Eigene Änderung: der Stand weicht jetzt von der veröffentlichten Version ab
+  if (state.syncSource) state.syncSource.edited = true;
+  save(); renderAll();
+}
 
 yt.initPlayer('player', {
   onLoad: () => { $('#playerEmpty').hidden = true; $('#consent').hidden = true; },
@@ -143,15 +148,75 @@ renderRevoke();
 
 // Eigenen Stand laden; in der geteilten Ansicht stattdessen den Stand aus dem Link
 function restoreState() {
-  restore();
+  const hadLocal = restore();
   if (ui.shared) applySharePayload(ui.shared);
+  return hadLocal;
 }
 function setVideo(id) {
   state.videoId = id;
-  restoreState();
+  const hadLocal = restoreState();
+  ui.published = null; ui.publishOffer = false; ui.pubVersions = null;
   renderAll();
   showVideo(id);
+  checkPublished(id, hadLocal);
 }
+
+// ===== Veröffentlichter Sync =====
+// Beim Laden prüfen, ob es für das Video einen veröffentlichten Sync gibt, und je nach eigenem Stand
+// übernehmen, still aktualisieren oder das Übernehmen anbieten (siehe decideOnLoad)
+async function checkPublished(id, hadLocal) {
+  if (ui.shared) return;
+  let pub = null;
+  try { pub = await fetchPublished(id); } catch (e) { return; } // ohne Server einfach wie bisher
+  if (state.videoId !== id) return;
+  ui.published = pub;
+  const action = decideOnLoad({ hasLocal: hadLocal, source: state.syncSource, pub });
+  if (action === 'adopt' || action === 'update') {
+    adoptPublished(pub);
+    showToast(action === 'adopt' ? `Veröffentlichten Sync übernommen (Version ${pub.version}).` : `Sync auf die veröffentlichte Version ${pub.version} aktualisiert.`);
+  }
+  ui.publishOffer = action === 'offer';
+  renderAll();
+}
+$('#publishPanel').addEventListener('click', async e => {
+  const b = e.target.closest('[data-pub]'); if (!b) return;
+  const act = b.dataset.pub;
+  try {
+    if (act === 'publish') {
+      b.disabled = true;
+      const first = !getToken(state.videoId);
+      const res = await publishSync();
+      ui.published = await fetchPublished(state.videoId);
+      ui.publishOffer = false; ui.pubVersions = null;
+      showToast(first ? `Sync veröffentlicht (Version ${res.version}). Den Bearbeitungsschlüssel hat sich dieser Browser gemerkt.` : `Änderungen als Version ${res.version} veröffentlicht.`);
+    } else if (act === 'adopt' && ui.published) {
+      adoptPublished(ui.published); ui.publishOffer = false;
+      showToast(`Veröffentlichte Version ${ui.published.version} übernommen.`);
+    } else if (act === 'copykey') {
+      await navigator.clipboard.writeText(getToken(state.videoId));
+      showToast('Bearbeitungsschlüssel kopiert. Wer ihn hat, kann den veröffentlichten Sync dieses Videos ändern.');
+    } else if (act === 'versions') {
+      ui.pubVersions = (await fetchVersions(state.videoId) || {}).versions || [];
+    } else if (act === 'loadversion') {
+      const v = await fetchPublished(state.videoId, Number(b.dataset.v));
+      if (v) {
+        // Ältere Version gilt als eigene Änderung: so wird sie nicht still überschrieben und lässt sich neu veröffentlichen
+        adoptPublished(v, { edited: true });
+        ui.publishOffer = false; // bewusst gewählt: kein Angebot der neueren Version mehr
+        showToast(`Version ${v.version} geladen. Mit „Änderungen veröffentlichen“ machst du sie wieder zur aktuellen Version.`);
+      }
+    }
+  } catch (err) { showToast(err.message); }
+  renderAll();
+});
+$('#publishPanel').addEventListener('submit', e => {
+  e.preventDefault();
+  const value = e.target.elements.key.value.trim();
+  if (!tokenValid(value)) { showToast('Das sieht nicht nach einem Bearbeitungsschlüssel aus (32 Zeichen aus 0–9 und a–f).'); return; }
+  setToken(state.videoId, value);
+  showToast('Schlüssel gespeichert. Du kannst jetzt Änderungen veröffentlichen.');
+  renderAll();
+});
 
 // ===== Spiel laden =====
 function loadGame(data) {

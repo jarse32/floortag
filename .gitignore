@@ -23,3 +23,7 @@ web/api/cache/*
 
 # Upload-Archive
 *.zip
+
+# Veröffentlichte Syncs (Laufzeitdaten des Servers)
+web/api/data/*
+!web/api/data/.htaccess

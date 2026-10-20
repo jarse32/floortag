@@ -16,7 +16,8 @@ export function save() {
       periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing,
       periodLen: state.periodLen, otLen: state.otLen, pauseLen: state.pauseLen,
       leadIn: state.leadIn, leadOut: state.leadOut, fps: state.fps, edlScope: state.edlScope, counterLen: state.counterLen,
-      kleinfeld: state.kleinfeld, includePenalties: state.includePenalties, hideYouth: state.hideYouth
+      kleinfeld: state.kleinfeld, includePenalties: state.includePenalties, hideYouth: state.hideYouth,
+      syncSource: state.syncSource
     }));
   } catch (e) { /* Speicher nicht verfügbar */ }
   saveMeta();
@@ -33,10 +34,14 @@ export function saveMeta() {
     localStorage.setItem(metaKey(), JSON.stringify({ ...gameMeta(), progress: computeProgress(), updated: new Date().toISOString() }));
   } catch (e) { /* Speicher nicht verfügbar */ }
 }
+// Liefert true, wenn es für dieses Spiel und Video einen eigenen Sync-Stand gab
 export function restore() {
   state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.tags = []; state.complete = {}; state.lineups = {};
+  state.syncSource = null;
+  let hadLocal = false;
   try {
     const raw = localStorage.getItem(storageKey());
+    hadLocal = !!raw;
     if (raw) { const { tags, ...rest } = JSON.parse(raw); Object.assign(state, rest); sanitizeSettings(); }
     const rawTags = localStorage.getItem(tagKey());
     if (rawTags) {
@@ -47,6 +52,7 @@ export function restore() {
       state.lineups = Array.isArray(d) ? {} : d.lineups || {};
     }
   } catch (e) { /* ignorieren */ }
+  return hadLocal;
 }
 
 // Einstellungen auf gültige Werte bringen (z. B. nach einem leeren Eingabefeld in einer älteren Version).

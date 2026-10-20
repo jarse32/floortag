@@ -6,9 +6,10 @@ import { prepareGame } from './game.js';
 import { restore, saveMeta, metaKey } from './storage.js';
 import { STAGES } from './progress.js';
 import { esc } from './format.js';
+import { fetchIndex } from './publish.js';
 
 const $ = s => document.querySelector(s);
-const view = { tab: 'mine', filter: 'all', league: null, upcoming: false, leagueData: null };
+const view = { tab: 'mine', filter: 'all', league: null, upcoming: false, leagueData: null, published: new Map() };
 
 // ===== Gespeicherte Spiele =====
 function storedGames() {
@@ -127,6 +128,14 @@ async function loadLeague(id, games) {
     if (!type.includes('application/json')) throw new Error('Der Proxy antwortet nicht. Lokal muss die Seite über „php -S localhost:8000 -t web“ laufen.');
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `Fehler ${res.status} beim Laden.`);
+    // Veröffentlichte Syncs aller: nach Spiel zusammenfassen (fehlt der Server, geht es ohne)
+    view.published = new Map();
+    try {
+      for (const [video, entry] of Object.entries(await fetchIndex() || {})) {
+        const prev = view.published.get(entry.game_id);
+        if (!prev || entry.periods > prev.periods) view.published.set(entry.game_id, { ...entry, video });
+      }
+    } catch (e) { /* ohne Übersicht der Syncs */ }
     renderLeague(data, games);
   } catch (e) {
     $('#leagueResult').innerHTML = '';
@@ -149,19 +158,20 @@ function renderLeague(data, games) {
   const list = view.upcoming ? all : all.filter(g => g.result);
   const name = data.league.name || (knownLeagues(games).find(([id]) => String(id) === String(data.league.id)) || [])[1] || `Liga ${data.league.id}`;
   const rows = list.map(g => {
-    const m = mine.get(Number(g.id));
+    const m = mine.get(Number(g.id)), pub = view.published.get(Number(g.id));
+    const pubBadge = pub ? `<span class="ov-pub" title="Veröffentlicht, Version ${pub.version}">öffentlicher Sync · ${pub.periods} Abschnitt${pub.periods === 1 ? '' : 'e'}</span>` : '';
     const videoCell = hasVideoInfo ? (g.video ? '<span class="ov-video" title="Video vorhanden">▶</span>' : '<span class="ov-novideo" title="Kein Video im Saisonmanager">–</span>') : '';
     return `<tr class="${g.result ? '' : 'upcoming'}">
       <td class="ov-d">${esc(shortDate(g.date))}</td>
       <td>${esc(g.home)} <span class="score">${esc(g.result || '')}</span> ${esc(g.guest)}</td>
       ${hasVideoInfo ? `<td class="ov-v">${videoCell}</td>` : ''}
-      <td>${m ? stageBadge(m.progress.stage) : g.result ? '<span class="te-info">nicht bearbeitet</span>' : '<span class="te-info">noch nicht gespielt</span>'}</td>
-      <td class="ov-a">${g.result ? `<a class="btn small ${m ? '' : 'ghost'}" href="./?spiel=${esc(g.id)}">${m ? 'Öffnen' : 'Bearbeiten'}</a>` : ''}</td>
+      <td>${m ? stageBadge(m.progress.stage) : g.result ? (pub ? '' : '<span class="te-info">nicht bearbeitet</span>') : '<span class="te-info">noch nicht gespielt</span>'}${pubBadge}</td>
+      <td class="ov-a">${g.result ? `<a class="btn small ${m || pub ? '' : 'ghost'}" href="./?spiel=${esc(g.id)}">${m || pub ? 'Öffnen' : 'Bearbeiten'}</a>` : ''}</td>
     </tr>`;
   }).join('');
   $('#leagueResult').innerHTML = `
     <h2 class="ov-league">${esc(name)}</h2>
-    <p class="note">${all.length} Spiele, ${played} gespielt${hasVideoInfo ? `, ${withVideo} mit Video` : ''}, ${all.filter(g => mine.has(Number(g.id))).length} von dir bearbeitet. Die Stufen beziehen sich auf Stände in diesem Browser.</p>
+    <p class="note">${all.length} Spiele, ${played} gespielt${hasVideoInfo ? `, ${withVideo} mit Video` : ''}, ${all.filter(g => mine.has(Number(g.id))).length} von dir bearbeitet, ${all.filter(g => view.published.has(Number(g.id))).length} mit öffentlichem Sync. Die Stufen beziehen sich auf Stände in diesem Browser.</p>
     <label class="check ov-upcoming"><input type="checkbox" id="upcomingCheck" ${view.upcoming ? 'checked' : ''}> Auch kommende Spiele zeigen (${all.length - played})</label>
     <div class="ov-tablewrap"><table class="stats ov-table">
       <thead><tr><th>Datum</th><th>Spiel</th>${hasVideoInfo ? '<th>Video</th>' : ''}<th>Stufe</th><th></th></tr></thead>

@@ -4,6 +4,7 @@
 </FilesMatch>
 RewriteEngine On
 RewriteRule ^cache/ - [F,L]
+RewriteRule ^data/ - [F,L]
 
 Options -Indexes
 AddDefaultCharset UTF-8

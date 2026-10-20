@@ -10,6 +10,7 @@ import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, sh
 import { personLabel } from './game.js';
 import { statPeriods, statRows, computeStats, signed, goalSituations, situationLabels } from './stats.js';
 import { lineupOf, forcedPlayers, fieldPlayers } from './lineups.js';
+import { getToken } from './publish.js';
 import * as yt from './player.js';
 
 export const $ = s => document.querySelector(s);
@@ -27,6 +28,7 @@ export function renderAll() {
   renderClipNote();
   renderTagBar();
   renderTagList();
+  renderPublish();
 }
 export function renderMatchline() {
   const g = state.game;
@@ -378,4 +380,43 @@ function plusMinusHtml(scope, names) {
       list.map(x => `<tr><th scope="row">${esc(personLabel(side, x.nr))}</th><td>${x.plus}</td><td>${x.minus}</td><td><strong>${signed(x.net)}</strong></td></tr>`).join('')}</tbody></table>`;
   };
   return `<h3 class="pm-title">Plus/Minus</h3>${note}<div class="pm-grid">${table('home')}${table('guest')}</div>`;
+}
+
+// ===== Veröffentlichen =====
+const dateTime = iso => (iso ? new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+
+function renderPublish() {
+  const el = $('#publishPanel');
+  if (!el) return;
+  if (!state.videoId) { el.innerHTML = '<p class="note">Zum Veröffentlichen braucht das Spiel ein Video.</p>'; return; }
+  const p = ui.published, token = getToken(state.videoId), src = state.syncSource;
+  const synced = Object.values(state.periods).some(x => x && x.start != null) || Object.keys(state.placed).length > 0;
+  const edited = src ? src.edited : true;
+  const parts = [];
+  if (p && ui.publishOffer) {
+    parts.push(`<div class="pub-offer">Es gibt eine veröffentlichte Version ${p.latest} vom ${esc(dateTime(p.updated))}${src ? ', die neuer ist als dein Stand' : ''}.
+      <button class="btn small" data-pub="adopt">Übernehmen</button> <span class="note">ersetzt deinen Sync, deine Tags bleiben.</span></div>`);
+  }
+  if (!p) {
+    parts.push(`<p>Noch nicht veröffentlicht. Veröffentliche deinen Sync, damit alle, die dieses Spiel öffnen, ihn direkt nutzen können.</p>
+      <div class="export-actions"><button class="btn" data-pub="publish" ${synced ? '' : 'disabled'}>Sync veröffentlichen</button></div>
+      ${synced ? '' : '<p class="note">Setz zuerst mindestens einen Anpfiff.</p>'}`);
+  } else if (token) {
+    parts.push(`<p>Veröffentlicht · Version ${p.latest} vom ${esc(dateTime(p.updated))}. ${edited ? 'Du hast Änderungen, die noch nicht veröffentlicht sind.' : 'Dein Stand entspricht der veröffentlichten Version.'}</p>
+      <div class="export-actions"><button class="btn" data-pub="publish" ${edited ? '' : 'disabled'}>Änderungen veröffentlichen</button>
+      <button class="btn ghost" data-pub="copykey">Bearbeitungsschlüssel kopieren</button></div>`);
+  } else {
+    parts.push(`<p>Für dieses Video gibt es einen veröffentlichten Sync (Version ${p.latest} vom ${esc(dateTime(p.updated))}). Ändern kann ihn, wer den Bearbeitungsschlüssel hat.</p>
+      <form class="idform pub-key"><input name="key" type="text" placeholder="Bearbeitungsschlüssel einfügen" autocomplete="off" aria-label="Bearbeitungsschlüssel">
+      <button class="btn ghost" type="submit">Schlüssel übernehmen</button></form>`);
+  }
+  if (p) {
+    const list = ui.pubVersions;
+    parts.push(list == null
+      ? '<button class="addanchor" data-pub="versions">Ältere Versionen anzeigen</button>'
+      : `<ul class="pub-versions">${list.map(v => `<li>Version ${v.version} · ${esc(dateTime(v.created))} · ${v.periods} Abschnitt(e), ${v.events} Ereignisse
+          <button class="btn small ghost" data-pub="loadversion" data-v="${v.version}">Laden</button></li>`).join('')}</ul>`);
+  }
+  parts.push('<p class="note">Veröffentlicht werden nur Drittelgrenzen und Positionen der Saisonmanager-Ereignisse, keine Tags und keine Namen.</p>');
+  el.innerHTML = parts.join('');
 }

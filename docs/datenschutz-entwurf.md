@@ -52,3 +52,13 @@ Nummer im `<h2>` auf 7 ändern und nach dem Absatz „Für Daten von Spielerinne
 
 - „Beschwerderecht“: `<span class="num">8</span>`
 - „Änderungen dieser Erklärung“: `<span class="num">9</span>`
+
+## Nachtrag (20.10.2026): veröffentlichte Syncs
+
+In Abschnitt 5 (FloorTag) nach dem Absatz „Spieldaten über einen eigenen Server“ einfügen:
+
+```html
+      <p><strong>Veröffentlichte Syncs:</strong> Wer möchte, kann seine Zuordnung von Spielereignissen zu Videostellen („Sync“) über „Sync veröffentlichen“ für alle bereitstellen. Gespeichert werden auf dem Server bei All-Inkl.com – Neue Medien Münnich in Deutschland ausschließlich die Videostellen der Drittelgrenzen und der im Saisonmanager eingetragenen Ereignisse, die Spiel- und Video-Kennung sowie der Zeitpunkt jeder Version. Eigene Tags, Kommentare, Namen und IP-Adressen werden dabei nicht gespeichert. Zum späteren Ändern erzeugt der Server einen Bearbeitungsschlüssel, den nur dein Browser kennt; auf dem Server liegt lediglich eine Prüfsumme davon. Veröffentlichte Syncs enthalten keine personenbezogenen Daten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der gemeinsamen Nutzung der Zuordnungen).</p>
+```
+
+Und im Absatz „Speicherung in Ihrem Browser“ ergänzen: „… sowie, falls du einen Sync veröffentlicht hast, der zugehörige Bearbeitungsschlüssel.“

@@ -11,6 +11,7 @@ export const GUIDES = {
       { title: 'Drittelgrenzen setzen', text: 'Spul zum Anpfiff des 1. Drittels und klick bei „Anpfiff“ auf „Jetzt“. Genauso beim Drittelende. Für die folgenden Drittel schlägt FloorTag Zeiten vor, die du mit „Vorschlag ansehen“ prüfst.', target: '#periods' },
       { title: 'Ereignisse prüfen', text: 'Klick auf ein Tor oder eine Strafe springt zur geschätzten Stelle. Passt sie nicht, spul zur richtigen Stelle und klick auf „Auf aktuelle Videozeit setzen“. Warst du schon vorher an der richtigen Stelle, reicht „Dort setzen“.', target: '#events' },
       { title: 'Feinjustieren', text: 'Mit −1 s / +1 s oder dem Regler rückst du ein Ereignis zurecht. Jedes gesetzte Ereignis verbessert die Schätzung der übrigen.', target: '#events' },
+      { title: 'Veröffentlichen', text: 'Unter „Veröffentlichen“ machst du deinen Sync für alle verfügbar, die dieses Spiel öffnen. Den Bearbeitungsschlüssel merkt sich dein Browser; für ein zweites Gerät oder einen Co-Trainer kopierst du ihn.', target: '#publishPanel' },
       { title: 'Kapitel und Link', text: 'Unter „Export“ kopierst du die YouTube-Kapitel für die Videobeschreibung. Mit „Link teilen“ schickst du Spiel und Szenen an andere.', target: '#chapters' }
     ],
     tips: [
