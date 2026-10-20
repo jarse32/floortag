@@ -3,6 +3,7 @@ import { state } from './state.js';
 import { events } from './game.js';
 import { fmtGame, parseTime } from './format.js';
 import { codeOf, TAG_STANDARD_VERSION } from './tags.js';
+import { computeProgress, gameMeta } from './progress.js';
 
 const SYNC_VERSION = 2;
 
@@ -17,6 +18,19 @@ export function save() {
       leadIn: state.leadIn, leadOut: state.leadOut, fps: state.fps, edlScope: state.edlScope, counterLen: state.counterLen,
       kleinfeld: state.kleinfeld, includePenalties: state.includePenalties, hideYouth: state.hideYouth
     }));
+  } catch (e) { /* Speicher nicht verfügbar */ }
+  saveMeta();
+}
+
+// ===== Eckdaten und Fortschritt für die Übersicht =====
+// floortag-meta:<Spiel>:<Video> = { …Eckdaten, progress, updated }
+export function metaKey(gameId = state.game && state.game.id, videoId = state.videoId) {
+  return `floortag-meta:${gameId}:${videoId || 'ohne-video'}`;
+}
+export function saveMeta() {
+  if (state.sharedView || !state.game) return;
+  try {
+    localStorage.setItem(metaKey(), JSON.stringify({ ...gameMeta(), progress: computeProgress(), updated: new Date().toISOString() }));
   } catch (e) { /* Speicher nicht verfügbar */ }
 }
 export function restore() {
@@ -57,6 +71,7 @@ function tagKey() { return `floortag-tags:${state.game && state.game.id}:${state
 export function saveTags() {
   if (state.sharedView) return;
   try { localStorage.setItem(tagKey(), JSON.stringify({ tags: state.tags, complete: state.complete, lineups: state.lineups })); } catch (e) { /* Speicher nicht verfügbar */ }
+  saveMeta();
 }
 export function buildTagFile() {
   return {

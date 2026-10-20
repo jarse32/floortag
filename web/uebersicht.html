@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FloorTag · Übersicht</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%231D6A4B'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/barlow-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+<script type="module" src="js/overview.js"></script>
+</head>
+<body data-page="overview">
+
+<header class="topbar">
+  <a class="brand brand-link" href="./">FloorTag</a>
+  <span class="matchline"><span class="teams">Übersicht</span></span>
+  <div class="header-actions">
+    <a class="btn" href="./">Spiel laden</a>
+  </div>
+</header>
+
+<main class="overview">
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-otab="mine" aria-selected="true">Deine Spiele</button>
+    <button class="tab" role="tab" data-otab="league" aria-selected="false">Liga-Spielplan</button>
+  </div>
+
+  <section id="minePanel" class="ov-panel">
+    <p class="note">Alle Spiele, die du in diesem Browser bearbeitet hast, mit ihrer Stufe. Stände aus anderen Browsern oder von anderen Personen erscheinen hier nicht.</p>
+    <div id="mineFilter" class="segbtns ov-filter" role="group" aria-label="Nach Stufe filtern"></div>
+    <div id="mineList" class="ov-list"></div>
+  </section>
+
+  <section id="leaguePanel" class="ov-panel" hidden>
+    <form id="leagueForm" class="idform">
+      <input id="leagueInput" type="text" inputmode="numeric" placeholder="Liga-ID oder Link zur Liga im Saisonmanager" aria-label="Liga-ID oder Saisonmanager-Link" autocomplete="off">
+      <button class="btn" type="submit">Spielplan laden</button>
+    </form>
+    <div id="leagueQuick" class="ov-quick"></div>
+    <p id="leagueError" class="error" hidden></p>
+    <div id="leagueResult"></div>
+  </section>
+</main>
+
+<footer class="source">
+  Daten: Saisonmanager / Floorball Deutschland ·
+  <a href="https://floorballdashboard.app/impressum/" target="_blank" rel="noopener">Impressum</a> ·
+  <a href="https://floorballdashboard.app/datenschutz/#floortag" target="_blank" rel="noopener">Datenschutz</a>
+</footer>
+</body>
+</html>

@@ -15,5 +15,15 @@ if ($path === '/games/77.json') {
     $g['id'] = 77; $g['game_status'] = 'running'; $g['ended'] = false;
     echo json_encode($g); exit;
 }
+if ($path === '/leagues/2449/schedule.json') {
+    // Aufbau wie der echte Spielplan, mit Feldern, die der Proxy weglassen soll
+    echo json_encode([
+        ['game_id' => 58668, 'date' => '2026-10-10', 'time' => '18:00', 'home_team_name' => 'Baltic Storms', 'guest_team_name' => 'TV Eiche Horn Bremen',
+         'result_string' => '5:4', 'result' => ['home_goals' => 5], 'referees' => [['first_name' => 'Volker']], 'home_team_logo' => '/logo.png'],
+        ['game_id' => 58700, 'date' => '2026-12-01', 'time' => '19:00', 'home_team_name' => 'A', 'guest_team_name' => 'B', 'result_string' => null, 'result' => null],
+    ]);
+    exit;
+}
+if ($path === '/leagues/2449.json') { echo json_encode(['name' => '2. FBL Herren Nord/West', 'short_name' => '2. FBL H NW']); exit; }
 http_response_code(404);
 echo '{"message":"Not found"}';

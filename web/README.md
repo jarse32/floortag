@@ -6,8 +6,10 @@ Start im Repo-Wurzelverzeichnis mit `php -S localhost:8000 -t web`, dann `http:/
 
 ## Aufbau
 
-- `index.html` – Markup
+- `index.html` – Spielansicht
+- `uebersicht.html` – Übersicht: deine Spiele nach Stufen und Liga-Spielpläne
 - `api/game.php` – Proxy zum Saisonmanager mit Dateicache (`api/cache/`), Key aus `SM_KEY` oder `api/config.php`
+- `api/league.php` – Proxy für den Spielplan einer Liga (kompakt, Cache 1 Stunde)
 - `css/fonts.css`, `fonts/` – selbst gehostete Schriften Barlow und Barlow Condensed (OFL 1.1)
 - `css/tokens.css` – Farb- und Schrift-Tokens für Hell- und Dunkelmodus
 - `css/app.css` – Layout und Komponenten
@@ -20,6 +22,8 @@ Start im Repo-Wurzelverzeichnis mit `php -S localhost:8000 -t web`, dann `http:/
 - `js/storage.js` – localStorage und Sync-Datei
 - `js/tags.js` – eigene Tags: Standard-Katalog, Bearbeiten, Penaltyschießen (siehe docs/tag-standard.md)
 - `js/help.js` – Anleitung je Modus (Texte, einmalig automatisch)
+- `js/overview.js` – Übersichtsseite
+- `js/progress.js` – Fortschritt eines Spiels in Stufen (für die Übersicht)
 - `js/share.js` – Teilen-Link für den Modus Ansehen (Stand komprimiert im #-Teil der Adresse)
 - `js/lineups.js` – Aufstellung bei Toren („auf dem Feld“) für Plus/Minus
 - `js/stats.js` – Statistik je Team und Abschnitt (Schüsse, Torhüter, Bully, Überzahl …) und Kopierformat

@@ -56,6 +56,21 @@ check "Laufendes Spiel"           200 MISS "/api/game.php?id=77"
 touch -t "$(date -v-2M +%Y%m%d%H%M.%S)" "$CACHE/game-77.json"
 check "Laufendes Spiel nach 2 Min. neu geholt" 200 MISS "/api/game.php?id=77"
 
+# Liga-Spielplan
+check "Spielplan: erster Abruf"    200 MISS "/api/league.php?id=2449"
+python3 -I - "$TMP/body" <<'PY' && echo "ok    Spielplan kompakt mit Liganame" || { echo "FEHLER Spielplan-Inhalt"; FAILS=$((FAILS+1)); }
+import json, sys
+d = json.load(open(sys.argv[1]))
+assert d['league'] == {'id': 2449, 'name': '2. FBL Herren Nord/West'}, d['league']
+assert [g['id'] for g in d['games']] == [58668, 58700]
+assert d['games'][0] == {'id': 58668, 'date': '2026-10-10', 'time': '18:00', 'home': 'Baltic Storms', 'guest': 'TV Eiche Horn Bremen', 'result': '5:4', 'video': None}, d['games'][0]
+assert d['games'][1]['result'] is None
+assert 'referees' not in json.dumps(d) and 'logo' not in json.dumps(d)
+PY
+check "Spielplan aus dem Cache"     200 HIT  "/api/league.php?id=2449"
+check "Spielplan: ungültige ID"     400 -    "/api/league.php?id=abc"
+check "Spielplan: unbekannte Liga"  404 -    "/api/league.php?id=1"
+
 # Ausfall des Saisonmanagers: alte Kopie ausliefern
 touch -t "$(date -v-2M +%Y%m%d%H%M.%S)" "$CACHE/game-77.json"
 kill $UPID 2>/dev/null; sleep 0.3

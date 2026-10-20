@@ -71,6 +71,13 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 - **Anleitung** (`web/js/help.js`): „?“ in der Kopfzeile öffnet eine Anleitung je Modus mit „Zeigen“ (scrollt zur Stelle und hebt sie hervor). Beim ersten Spiel bzw. ersten Wechsel in einen Modus erscheint sie einmal automatisch (`floortag:intro-seen`). Texte bei neuen Funktionen mitpflegen.
 - Klick auf ein Ereignis springt in Sync/Analyse zur Szene. War das Video vorher woanders, bietet die Zeile „Dort setzen“ (Ereignis an die vorherige Stelle) und „Zurück“ an. Ohne das ging die Position verloren, wenn man erst spulte und dann das Ereignis antippte.
 
+## Übersicht
+
+- Eigene Seite `web/uebersicht.html` (`js/overview.js`), erreichbar über „Übersicht“ in der Kopfzeile.
+- **Deine Spiele:** alle Spiele mit Stand in diesem Browser, nach Stufen filterbar: 0 · Video, 1 · Sync (Fortschritt Ereignisse und Abschnitte), 2 · Tags, 3 · Vollständig analysiert (Schüsse aller Drittel vollständig und Aufstellung bei allen zählenden Toren). Berechnung in `js/progress.js`, beim Speichern als `floortag-meta:<Spiel>:<Video>` abgelegt; ältere Stände werden beim Öffnen der Übersicht einmal über den Proxy nachberechnet.
+- **Liga-Spielplan:** über `api/league.php?id=…` (kompakter Spielplan plus Liganame, Cache 1 Stunde, gemeinsames Abrufbudget mit `game.php`). Der Spielplan des Saisonmanagers enthält **keine Video-Links**; die Spalte „Video“ erscheint deshalb nur, wenn sie geliefert würden. Standardmäßig nur gespielte Spiele, kommende auf Wunsch. `?liga=2449` öffnet direkt den Spielplan.
+- Mit dem Backend (Etappe 4) kommen veröffentlichte Syncs anderer dazu; die Stufen-Logik bleibt.
+
 ## Teilen-Link (Zwischenlösung bis Etappe 4)
 
 - „Link teilen“ (Kopfzeile, Sync und Analyse) schreibt Sync, Tags, Haken und Aufstellungen kompakt und komprimiert (`deflate-raw`, base64url) in den Teil hinter `#ft=` (`web/js/share.js`). Der wird nie an den Server übertragen. Namen stehen nicht im Link, nur Rückennummern.
@@ -160,7 +167,7 @@ floortag/
 ├── CLAUDE.md
 ├── README.md
 ├── prototype/floortag-prototyp.html   # Ausgangspunkt, nicht mehr weiterentwickeln
-├── web/                               # Deploy-Ordner: Frontend (ES-Module ohne Build) + api/game.php
+├── web/                               # Deploy-Ordner: Frontend (ES-Module ohne Build), uebersicht.html, api/game.php + api/league.php
 ├── tests/                             # Tests: Sync-Logik, Kapitel, Proxy (Fake-Saisonmanager)
 └── fixtures/spiel_58668.json          # Testdaten
 ```
