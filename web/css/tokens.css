@@ -11,6 +11,7 @@
   --guest: #2D5584;
   --period: #E2EAE4;
   --danger: #A33A2A;
+  --on-badge: #FFFFFF;
   --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;
@@ -28,6 +29,7 @@
     --guest: #7AA2D4;
     --period: #1F3027;
     --danger: #E07A66;
+    --on-badge: #0E1813;
     color-scheme: dark;
   }
 }

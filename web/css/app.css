@@ -266,9 +266,12 @@ body[data-mode="view"] .event .ev-head { cursor: pointer; }
 body[data-shared] .modes { display: none; }
 
 /* Marken für die Torsituation */
-.badge { display: inline-block; margin-left: .3rem; padding: 0 .4rem; border-radius: 999px; font: 600 .72rem/1.5 var(--body); vertical-align: .1em; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
-.badge.pp { background: var(--pine); border-color: var(--pine); color: #fff; }
-.badge.sh { background: var(--estimate); border-color: var(--estimate); color: #fff; }
+.badge { display: inline-block; margin-left: .35rem; padding: .05rem .55rem; border-radius: 999px; font: 700 .82rem/1.35 var(--display); letter-spacing: .03em; text-transform: uppercase; vertical-align: .08em; background: var(--muted); color: var(--on-badge); white-space: nowrap; box-shadow: 0 1px 2px rgba(0, 0, 0, .15); }
+.badge.pp { background: var(--pine); }
+.badge.sh { background: var(--estimate); }
+.badge.en { background: var(--danger); }
+.badge.ea { background: var(--guest); }
+.badge.ps { background: var(--ink); color: var(--surface); }
 
 /* Teilen in der Kopfzeile und Meldung */
 .share-btn { align-self: center; padding: .4rem .9rem; font-weight: 600; }

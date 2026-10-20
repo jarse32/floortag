@@ -15,6 +15,16 @@ import * as yt from './player.js';
 
 export const $ = s => document.querySelector(s);
 
+// Farbe der Marke zur Torsituation
+function badgeClass(label) {
+  if (label.startsWith('Überzahl')) return 'pp';
+  if (label.startsWith('Unterzahl')) return 'sh';
+  if (label === 'leeres Tor') return 'en';
+  if (label.endsWith('ohne Torhüter')) return 'ea';
+  if (label === 'Penalty') return 'ps';
+  return '';
+}
+
 export function renderAll() {
   document.body.dataset.mode = ui.mode;
   document.querySelectorAll('.modes [data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === ui.mode)));
@@ -151,7 +161,7 @@ function renderEvents() {
     return `<li class="event ${e.event_team} ${sel ? 'sel' : ''}" data-row="${e.event_id}">
       <button class="ev-head" data-act="select" data-id="${e.event_id}" aria-expanded="${sel}">
         <span class="ev-gt">${esc(periodTitle(Math.floor(e.period), true))}<br>${fmtGame(state.gs[e.event_id])}</span>
-        <span><span class="ev-title">${d.score ? `<span class="sc">${esc(d.score)}</span>` : ''}${esc(d.text)}</span>${situationLabels(situations[e.event_id]).map(l => ` <span class="badge ${l.startsWith('Überzahl') ? 'pp' : l.startsWith('Unterzahl') ? 'sh' : ''}">${esc(l)}</span>`).join('')}
+        <span><span class="ev-title">${d.score ? `<span class="sc">${esc(d.score)}</span>` : ''}${esc(d.text)}</span>${situationLabels(situations[e.event_id]).map(l => ` <span class="badge ${badgeClass(l)}">${esc(l)}</span>`).join('')}
           ${d.sub ? `<br><span class="ev-sub">${esc(d.sub)}</span>` : ''}</span>
         <span class="ev-vt ${status[1]}">${fmt(t)}<small>${status[0]}</small></span>
       </button>${tools}</li>`;
