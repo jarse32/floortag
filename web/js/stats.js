@@ -8,7 +8,7 @@
 import { state } from './state.js';
 import { events, personLabel, teamShort } from './game.js';
 import { timeOf, periodAtVideo } from './sync.js';
-import { goalieAt, faceoffAdvantage } from './tags.js';
+import { goalieAt, faceoffAdvantage, isShootout } from './tags.js';
 import { penaltyWindowsByTeam, emptyNetWindows, absTime, playedPeriods } from './phases.js';
 import { lineupOf, hasLineup } from './lineups.js';
 
@@ -140,7 +140,7 @@ export function computeStats(scope = 'all') {
   // Eigene Tags
   for (const tag of state.tags || []) {
     const team = tag.team, r = res[team];
-    if (tag.code === 'penalty_shot' && tag.shootout) {
+    if (isShootout(tag)) {
       if (scope === 'all' && r) { r.shootoutShots++; if (tag.outcome === 'goal') r.shootoutGoals++; }
       continue;
     }

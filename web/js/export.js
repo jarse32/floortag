@@ -6,7 +6,7 @@ import { state } from './state.js';
 import { fmtGame } from './format.js';
 import { events, periodList, periodTitle, teamShort, personLabel } from './game.js';
 import { timeOf, videoTimeAt, periodAtVideo } from './sync.js';
-import { codeOf, other, outcomeLabel, placeLabel, faceoffAdvantage, goalieAt } from './tags.js';
+import { codeOf, other, outcomeLabel, placeLabel, faceoffAdvantage, goalieAt, isShootout } from './tags.js';
 import { powerPlayPhases } from './phases.js';
 import { lineupOf, hasLineup } from './lineups.js';
 import { goalSituations, situationLabels } from './stats.js';
@@ -106,7 +106,7 @@ export function tagClips(tag, names) {
     const group = def.players === 'both' ? `Spieler ${names[side]}` : side === team || !team ? 'Spieler' : 'Gegenspieler';
     labels.push([group, personLabel(side, nr)]);
   }
-  if (tag.shootout) labels.push(['Penaltyschießen', 'ja']);
+  if (isShootout(tag)) labels.push(['Penaltyschießen', 'ja']);
   if (tag.comment) labels.push(['Kommentar', tag.comment]);
   const clips = [{ code: team ? `${def.label} ${names[team]}` : def.label, kind: 'tag', tagKey: def.key,
     color: team ? COLORS[team] : COLORS.special, start, end, labels }];

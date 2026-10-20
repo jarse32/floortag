@@ -6,7 +6,7 @@ import { timeOf, bounds, suggestStart, suggestEnd, gameTimeAt, videoTimeAt } fro
 import { buildChapters } from './chapters.js';
 import { buildClips, EDL_SCOPES } from './export.js';
 import { powerPlayPhases } from './phases.js';
-import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, faceoffAdvantage, goalieAt, goalkeepers } from './tags.js';
+import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, isShootout, faceoffAdvantage, goalieAt, goalkeepers } from './tags.js';
 import { personLabel } from './game.js';
 import { statPeriods, statRows, computeStats, signed, goalSituations, situationLabels } from './stats.js';
 import { lineupOf, forcedPlayers, fieldPlayers } from './lineups.js';
@@ -261,7 +261,7 @@ function renderTagBar() {
     return `<div class="code-group"><span class="code-name"><kbd>${i + 1}</kbd> ${esc(c.label)}</span><div class="code-btns">${buttons}</div></div>`;
   }).join('');
   let so = '';
-  if (ui.shootout) {
+  if (ui.shootout || state.tags.some(isShootout)) {
     const sc = shootoutScore();
     so = `<span class="so-info">Stand ${sc.home}:${sc.guest} nach ${sc.attempts} Versuch${sc.attempts === 1 ? '' : 'en'}, als Nächstes ${esc(names[nextShootoutTeam(team)])}</span>`;
   }
@@ -270,6 +270,7 @@ function renderTagBar() {
       <span class="lbl">Neue Tags für</span>
       <div class="segbtns">${seg('tagteam', [['home', names.home], ['guest', names.guest]], team)}</div>
       <label class="check"><input type="checkbox" id="shootoutCheck" ${ui.shootout ? 'checked' : ''}> Penaltyschießen</label>
+      <span class="so-hint">Nach dem gesetzten Beginn des Penaltyschießens automatisch</span>
       ${so}
       <span id="goalieInfo" class="goalie-info"></span>
     </div>
@@ -335,12 +336,12 @@ function renderTagList() {
     const def = codeOf(t.code);
     const main = [def.label, t.outcome && outcomeLabel(def, t.outcome, names), t.place && placeLabel(def, t.place, names)].filter(Boolean).join(' · ');
     const players = ['home', 'guest'].filter(s => t.players[s] != null).map(s => personLabel(s, t.players[s])).join(', ');
-    const sub = [t.team ? names[t.team] : '', players, t.shootout ? 'Penaltyschießen' : '', def.phase ? (t.end != null ? `bis ${fmt(t.end)}` : 'läuft') : '', t.comment].filter(Boolean).join(' · ');
+    const sub = [t.team ? names[t.team] : '', players, isShootout(t) ? 'Penaltyschießen' : '', def.phase ? (t.end != null ? `bis ${fmt(t.end)}` : 'läuft') : '', t.comment].filter(Boolean).join(' · ');
     return `<li class="tagrow ${t.team || ''} ${t.id === ui.tagId ? 'sel' : ''}">
       <button data-act="selecttag" data-id="${t.id}">
         <span class="tr-time">${fmt(t.v)}</span>
         <span><span class="tr-main">${esc(main)}</span>${sub ? `<br><span class="tr-sub">${esc(sub)}</span>` : ''}</span>
-      </button></li>`;
+      </button><button class="tr-del" data-act="deltag" data-id="${t.id}" data-modes="analysis" title="Tag löschen" aria-label="Tag löschen">✕</button></li>`;
   }).join('');
 }
 

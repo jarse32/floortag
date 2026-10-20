@@ -5,6 +5,7 @@
 // Die festen Schlüssel (key) machen Analysen über Teams und Spiele hinweg vergleichbar.
 // Beschreibung des Standards: docs/tag-standard.md
 import { state } from './state.js';
+import { periodAtVideo } from './sync.js';
 
 export const TAG_STANDARD_VERSION = 1;
 
@@ -111,8 +112,16 @@ export function setPlayer(id, side, nr) {
   if (!tag) return;
   tag.players[side] = tag.players[side] === nr ? null : nr; // zweiter Klick nimmt die Auswahl zurück
 }
+// Gibt den gelöschten Tag zurück, damit er sich wiederherstellen lässt
 export function removeTag(id) {
+  const tag = findTag(id);
   state.tags = state.tags.filter(t => t.id !== id);
+  return tag || null;
+}
+export function restoreTag(tag) {
+  if (!tag || findTag(tag.id)) return;
+  state.tags.push(tag);
+  sortTags();
 }
 // Laufende Phase eines Teams (z. B. Torhüter raus ohne Ende)
 export function openPhase(code, team) {
@@ -120,7 +129,16 @@ export function openPhase(code, team) {
 }
 
 // ===== Penaltyschießen =====
-const shootoutTags = () => state.tags.filter(t => t.code === 'penalty_shot' && t.shootout);
+// Videostelle im Penaltyschießen (Abschnitt 5), sobald dessen Beginn gesetzt ist
+export function inShootout(v) {
+  const where = periodAtVideo(v);
+  return !!where && where.p === 5;
+}
+// Ein Penalty gehört zum Penaltyschießen, wenn er so markiert wurde oder im Abschnitt 5 liegt
+export function isShootout(t) {
+  return t.code === 'penalty_shot' && (!!t.shootout || inShootout(t.v));
+}
+const shootoutTags = () => state.tags.filter(isShootout);
 export function nextShootoutTeam(fallback = 'home') {
   const list = shootoutTags();
   return list.length ? other(list[list.length - 1].team) || fallback : fallback;

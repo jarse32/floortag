@@ -4,7 +4,7 @@ import { extractVideoId, fmt, fmtGame, esc } from './format.js';
 import { prepareGame, events, findEvent, periodLength } from './game.js';
 import { timeOf, place, setMissing, addAnchor, removeAnchor } from './sync.js';
 import { save, restore, buildSyncFile, syncFileName, applySyncFile, saveTags, buildTagFile, tagFileName, applyTagFile } from './storage.js';
-import { CATALOG, codeOf, addTag, findTag, updateTag, setPlayer, removeTag, openPhase, nextShootoutTeam } from './tags.js';
+import { CATALOG, codeOf, addTag, findTag, updateTag, setPlayer, removeTag, restoreTag, openPhase, nextShootoutTeam, inShootout } from './tags.js';
 import { buildClips, toSportscodeXml, toCsv, toEdl } from './export.js';
 import * as yt from './player.js';
 import { hasConsent, giveConsent, revokeConsent, isRemembered } from './consent.js';
@@ -425,10 +425,20 @@ function createTag(code, outcome = null, place = null) {
     const open = openPhase(code, ui.tagTeam);
     if (open) { updateTag(open.id, { end: yt.now() }); ui.tagId = open.id; commitTags(); return; }
   }
-  const shootout = ui.shootout && code === 'penalty_shot';
+  const v = yt.now();
+  const shootout = code === 'penalty_shot' && (ui.shootout || inShootout(v));
   const team = shootout ? nextShootoutTeam(ui.tagTeam) : ui.tagTeam;
-  ui.tagId = addTag({ code, v: yt.now(), team, outcome, place, shootout }).id;
+  ui.tagId = addTag({ code, v, team, outcome, place, shootout }).id;
   commitTags();
+}
+// Tag löschen, mit „Rückgängig“ in der Meldung
+function deleteTag(id) {
+  const tag = removeTag(id);
+  if (!tag) return;
+  if (ui.tagId === id) ui.tagId = null;
+  commitTags();
+  const def = codeOf(tag.code);
+  showToast(`Tag „${def ? def.label : tag.code}“ bei ${fmt(tag.v)} gelöscht.`, ['Rückgängig', () => { restoreTag(tag); ui.tagId = tag.id; commitTags(); }]);
 }
 $('#tagbar').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -443,7 +453,7 @@ $('#tagbar').addEventListener('click', e => {
   else if (d.tagact === 'nudge') updateTag(tag.id, { v: tag.v + Number(d.d) });
   else if (d.tagact === 'seek') { yt.seek(tag.v - 3); return; }
   else if (d.tagact === 'endnow') updateTag(tag.id, { end: yt.now() });
-  else if (d.tagact === 'delete') { removeTag(tag.id); ui.tagId = null; }
+  else if (d.tagact === 'delete') { deleteTag(tag.id); return; }
   else if (d.tagact === 'close') { ui.tagId = null; renderAll(); return; }
   else return;
   commitTags();
@@ -455,6 +465,8 @@ $('#tagbar').addEventListener('change', e => {
 // Rechte Spalte: Reiter und Tag-Liste
 document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { ui.sideTab = b.dataset.tab; renderAll(); }));
 $('#tagList').addEventListener('click', e => {
+  const del = e.target.closest('[data-act="deltag"]');
+  if (del) { if (ui.mode !== 'view') deleteTag(del.dataset.id); return; }
   const b = e.target.closest('[data-act="selecttag"]'); if (!b) return;
   const tag = findTag(b.dataset.id); if (!tag) return;
   if (ui.mode === 'view') { yt.seek(tag.v - state.leadIn); yt.play(); return; }
@@ -582,15 +594,16 @@ document.addEventListener('keydown', e => {
   else if (k === '.') yt.seek(yt.now() + 1);
   else if (k === '-') stepRate(-1);
   else if (k === '+') stepRate(1);
-  // Tags: Ziffer = Code, Q/W/E = Ergebnis, T = Team, V/X im Penaltyschießen, Esc schließt den Nachtrag
+  // Tags: Ziffer = Code, Q/W/E = Ergebnis, T = Team, V/X im Penaltyschießen, Esc schließt den Nachtrag, Entf löscht
   else if (/^[1-9]$/.test(k) && CATALOG[Number(k) - 1]) createTag(CATALOG[Number(k) - 1].key);
   else if (['q', 'w', 'e'].includes(k) && ui.tagId) {
     const tag = findTag(ui.tagId), outcome = tag && (codeOf(tag.code).outcomes || [])[['q', 'w', 'e'].indexOf(k)];
     if (outcome) { updateTag(tag.id, { outcome: outcome[0] }); commitTags(); }
   }
   else if (k === 't') { ui.tagTeam = ui.tagTeam === 'home' ? 'guest' : 'home'; renderAll(); }
-  else if (ui.shootout && (k === 'v' || k === 'x')) createTag('penalty_shot', k === 'v' ? 'goal' : 'miss');
+  else if ((ui.shootout || inShootout(yt.now())) && (k === 'v' || k === 'x')) createTag('penalty_shot', k === 'v' ? 'goal' : 'miss');
   else if (k === 'escape' && ui.tagId) { ui.tagId = null; renderAll(); }
+  else if ((k === 'delete' || k === 'backspace') && ui.tagId && ui.mode === 'analysis') { e.preventDefault(); deleteTag(ui.tagId); }
   else if (k === 'enter' && ui.selectedId != null) { e.preventDefault(); const ev = findEvent(ui.selectedId); if (ev) { place(ev, yt.now()); commit(); } }
   else if (k === 'n') {
     const evs = events(), i = evs.findIndex(x => x.event_id === ui.selectedId);
@@ -649,10 +662,19 @@ $('#shareBtn').addEventListener('click', async () => {
 });
 // Kurze Meldung oben, verschwindet von selbst
 let toastTimer = null;
-function showToast(text) {
+// action: optional [Beschriftung, Funktion], z. B. „Rückgängig“
+let toastAction = null;
+function showToast(text, action = null) {
   const t = $('#toast');
-  t.textContent = text; t.hidden = false;
+  t.textContent = text;
+  toastAction = action ? action[1] : null;
+  if (action) t.insertAdjacentHTML('beforeend', ` <button class="toast-action" type="button">${esc(action[0])}</button>`);
+  t.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 7000);
+  toastTimer = setTimeout(() => { t.hidden = true; toastAction = null; }, action ? 10000 : 7000);
 }
-$('#toast').addEventListener('click', () => { $('#toast').hidden = true; });
+$('#toast').addEventListener('click', e => {
+  const fn = e.target.closest('.toast-action') ? toastAction : null;
+  $('#toast').hidden = true; toastAction = null;
+  if (fn) fn();
+});

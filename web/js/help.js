@@ -27,7 +27,7 @@ export const GUIDES = {
     steps: [
       { title: 'Zuerst die Drittelgrenzen', text: 'Setz im Modus Sync die Drittelgrenzen. Dann ordnet FloorTag Tags den Dritteln zu und die Statistik stimmt je Drittel.', target: '#periods' },
       { title: 'Taggen', text: 'Wähl bei „Neue Tags für“ das Team und klick beim Schauen auf den passenden Button, z. B. „Torschuss · aufs Tor“. Getaggt wird die aktuelle Videostelle, das Video läuft weiter. Tasten 1–9 gehen auch.', target: '#tagbar' },
-      { title: 'Nachtragen', text: 'Nach jedem Tag erscheint darunter die Nachtragsleiste: Spieler per Rückennummer, Ort, Kommentar, ±1 s. Das geht auch später über den Reiter „Tags“.', target: '#tagbar' },
+      { title: 'Nachtragen', text: 'Nach jedem Tag erscheint darunter die Nachtragsleiste: Spieler per Rückennummer, Ort, Kommentar, ±1 s. Das geht auch später über den Reiter „Tags“. Löschen: ✕ in der Tag-Liste oder Entf beim ausgewählten Tag, danach lässt sich das rückgängig machen.', target: '#tagbar' },
       { title: 'Torhüter', text: '„Torhüter raus“ startest und beendest du per Klick. Bei einem Torhüterwechsel setzt du „Torhüter · Wechsel ab hier“. Saves werden dem Torhüter zugeordnet, der gerade im Tor steht.', target: '#tagbar' },
       { title: 'Statistik', text: 'Der Reiter „Statistik“ zeigt Schüsse, Fangquote, Bullys und Überzahl je Drittel. Hak „Schüsse vollständig erfasst“ ab, sobald du alle Schüsse eines Drittels getaggt hast, erst dann erscheint die Fangquote.', target: '[data-tab="stats"]' },
       { title: 'Plus/Minus', text: 'Klick in der Ereignisliste auf ein Tor und tipp unter „Auf dem Feld“ die Spieler an. Schütze und Vorlage sind schon markiert.', target: '#events' },
@@ -35,7 +35,7 @@ export const GUIDES = {
     ],
     tips: [
       'Jede Szene wird einmal aus Sicht des handelnden Teams getaggt. Die Gegenseite (Save, Block, Ballverlust …) entsteht im Export automatisch.',
-      'Im Penaltyschießen das Häkchen „Penaltyschießen“ setzen: Das Team wechselt automatisch, V = verwandelt, X = nicht verwandelt.',
+      'Penaltyschießen: Setz im Sync den Beginn des Penaltyschießens, dann zählt jeder Penalty-Tag danach als Versuch (ohne gesetzten Beginn das Häkchen „Penaltyschießen“ setzen). Pro Versuch V = verwandelt, X = nicht verwandelt, das Team wechselt automatisch. Der Saisonmanager kennt nur das entscheidende Tor, alle Versuche taggst du selbst.',
       'Tags liegen nur in deinem Browser. Sichere sie zwischendurch über „Tags speichern“ im Reiter „Tags“.'
     ]
   },

@@ -1,10 +1,10 @@
 // Tests für eigene Tags (FloorTag-Standard v1), Tag-Datei und Export
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CATALOG, codeOf, addTag, updateTag, setPlayer, removeTag, openPhase, nextShootoutTeam, shootoutScore, faceoffAdvantage } from '../web/js/tags.js';
+import { CATALOG, codeOf, addTag, updateTag, setPlayer, removeTag, restoreTag, openPhase, nextShootoutTeam, shootoutScore, faceoffAdvantage, isShootout, inShootout } from '../web/js/tags.js';
 import { buildTagFile, applyTagFile } from '../web/js/storage.js';
 import { buildClips, tagClips, toSportscodeXml, toEdl } from '../web/js/export.js';
-import { setup } from './helpers.js';
+import { setup, miniGame } from './helpers.js';
 
 const names = { home: 'BAL', guest: 'TVEH' };
 const label = (c, g) => Object.fromEntries(c.labels)[g];
@@ -215,4 +215,42 @@ test('codeOf liefert Definitionen, unbekannte Codes werfen beim Anlegen', () => 
   assert.equal(codeOf('shot').label, 'Torschuss');
   setup();
   assert.throws(() => addTag({ code: 'gibtsnicht', v: 1 }), /Unbekannter Code/);
+});
+
+// ===== Penaltyschießen aus Abschnitt 5, Löschen und Wiederherstellen =====
+
+test('Penalty-Tags nach dem Beginn des Penaltyschießens zählen automatisch dazu', () => {
+  // Spiel mit Penaltyschießen: Der Saisonmanager kennt nur das entscheidende Tor (Abschnitt 5)
+  const s = setup(miniGame([{ event_id: 1, event_type: 'goal', event_team: 'guest', period: 5, time: '10:00', home_goals: 3, guest_goals: 4 }], { result: { overtime: true } }));
+  s.periods[5] = { start: 7000 };
+  const before = addTag({ code: 'penalty_shot', v: 6900, team: 'home', outcome: 'goal' });
+  const a = addTag({ code: 'penalty_shot', v: 7010, team: 'home', outcome: 'miss' });
+  const b = addTag({ code: 'penalty_shot', v: 7040, team: 'guest', outcome: 'goal' });
+  const shot = addTag({ code: 'shot', v: 7050, team: 'home', outcome: 'on' });
+  assert.equal(inShootout(7010), true);
+  assert.deepEqual([before, a, b, shot].map(isShootout), [false, true, true, false]);
+  assert.deepEqual(shootoutScore(), { home: 0, guest: 1, attempts: 2 });
+  assert.equal(nextShootoutTeam('guest'), 'home');
+});
+
+test('Ohne gesetzten Beginn zählt nur die Markierung', () => {
+  setup();
+  const a = addTag({ code: 'penalty_shot', v: 7010, team: 'home', outcome: 'miss' });
+  const b = addTag({ code: 'penalty_shot', v: 7040, team: 'guest', outcome: 'goal', shootout: true });
+  assert.deepEqual([a, b].map(isShootout), [false, true]);
+});
+
+test('Gelöschter Tag lässt sich mit allen Angaben wiederherstellen', () => {
+  const s = setup();
+  const a = addTag({ code: 'shot', v: 100, team: 'home', outcome: 'on' });
+  const b = addTag({ code: 'shot', v: 200, team: 'guest', outcome: 'off' });
+  updateTag(a.id, { comment: 'Schlagschuss' });
+  const removed = removeTag(a.id);
+  assert.equal(s.tags.length, 1);
+  restoreTag(removed);
+  assert.deepEqual(s.tags.map(t => t.id), [a.id, b.id]);
+  assert.equal(s.tags[0].comment, 'Schlagschuss');
+  restoreTag(removed); // doppelt wiederherstellen legt keinen zweiten an
+  assert.equal(s.tags.length, 2);
+  assert.equal(removeTag('gibtsnicht'), null);
 });
