@@ -117,3 +117,15 @@ test('Export: Phase mit Torhüter raus trägt das Label', () => {
   assert.equal(label(pp[0], 'Torhüter raus'), 'GAST');
   assert.deepEqual([pp[0].start, pp[0].end], [2140, 2190]);
 });
+
+test('Phase nach dem Schlusspfiff beendet: zählt bis zum Drittelende (Spiel 58665)', () => {
+  linear();
+  emptyNet('home', 5000 + 1100, 5000 + 1250); // 3. Drittel ab 18:20, beendet 50 s nach dem Drittelende
+  assert.deepEqual(emptyNetWindows().home, [{ start: 3500, end: 3600, v: 6100, vEnd: 6250 }]);
+});
+
+test('Phase vor dem Anpfiff begonnen: zählt ab Drittelbeginn', () => {
+  linear();
+  emptyNet('guest', 2950, 3030); // Beginn in der Pause vor dem 2. Drittel, Ende bei 0:30
+  assert.deepEqual(emptyNetWindows().guest, [{ start: 1200, end: 1230, v: 2950, vEnd: 3030 }]);
+});

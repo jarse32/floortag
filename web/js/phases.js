@@ -87,7 +87,8 @@ export function penaltyWindowsByTeam() {
 }
 
 // Phasen „Torhüter raus“ (eigene Tags, Videozeit) als Zeitfenster auf der Gesamtspielzeit.
-// Beginn und Ende müssen in markierten Dritteln liegen; eine noch laufende Phase gilt bis Spielende.
+// Eine noch laufende Phase gilt bis Spielende. Liegt nur Beginn oder nur Ende außerhalb eines markierten
+// Drittels (z. B. beendet nach dem Schlusspfiff), zählt das Drittel der anderen Seite bis zu seinem Rand.
 // v/vEnd: dieselbe Phase in Videozeit, für den genauen Vergleich mit Toren (siehe stats.js)
 export function emptyNetWindows() {
   const out = { home: [], guest: [] };
@@ -95,8 +96,10 @@ export function emptyNetWindows() {
   const gameEnd = periods.length ? periods[periods.length - 1].to : 0;
   for (const t of state.tags || []) {
     if (t.code !== 'empty_net' || !out[t.team]) continue;
-    const a = periodAtVideo(t.v), b = t.end != null ? periodAtVideo(t.end) : null;
-    if (!a || (t.end != null && !b)) continue;
+    let a = periodAtVideo(t.v), b = t.end != null ? periodAtVideo(t.end) : null;
+    if (!a && b) a = { p: b.p, g: 0 };                                       // Beginn vor dem Anpfiff
+    if (!a) continue;
+    if (t.end != null && !b) b = { p: a.p, g: periodLength(a.p) };           // Ende nach dem Drittelende
     const start = offset(a.p) + a.g, end = b ? offset(b.p) + b.g : gameEnd;
     if (end > start || (b && t.end > t.v)) out[t.team].push({ start, end: Math.max(end, start), v: t.v, vEnd: t.end != null ? t.end : Infinity });
   }
