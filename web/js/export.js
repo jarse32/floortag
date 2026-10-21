@@ -4,7 +4,7 @@
 // Spätere eigene Tags und Phasen (Etappe 5) werden einfach weitere Clips.
 import { state } from './state.js';
 import { fmtGame } from './format.js';
-import { events, periodList, periodTitle, teamShort, personLabel } from './game.js';
+import { events, periodList, periodTitle, teamShort, personLabel, gameSec } from './game.js';
 import { timeOf, videoTimeAt, periodAtVideo } from './sync.js';
 import { codeOf, other, outcomeLabel, placeLabel, faceoffAdvantage, goalieAt, isShootout } from './tags.js';
 import { powerPlayPhases } from './phases.js';
@@ -29,7 +29,7 @@ export function buildClips() {
     if (t == null || t < 0) continue; // ohne Zeit, nicht im Video oder vor Streambeginn
     const p = Math.floor(e.period), team = teamShort(e.event_team);
     const labels = [['Team', team], ['Abschnitt', periodTitle(p)]];
-    if (p !== 5) labels.push(['Spielzeit', fmtGame(state.gs[e.event_id])]);
+    if (p !== 5) labels.push(['Spielzeit', fmtGame(gameSec(e))]);
     let code, color = COLORS[e.event_team];
     if (e.event_type === 'goal') {
       code = `Tor ${team}`;

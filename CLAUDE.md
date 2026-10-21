@@ -100,6 +100,7 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 - Jedes manuell gesetzte Ereignis wird selbst zum Anker und verbessert die Schätzung der übrigen.
 - **Grenzen:** Ein Ereignis darf nicht vor dem vorherigen oder nach dem nächsten Anker liegen. Ereignisse mit gleicher Spielzeit (z. B. Tor und Auszeit bei 18:55) dürfen auf derselben Videozeit liegen.
 - Penaltyschießen hat keine Spielzeit; dort wird pro Versuch mit 30 Sekunden Abstand geschätzt.
+- **Falsche Spielzeit im Saisonmanager** (z. B. Tor zu früh eingetragen, Spiel 58665): Liegt die gewünschte Stelle mehr als 1 s außerhalb der Grenzen, setzt `place()` an den Rand und meldet die Stelle; die Ereigniszeile bietet „Spielzeit korrigieren und dort setzen“ an (vorausgefüllt mit `gameTimeFor`). Korrekturen liegen in `state.gsFix` (Sync-Ebene: gespeichert, im Teilen-Link, in der Sync-Datei als `game_time_fixes`, veröffentlicht über `sync.php`). Alle Rechnungen nutzen `gameSec(e)` aus `game.js` statt `state.gs`; die Liste zeigt korrigierte Zeiten mit *, die Saisonmanager-Zeit bleibt sichtbar und lässt sich wiederherstellen. Spielstände (`home_goals`/`guest_goals`) bleiben wie im Saisonmanager.
 
 ### Streamlücken und freie Anker
 

@@ -375,3 +375,11 @@ main.overview { display: block; max-width: 1100px; margin: 0 auto; padding: 1.5r
 .ov-daynav { display: flex; align-items: center; gap: .4rem; margin: .4rem 0 .8rem; }
 .ov-daynav select { flex: 1; max-width: 22rem; padding: .4rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
 .ov-daynav .btn { font-size: 1.1rem; line-height: 1; padding: .35rem .7rem; }
+
+/* Spielzeit korrigieren, wenn der Saisonmanager falsch liegt */
+.fixbox { display: grid; gap: .45rem; margin-top: .3rem; padding: .6rem .7rem; border: 1px solid var(--estimate); border-radius: 8px; background: var(--surface); font-size: .88rem; }
+.fixbox .row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.fixbox label { display: inline-flex; align-items: center; gap: .35rem; color: var(--muted); }
+.fix-input { width: 4.2rem; padding: .25rem .4rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: 600 .95rem var(--display); font-variant-numeric: tabular-nums; }
+.fixnote { margin-top: .3rem; font-size: .85rem; color: var(--muted); }
+.gt-fixed { color: var(--estimate); cursor: help; }

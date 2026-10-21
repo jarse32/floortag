@@ -78,12 +78,18 @@ function sanitize_sync(array $s, int $gameId, string $video): array {
         if (count($anchors) >= 100) break;
     }
     $missing = array_values(array_slice(array_filter((array) ($s['not_in_video'] ?? []), 'is_int'), 0, 500));
+    $fixes = [];
+    foreach ((array) ($s['game_time_fixes'] ?? []) as $f) {
+        if (!is_array($f) || !is_int($f['event_id'] ?? null) || !preg_match('/^\d{1,3}:\d{2}$/', (string) ($f['time'] ?? ''))) continue;
+        $fixes[] = ['event_id' => $f['event_id'], 'time' => $f['time']];
+        if (count($fixes) >= 100) break;
+    }
     $len = fn($k, $min, $max) => is_int($s[$k] ?? null) && $s[$k] >= $min && $s[$k] <= $max ? $s[$k] : null;
     return [
         'format' => 'floortag-sync', 'version' => 2, 'game_id' => $gameId, 'video_id' => $video,
         'period_length_sec' => $len('period_length_sec', 300, 1800), 'overtime_length_sec' => $len('overtime_length_sec', 60, 1200),
         'pause_length_sec' => $len('pause_length_sec', 60, 1800),
-        'periods' => (object) $periods, 'events' => $events, 'free_anchors' => $anchors, 'not_in_video' => $missing
+        'periods' => (object) $periods, 'events' => $events, 'free_anchors' => $anchors, 'not_in_video' => $missing, 'game_time_fixes' => $fixes
     ];
 }
 function summary(array $sync): array {

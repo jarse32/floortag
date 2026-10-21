@@ -2,7 +2,7 @@
 import { state, ui } from './state.js';
 import { extractVideoId, fmt, fmtGame, esc } from './format.js';
 import { prepareGame, events, findEvent, periodLength } from './game.js';
-import { timeOf, place, setMissing, addAnchor, removeAnchor } from './sync.js';
+import { timeOf, place, setMissing, addAnchor, removeAnchor, gameTimeFor, correctGameTime } from './sync.js';
 import { save, restore, buildSyncFile, syncFileName, applySyncFile, saveTags, buildTagFile, tagFileName, applyTagFile } from './storage.js';
 import { CATALOG, codeOf, addTag, findTag, updateTag, setPlayer, removeTag, restoreTag, openPhase, nextShootoutTeam, inShootout } from './tags.js';
 import { buildClips, toSportscodeXml, toCsv, toEdl } from './export.js';
@@ -56,6 +56,7 @@ renderAll();
 // Ereignis auswählen. Ansehen: Szene ab Vorlauf abspielen. Sync/Analyse: zur Szene springen und
 // die vorherige Stelle merken, damit man das Ereignis dort setzen kann („Dort setzen“).
 function selectEvent(ev, toggleOff) {
+  if (ui.outOfOrder && ui.outOfOrder.id !== ev.event_id) ui.outOfOrder = null;
   const t = timeOf(ev);
   // Ohne Zeit gibt es kein Sprungziel: erklären statt stumm nichts zu tun
   if (t == null && !toggleOff) {
@@ -361,6 +362,12 @@ function focusAnchorInput() {
 }
 
 // ===== Ereignisse =====
+// Setzen mit Angebot zur Spielzeit-Korrektur, falls die Stelle nicht zur Reihenfolge passt
+function placeEvent(ev, v) {
+  const wanted = place(ev, v);
+  ui.outOfOrder = wanted != null && Math.floor(ev.period) !== 5 ? { id: ev.event_id, v: wanted, g: gameTimeFor(ev, wanted) } : null;
+  commit();
+}
 function handleEventAction(e) {
   const b = e.target.closest('[data-act]'); if (!b) return;
   if (b.dataset.act !== 'select' && b.dataset.act !== 'placeback' && b.dataset.act !== 'goback') ui.jumpFrom = null;
@@ -374,13 +381,24 @@ function handleEventAction(e) {
       // Ereignis an die Stelle vor dem Sprung setzen und dorthin zurück
       const back = ui.jumpFrom;
       if (back == null) break;
-      place(ev, back); ui.jumpFrom = null; commit(); yt.seek(back);
+      ui.jumpFrom = null; placeEvent(ev, back); yt.seek(back);
       break;
     }
     case 'goback': if (ui.jumpFrom != null) { yt.seek(ui.jumpFrom); ui.jumpFrom = null; renderAll(); } break;
-    case 'setnow': place(ev, yt.now()); commit(); break;
+    case 'setnow': placeEvent(ev, yt.now()); break;
+    case 'fixtime': {
+      const o = ui.outOfOrder, input = document.querySelector(`[data-fix-input="${ev.event_id}"]`);
+      if (!o || o.id !== ev.event_id) break;
+      const m = input && /^\s*(\d{1,2}):([0-5]\d)\s*$/.exec(input.value);
+      if (!m) { showToast('Spielzeit bitte als Minuten:Sekunden eingeben, z. B. 7:05.'); break; }
+      const g = Math.min(Number(m[1]) * 60 + Number(m[2]), periodLength(Math.floor(ev.period)) || Infinity);
+      ui.outOfOrder = null; correctGameTime(ev, g, o.v); commit();
+      break;
+    }
+    case 'fixdismiss': ui.outOfOrder = null; renderAll(); break;
+    case 'unfix': ui.outOfOrder = null; correctGameTime(ev, null); commit(); break;
     case 'jump': yt.seek(t - state.leadIn); yt.play(); break;
-    case 'nudge': place(ev, t + Number(b.dataset.d)); commit(); yt.seek(timeOf(ev) - 3); break;
+    case 'nudge': placeEvent(ev, t + Number(b.dataset.d)); yt.seek(timeOf(ev) - 3); break;
     case 'unplace': delete state.placed[ev.event_id]; commit(); break;
     case 'missing': setMissing(ev, true); commit(); break;
     case 'unmissing': setMissing(ev, false); commit(); break;
@@ -604,7 +622,7 @@ document.addEventListener('keydown', e => {
   else if ((ui.shootout || inShootout(yt.now())) && (k === 'v' || k === 'x')) createTag('penalty_shot', k === 'v' ? 'goal' : 'miss');
   else if (k === 'escape' && ui.tagId) { ui.tagId = null; renderAll(); }
   else if ((k === 'delete' || k === 'backspace') && ui.tagId && ui.mode === 'analysis') { e.preventDefault(); deleteTag(ui.tagId); }
-  else if (k === 'enter' && ui.selectedId != null) { e.preventDefault(); const ev = findEvent(ui.selectedId); if (ev) { place(ev, yt.now()); commit(); } }
+  else if (k === 'enter' && ui.selectedId != null) { e.preventDefault(); const ev = findEvent(ui.selectedId); if (ev) placeEvent(ev, yt.now()); }
   else if (k === 'n') {
     const evs = events(), i = evs.findIndex(x => x.event_id === ui.selectedId);
     const next = evs[(i + 1) % evs.length];

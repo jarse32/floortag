@@ -17,6 +17,7 @@ export const GUIDES = {
     tips: [
       'Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, Komma/Punkt ±1 s, − / + Tempo, Enter setzt das gewählte Ereignis.',
       'Streamlücke? Setz in der Drittelkarte je einen „freien Anker“ vor und nach der Lücke. Ereignisse in der Lücke markierst du als „Nicht im Video“.',
+      'Spielzeit im Saisonmanager falsch? Setz das Ereignis an die richtige Stelle. Passt sie nicht zur Reihenfolge, bietet FloorTag an, die Spielzeit zu korrigieren (markiert mit *).',
       'Unter „Übersicht“ siehst du alle Spiele dieses Browsers mit ihrer Stufe und den Spielplan einer Liga.',
       'Dein Stand wird automatisch in diesem Browser gespeichert, nicht auf anderen Geräten. Fürs Handy oder für andere schickst du einen Link über „Link teilen“. „Sync speichern“ legt zusätzlich eine Datei an.'
     ]

@@ -10,7 +10,7 @@
 //   Tore zählen nur bei echter Überzahl (ungleiche Zahl laufender Strafen)
 // Abweichend vom Dashboard rechnet FloorTag mit der eingestellten Drittellänge statt fest 20 Min.
 import { state } from './state.js';
-import { events, periodList, periodLength } from './game.js';
+import { events, periodList, periodLength, gameSec } from './game.js';
 import { periodAtVideo } from './sync.js';
 
 // Spielzeit über alle Abschnitte hinweg (Drittel 2 beginnt bei Drittellänge usw.)
@@ -20,7 +20,7 @@ export function offset(p) {
   return o;
 }
 export function absTime(e) {
-  return offset(Math.floor(e.period)) + state.gs[e.event_id];
+  return offset(Math.floor(e.period)) + gameSec(e);
 }
 // Abschnitte mit Spielzeit (ohne Penaltyschießen) und ihre Grenzen auf der Gesamtspielzeit
 export function playedPeriods() {

@@ -13,7 +13,7 @@ export function save() {
   if (state.sharedView) return; // geteilte Ansicht überschreibt nie den eigenen Stand
   try {
     localStorage.setItem(storageKey(), JSON.stringify({
-      periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing,
+      periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing, gsFix: state.gsFix,
       periodLen: state.periodLen, otLen: state.otLen, pauseLen: state.pauseLen,
       leadIn: state.leadIn, leadOut: state.leadOut, fps: state.fps, edlScope: state.edlScope, counterLen: state.counterLen,
       kleinfeld: state.kleinfeld, includePenalties: state.includePenalties, hideYouth: state.hideYouth,
@@ -36,7 +36,7 @@ export function saveMeta() {
 }
 // Liefert true, wenn es für dieses Spiel und Video einen eigenen Sync-Stand gab
 export function restore() {
-  state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.tags = []; state.complete = {}; state.lineups = {};
+  state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.gsFix = {}; state.tags = []; state.complete = {}; state.lineups = {};
   state.syncSource = null; state.lengthSource = null;
   let hadLocal = false;
   try {
@@ -118,7 +118,9 @@ export function buildSyncFile() {
       event_id: e.event_id, period: e.period, time: e.time, video_sec: state.placed[e.event_id]
     })),
     free_anchors: freeAnchors,
-    not_in_video: events().filter(e => state.missing[e.event_id]).map(e => e.event_id)
+    not_in_video: events().filter(e => state.missing[e.event_id]).map(e => e.event_id),
+    // Spielzeiten, die im Saisonmanager falsch stehen (optional, ältere Versionen ignorieren das Feld)
+    game_time_fixes: events().filter(e => state.gsFix[e.event_id] != null).map(e => ({ event_id: e.event_id, time: fmtGame(state.gsFix[e.event_id]) }))
   };
 }
 export function syncFileName() {
@@ -139,6 +141,8 @@ export function applySyncFile(d) {
   for (const list of Object.values(state.anchors)) list.sort((x, y) => x.g - y.g);
   state.missing = {};
   for (const id of d.not_in_video || []) state.missing[id] = true;
+  state.gsFix = {};
+  for (const f of d.game_time_fixes || []) if (Number.isInteger(f.event_id) && /^\d{1,3}:\d{2}$/.test(f.time || '')) state.gsFix[f.event_id] = parseTime(f.time);
   if (d.period_length_sec) state.periodLen = d.period_length_sec;
   if (d.overtime_length_sec) state.otLen = d.overtime_length_sec;
   if (d.pause_length_sec) state.pauseLen = d.pause_length_sec;

@@ -1,6 +1,6 @@
 // ===== Sync-Logik: Ankerpunkte und Interpolation =====
 import { state } from './state.js';
-import { events, periodLength, periodList } from './game.js';
+import { events, periodLength, periodList, gameSec } from './game.js';
 
 // Anker eines Abschnitts: Beginn, Ende, freie Anker und alle gesetzten Ereignisse.
 // exclude = { id } für ein Ereignis oder { anchor } für den Index eines freien Ankers
@@ -11,7 +11,7 @@ function anchors(p, exclude = {}) {
   (state.anchors[p] || []).forEach((x, i) => { if (i !== exclude.anchor) a.push({ g: x.g, v: x.v }); });
   for (const e of events()) {
     if (Math.floor(e.period) === p && e.event_id !== exclude.id && state.placed[e.event_id] != null && !state.missing[e.event_id]) {
-      a.push({ g: state.gs[e.event_id], v: state.placed[e.event_id] });
+      a.push({ g: gameSec(e), v: state.placed[e.event_id] });
     }
   }
   return a.sort((x, y) => x.g - y.g || x.v - y.v);
@@ -34,7 +34,7 @@ function interpolate(a, g) {
 }
 // Schätzt die Videozeit eines Ereignisses
 function estimate(e) {
-  return interpolate(anchors(Math.floor(e.period), { id: e.event_id }), state.gs[e.event_id]);
+  return interpolate(anchors(Math.floor(e.period), { id: e.event_id }), gameSec(e));
 }
 // Videozeit zu einer beliebigen Spielzeit g im Abschnitt p (z. B. Beginn und Ende von Phasen)
 export function videoTimeAt(p, g) {
@@ -81,7 +81,7 @@ function boundsFor(a, g) {
 }
 // Grenzen: Ein Ereignis darf nicht vor dem vorherigen oder nach dem nächsten Anker liegen
 export function bounds(e) {
-  return boundsFor(anchors(Math.floor(e.period), { id: e.event_id }), state.gs[e.event_id]);
+  return boundsFor(anchors(Math.floor(e.period), { id: e.event_id }), gameSec(e));
 }
 function clamp(v, { lo, hi }) {
   let val = v;
@@ -109,10 +109,37 @@ export function suggestStart(p) {
   return prev.end != null ? prev.end + state.pauseLen : null;
 }
 
-// Setzt ein Ereignis als Anker, begrenzt auf die benachbarten Anker
+// Setzt ein Ereignis als Anker, begrenzt auf die benachbarten Anker.
+// Rückgabe: die gewünschte Videozeit, wenn sie mehr als 1 s außerhalb der Reihenfolge lag, sonst null
 export function place(e, v) {
   delete state.missing[e.event_id];
-  state.placed[e.event_id] = clamp(v, bounds(e));
+  const val = clamp(v, bounds(e));
+  state.placed[e.event_id] = val;
+  return Math.abs(val - Math.max(0, v)) > 1 ? Math.max(0, Math.round(v * 10) / 10) : null;
+}
+// Spielzeit, die zur Videozeit v passen würde, geschätzt ohne das Ereignis selbst
+export function gameTimeFor(e, v) {
+  const p = Math.floor(e.period);
+  const a = anchors(p, { id: e.event_id }).sort((x, y) => x.v - y.v || x.g - y.g);
+  if (!a.length) return null;
+  let before = null, after = null;
+  for (const x of a) {
+    if (x.v <= v) before = x;
+    if (x.v >= v && !after) after = x;
+  }
+  let g;
+  if (before && after) g = after.v === before.v ? before.g : before.g + (v - before.v) / (after.v - before.v) * (after.g - before.g);
+  else if (before) g = before.g + (v - before.v);
+  else g = after.g - (after.v - v);
+  return Math.round(Math.min(Math.max(g, 0), periodLength(p) || Infinity));
+}
+// Spielzeit korrigieren (Saisonmanager falsch) und das Ereignis an Videozeit v setzen; g = null nimmt die Korrektur zurück
+export function correctGameTime(e, g, v = null) {
+  if (Math.floor(e.period) === 5) return;
+  if (g == null || g === state.gs[e.event_id]) delete state.gsFix[e.event_id];
+  else state.gsFix[e.event_id] = g;
+  if (v != null) place(e, v);
+  else if (state.placed[e.event_id] != null) place(e, state.placed[e.event_id]); // in die neuen Grenzen einpassen
 }
 
 // Ereignis als „nicht im Video“ markieren oder zurücknehmen; ein gesetzter Anker entfällt dabei

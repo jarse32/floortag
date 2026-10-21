@@ -1,7 +1,7 @@
 // ===== Darstellung =====
 import { state, ui } from './state.js';
 import { fmt, fmtGame, esc } from './format.js';
-import { events, periodList, periodTitle, describe, teamShort as describeTeam } from './game.js';
+import { events, periodList, periodTitle, describe, teamShort as describeTeam, gameSec, isCorrected } from './game.js';
 import { timeOf, bounds, suggestStart, suggestEnd, gameTimeAt, videoTimeAt } from './sync.js';
 import { buildChapters } from './chapters.js';
 import { buildClips, EDL_SCOPES } from './export.js';
@@ -155,17 +155,32 @@ function renderEvents() {
         </div>
         ${t != null && max > min ? `<input type="range" data-id="${e.event_id}" min="${min}" max="${max}" step="0.5" value="${c}" aria-label="Videozeit feinjustieren">
         <span class="hint">Der Regler bleibt zwischen den benachbarten gesetzten Punkten.</span>` : '<span class="hint">Setze zuerst den Anpfiff des Abschnitts, dann wird die Position geschätzt.</span>'}
+        ${fixHtml(e)}
         ${ui.mode === 'analysis' && e.event_type === 'goal' && Math.floor(e.period) <= 4 ? lineupHtml(e) : ''}
       </div>`;
     }
     return `<li class="event ${e.event_team} ${sel ? 'sel' : ''}" data-row="${e.event_id}">
       <button class="ev-head" data-act="select" data-id="${e.event_id}" aria-expanded="${sel}">
-        <span class="ev-gt">${esc(periodTitle(Math.floor(e.period), true))}<br>${fmtGame(state.gs[e.event_id])}</span>
+        <span class="ev-gt">${esc(periodTitle(Math.floor(e.period), true))}<br>${isCorrected(e) ? `<span class="gt-fixed" title="Spielzeit korrigiert, laut Saisonmanager ${fmtGame(state.gs[e.event_id])}">${fmtGame(gameSec(e))}*</span>` : fmtGame(gameSec(e))}</span>
         <span><span class="ev-title">${d.score ? `<span class="sc">${esc(d.score)}</span>` : ''}${esc(d.text)}</span>${situationLabels(situations[e.event_id]).map(l => ` <span class="badge ${badgeClass(l)}">${esc(l)}</span>`).join('')}
           ${d.sub ? `<br><span class="ev-sub">${esc(d.sub)}</span>` : ''}</span>
         <span class="ev-vt ${status[1]}">${fmt(t)}<small>${status[0]}</small></span>
       </button>${tools}</li>`;
   }).join('');
+}
+// Spielzeit korrigieren: Angebot nach einem Setzen außerhalb der Reihenfolge, Hinweis bei bestehender Korrektur
+function fixHtml(e) {
+  const o = ui.outOfOrder && ui.outOfOrder.id === e.event_id ? ui.outOfOrder : null;
+  let html = '';
+  if (o && o.g != null) html += `<div class="fixbox">
+      <span>Die Stelle ${fmt(o.v)} passt nicht zur Reihenfolge der Spielzeiten, das Ereignis liegt deshalb am Rand bei ${fmt(timeOf(e))}. Ist die Spielzeit im Saisonmanager falsch?</span>
+      <div class="row"><label>Spielzeit <input type="text" class="fix-input" data-fix-input="${e.event_id}" value="${fmtGame(o.g)}" inputmode="numeric" aria-label="Korrigierte Spielzeit (Minuten:Sekunden)"></label>
+        <button class="btn small" data-act="fixtime" data-id="${e.event_id}">Spielzeit korrigieren und bei ${fmt(o.v)} setzen</button>
+        <button class="btn small quiet" data-act="fixdismiss" data-id="${e.event_id}">Nein, am Rand lassen</button></div>
+    </div>`;
+  if (isCorrected(e)) html += `<div class="fixnote">Spielzeit korrigiert auf <strong>${fmtGame(gameSec(e))}</strong>, laut Saisonmanager ${fmtGame(state.gs[e.event_id])}.
+      <button class="btn small quiet" data-act="unfix" data-id="${e.event_id}">Saisonmanager-Zeit verwenden</button></div>`;
+  return html;
 }
 export function renderStrip() {
   const strip = $('#strip');

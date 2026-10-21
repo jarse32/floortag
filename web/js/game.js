@@ -14,12 +14,21 @@ export function prepareGame(data) {
   }
 }
 
+// Spielzeit im Abschnitt in Sekunden; eine Korrektur (state.gsFix) hat Vorrang vor dem Saisonmanager
+export function gameSec(e) {
+  const fix = state.gsFix && state.gsFix[e.event_id];
+  return fix != null ? fix : state.gs[e.event_id];
+}
+export function isCorrected(e) {
+  return !!state.gsFix && state.gsFix[e.event_id] != null;
+}
 export function events() {
   if (!state.game) return [];
+  const t = e => isCorrected(e) ? state.gsFix[e.event_id] : parseTime(e.time);
   return (state.game.events || [])
     .filter(e => ['goal', 'penalty', 'timeout'].includes(e.event_type))
     .slice()
-    .sort((a, b) => a.period - b.period || parseTime(a.time) - parseTime(b.time) || a.event_id - b.event_id);
+    .sort((a, b) => a.period - b.period || t(a) - t(b) || a.event_id - b.event_id);
 }
 export function findEvent(id) {
   return events().find(e => e.event_id === Number(id));
