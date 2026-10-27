@@ -13,3 +13,11 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
 Options -Indexes
 AddDefaultCharset UTF-8
+
+# Oberfläche bei jedem Aufruf mit dem Server abgleichen (ETag, meist nur 304),
+# damit nach einem Upload kein Browser alte JS- oder CSS-Dateien weiterverwendet
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|js|css)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
