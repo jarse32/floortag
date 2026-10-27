@@ -16,7 +16,7 @@ export function save() {
       periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing, gsFix: state.gsFix,
       periodLen: state.periodLen, otLen: state.otLen, pauseLen: state.pauseLen,
       leadIn: state.leadIn, leadOut: state.leadOut, fps: state.fps, edlScope: state.edlScope, counterLen: state.counterLen,
-      kleinfeld: state.kleinfeld, includePenalties: state.includePenalties, hideYouth: state.hideYouth,
+      kleinfeld: state.kleinfeld, includePenalties: state.includePenalties, chapterTags: state.chapterTags, hideYouth: state.hideYouth,
       syncSource: state.syncSource, lengthSource: state.lengthSource
     }));
   } catch (e) { /* Speicher nicht verfügbar */ }
@@ -68,6 +68,8 @@ export function sanitizeSettings() {
     if (typeof v !== 'number' || !isFinite(v) || v < min || v > max) { state[key] = def; fixed.push(key); }
   }
   if (![24, 25, 30, 50, 60].includes(state.fps)) { state.fps = 25; fixed.push('fps'); }
+  // Ältere Stände ohne Auswahl: keine Tags als Kapitel
+  state.chapterTags = Array.isArray(state.chapterTags) ? state.chapterTags.filter(k => typeof k === 'string') : [];
   return fixed;
 }
 

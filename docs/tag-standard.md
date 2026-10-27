@@ -16,7 +16,7 @@ Gemeinsamer Katalog, damit Analysen über Teams, Vereine und Spiele hinweg vergl
 | `shot` | Torschuss | schießendes Team | aufs Tor · daneben · geblockt | Moment | aufs Tor → Save, geblockt → Block |
 | `penalty_shot` | Penalty | schießendes Team | verwandelt · nicht verwandelt | Moment | nicht verwandelt → Penalty gehalten |
 | `faceoff` | Bully | Gewinner (aus dem Ergebnis) | Heim gewinnt · Gast gewinnt · unentschieden; Ort: Mittellinie · Hälfte Heim · Hälfte Gast | Moment | Bully verloren |
-| `free_hit` | Freistoß | ausführendes Team (mit Ball) | Ecke (Angriffsecke) · Mitte (Mittelzone) · eigene Hälfte | Moment | Freistoßabwehr (gegen den Ball) |
+| `free_hit` | Freistoß | ausführendes Team (mit Ball) | Ecke (Angriffsecke) · außen (seitlich in der Angriffshälfte) · Mitte (Mittelzone) · eigene Hälfte | Moment | Freistoßabwehr (gegen den Ball) |
 | `turnover` | Ballgewinn | gewinnendes Team | – | Moment | Ballverlust |
 | `counter` | Konter | konterndes Team | – | Zeitpunkt + Dauer (Standard 10 s) | Konterabwehr |
 | `empty_net` | Torhüter raus | Team ohne Torhüter | – | Phase (Start/Ende) | – |

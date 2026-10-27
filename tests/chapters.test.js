@@ -58,17 +58,17 @@ test('Zu dichte Kapitel werden nach hinten verschoben und gezählt', () => {
 test('Kapitel zu Ereignissen beginnen mit dem Vorlauf', () => {
   const s = fullySynced();
   place(ev(1), 900);
-  let line = lines(buildChapters()).find(l => l.includes('1:0 BAL'));
+  let line = lines(buildChapters()).find(l => l.includes('1:0 Tor BAL'));
   assert.equal(toSec(line.split(' ')[0]), 900 - 8);
   s.leadIn = 20;
-  line = lines(buildChapters()).find(l => l.includes('1:0 BAL'));
+  line = lines(buildChapters()).find(l => l.includes('1:0 Tor BAL'));
   assert.equal(toSec(line.split(' ')[0]), 900 - 20);
 });
 
 test('Drittel, Pausen und Spielende erscheinen mit ihren Titeln', () => {
   fullySynced();
   const text = buildChapters().text;
-  for (const t of ['1. Drittel', '1. Drittelpause', '2. Drittel', '2. Drittelpause', '3. Drittel', 'Nach dem Spiel']) {
+  for (const t of ['1. Drittel', '1. Drittelpause · Stand ', '2. Drittel', '2. Drittelpause · Stand ', '3. Drittel', 'Spielende · Endstand 5:4']) {
     assert.ok(text.includes(` ${t}`), `fehlt: ${t}`);
   }
 });
@@ -83,14 +83,14 @@ test('Strafen lassen sich aus den Kapiteln ausblenden, Auszeiten erscheinen nie'
 
 test('Tor-Kapitel nennen Stand, Team, Schütze und Vorlage', () => {
   fullySynced();
-  const line = lines(buildChapters()).find(l => l.includes('1:0 BAL'));
-  assert.match(line, /^\d+:\d{2} 1:0 BAL – #38 \S+ \(#15 \S+\)$/);
+  const line = lines(buildChapters()).find(l => l.includes('1:0 Tor BAL'));
+  assert.match(line, /^\d+:\d{2} 1:0 Tor BAL · #38 \S+, Vorlage #15 \S+$/);
 });
 
 test('Jugendspieler erscheinen auch in Kapiteln nur mit Rückennummer', () => {
   fullySynced();
-  const line = lines(buildChapters()).find(l => l.includes('2:1 TVEH'));
-  assert.match(line, /2:1 TVEH – #6 \(#7 \S+\)$/);
+  const line = lines(buildChapters()).find(l => l.includes('2:1 Tor TVEH'));
+  assert.match(line, /2:1 Tor TVEH · #6, Vorlage #7 \S+$/);
 });
 
 test('Besondere Torarten werden angehängt', () => {
@@ -99,15 +99,15 @@ test('Besondere Torarten werden angehängt', () => {
   ]));
   s.periods[1] = { start: 60 };
   // Anpfiff 60 s + 5:00 Spielzeit − 8 s Vorlauf = 5:52
-  assert.ok(lines(buildChapters()).includes('5:52 1:0 HEIM – #9 [Penalty]'));
+  assert.ok(lines(buildChapters()).includes('5:52 1:0 Tor HEIM · #9 · Penalty'));
 });
 
 test('Tor-Kapitel tragen die Spielsituation', () => {
   fullySynced();
-  const line = lines(buildChapters()).find(l => l.includes('4:4 BAL'));
-  assert.match(line, / \[Unterzahl 4:5\]$/);
+  const line = lines(buildChapters()).find(l => l.includes('4:4 Tor BAL'));
+  assert.match(line, / · Unterzahl 4:5$/);
   // Tore bei gleicher Stärke bleiben ohne Zusatz
-  assert.ok(!lines(buildChapters()).find(l => l.includes('1:0 BAL')).includes('['));
+  assert.ok(!lines(buildChapters()).find(l => l.includes('1:0 Tor BAL')).includes('zahl'));
 });
 
 test('Penaltytore bekommen keinen doppelten Hinweis', () => {
@@ -115,7 +115,7 @@ test('Penaltytore bekommen keinen doppelten Hinweis', () => {
     { event_id: 1, event_type: 'goal', event_team: 'home', period: 1, time: '5:00', home_goals: 1, guest_goals: 0, number: 9, goal_type: 'penalty_shot', goal_type_string: 'Penalty' }
   ]));
   s.periods[1] = { start: 60 };
-  assert.ok(lines(buildChapters()).includes('5:52 1:0 HEIM – #9 [Penalty]'));
+  assert.ok(lines(buildChapters()).includes('5:52 1:0 Tor HEIM · #9 · Penalty'));
 });
 
 test('Tor mit 6. Feldspieler im Kapitel', async () => {
@@ -123,5 +123,47 @@ test('Tor mit 6. Feldspieler im Kapitel', async () => {
   const s = setup(miniGame([{ event_id: 1, event_type: 'goal', event_team: 'home', period: 3, time: '16:54', home_goals: 5, guest_goals: 6, number: 9 }]));
   s.periods = { 3: { start: 5000, end: 6200 } };
   const t = addTag({ code: 'empty_net', v: 5990, team: 'home' }); updateTag(t.id, { end: 6020 });
-  assert.ok(lines(buildChapters()).some(l => l.endsWith('[6:5 ohne Torhüter]')));
+  assert.ok(lines(buildChapters()).some(l => l.endsWith(' · 6:5 ohne Torhüter')));
+});
+
+// ===== Strafen kurz, Tags als Kapitel =====
+test('Strafen-Kapitel: Team, Spieler, kurze Dauer und Grund', () => {
+  fullySynced();
+  const line = lines(buildChapters()).find(l => l.includes('Strafe'));
+  assert.match(line, /Strafe \S+ · #\d+.* · 2 Min\./);
+});
+
+test('Tags erscheinen nur, wenn sie ausgewählt sind', async () => {
+  const { addTag, updateTag } = await import('../web/js/tags.js');
+  const s = fullySynced();
+  const miss = addTag({ code: 'penalty_shot', v: 1000, team: 'guest', outcome: 'miss' });
+  updateTag(miss.id, { players: { home: null, guest: 7 } });
+  addTag({ code: 'penalty_shot', v: 1100, team: 'home', outcome: 'goal' });  // verwandelt: kommt schon als Tor
+  addTag({ code: 'empty_net', v: 6000, team: 'guest' });
+  const sp = addTag({ code: 'special', v: 3000 }); updateTag(sp.id, { comment: 'Verletzungspause' });
+  addTag({ code: 'shot', v: 1200, team: 'home', outcome: 'on' });           // Schüsse nie
+  const before = buildChapters().count;
+  assert.ok(!buildChapters().text.includes('Penalty TVEH'));
+  s.chapterTags = ['penalty_miss', 'empty_net', 'special'];
+  const t = lines(buildChapters());
+  assert.equal(buildChapters().count, before + 3);
+  assert.ok(t.some(l => /^16:32 Penalty TVEH · #7 \S+ · verschossen$/.test(l)), t.join('\n'));
+  assert.ok(t.includes('1:40:00 Torhüter raus TVEH'));
+  assert.ok(t.some(l => / Besonderes Ereignis · Verletzungspause$/.test(l)));
+});
+
+test('Getaggtes Penaltyschießen ersetzt das Siegtor aus dem Saisonmanager', async () => {
+  const { addTag } = await import('../web/js/tags.js');
+  const s = setup(miniGame([{ event_id: 1, event_type: 'goal', event_team: 'guest', period: 5, time: '10:00', home_goals: 3, guest_goals: 4, number: 18 }],
+    { result: { overtime: true, home_goals: 3, guest_goals: 4, postfix: { short: 'n. PS' } } }));
+  s.periods = { 5: { start: 7000, end: 7300 } };
+  addTag({ code: 'penalty_shot', v: 7020, team: 'home', outcome: 'miss' });
+  addTag({ code: 'penalty_shot', v: 7060, team: 'guest', outcome: 'goal' });
+  assert.ok(buildChapters().text.includes('3:4 Tor GAST'));
+  s.chapterTags = ['shootout'];
+  const t = lines(buildChapters());
+  assert.ok(!t.some(l => l.includes('3:4 Tor GAST')));
+  assert.ok(t.includes('1:56:52 Penalty HEIM · nicht verwandelt · 0:0'));
+  assert.ok(t.includes('1:57:32 Penalty GAST · verwandelt · 0:1'));
+  assert.ok(t.includes('2:01:40 Spielende · Endstand 3:4 n. PS'));
 });

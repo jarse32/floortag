@@ -115,8 +115,8 @@ test('Kapitel lassen Ereignisse „nicht im Video“ weg und zählen sie getrenn
   setMissing(ev(2), true);
   const c = buildChapters();
   assert.equal(c.notInVideo, 1);
-  assert.ok(!c.text.includes('2:0 BAL'));
-  assert.ok(c.text.includes('1:0 BAL'));
+  assert.ok(!c.text.includes('2:0 Tor BAL'));
+  assert.ok(c.text.includes('1:0 Tor BAL'));
   assert.equal(c.missing, 8); // Drittel 2 und 3 (3 + 5 Tore und Strafen) haben noch keine Zeiten
 });
 

@@ -3,7 +3,7 @@ import { state, ui } from './state.js';
 import { fmt, fmtGame, esc } from './format.js';
 import { events, periodList, periodTitle, describe, teamShort as describeTeam, gameSec, isCorrected } from './game.js';
 import { timeOf, bounds, suggestStart, suggestEnd, gameTimeAt, videoTimeAt } from './sync.js';
-import { buildChapters } from './chapters.js';
+import { buildChapters, CHAPTER_TAGS } from './chapters.js';
 import { buildClips, EDL_SCOPES } from './export.js';
 import { powerPlayPhases } from './phases.js';
 import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, isShootout, faceoffAdvantage, goalieAt, goalkeepers } from './tags.js';
@@ -53,6 +53,8 @@ function renderSettings() {
   $('#pauseLenInput').value = state.pauseLen / 60;
   $('#leadInput').value = state.leadIn;
   $('#penaltyCheck').checked = state.includePenalties;
+  $('#chapterTags').innerHTML = '<legend>Aus deinen Tags als Kapitel</legend>' + CHAPTER_TAGS.map(([k, l]) =>
+    `<label class="check"><input type="checkbox" data-chapter-tag="${k}" ${state.chapterTags.includes(k) ? 'checked' : ''}> ${esc(l)}</label>`).join('');
   $('#youthCheck').checked = state.hideYouth;
   $('#kleinfeldCheck').checked = state.kleinfeld;
   $('#leadOutInput').value = state.leadOut;

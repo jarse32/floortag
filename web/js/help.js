@@ -37,6 +37,7 @@ export const GUIDES = {
     tips: [
       'Jede Szene wird einmal aus Sicht des handelnden Teams getaggt. Die Gegenseite (Save, Block, Ballverlust …) entsteht im Export automatisch.',
       'Penaltyschießen: Setz im Sync den Beginn des Penaltyschießens, dann zählt jeder Penalty-Tag danach als Versuch (ohne gesetzten Beginn das Häkchen „Penaltyschießen“ setzen). Pro Versuch V = verwandelt, X = nicht verwandelt, das Team wechselt automatisch. Der Saisonmanager kennt nur das entscheidende Tor, alle Versuche taggst du selbst.',
+      'Unter „Export“ wählst du, welche Tags zusätzlich als YouTube-Kapitel erscheinen: verschossene Penaltys, Penaltyschießen, Torhüter raus, besondere Ereignisse.',
       'Tags liegen nur in deinem Browser. Sichere sie zwischendurch über „Tags speichern“ im Reiter „Tags“.'
     ]
   },

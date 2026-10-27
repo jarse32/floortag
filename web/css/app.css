@@ -42,6 +42,12 @@ details textarea { width: 100%; margin: .6rem 0; background: var(--surface); bor
 /* Hauptlayout */
 main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr); gap: 1.5rem; padding: 1.5rem; max-width: 1500px; margin: 0 auto; }
 @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+/* Breite Ansicht: rechte Spalte scrollt für sich, das Video bleibt im Bild (Spiel-Seite) */
+@media (min-width: 961px) {
+  body:not([data-page]) main > .side { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; overscroll-behavior: contain; padding-right: .3rem; scrollbar-gutter: stable; }
+}
+.chapter-tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .3rem 1rem; margin: 0; padding: .4rem 0 0; border: 0; border-top: 1px solid var(--line); }
+.chapter-tags legend { padding: 0; margin-bottom: .2rem; font-size: .85rem; color: var(--muted); float: left; width: 100%; }
 
 .videorow { display: flex; gap: .5rem; margin-bottom: .75rem; }
 .videorow input { flex: 1; min-width: 0; padding: .4rem .6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }

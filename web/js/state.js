@@ -12,6 +12,7 @@ export const state = {
   edlScope: 'goal',    // Inhalt der Schnittliste, siehe EDL_SCOPES in export.js
   kleinfeld: false,    // Kleinfeld: max. 1 Strafe gleichzeitig, 3 Feldspieler
   includePenalties: true,
+  chapterTags: [],     // eigene Tags als YouTube-Kapitel, Schlüssel aus CHAPTER_TAGS in chapters.js
   hideYouth: true,
   periods: {},         // { 1: { start, end }, ... } in Videosekunden
   placed: {},          // { event_id: videoSec } manuell gesetzte Ereignisse = Ankerpunkte

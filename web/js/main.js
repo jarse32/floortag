@@ -79,7 +79,7 @@ function selectEvent(ev, toggleOff) {
     yt.seek(t - 3);
   }
   renderAll();
-  const row = document.querySelector(`[data-row="${ev.event_id}"]`); if (row) row.scrollIntoView({ block: 'nearest' });
+  showRow(ev.event_id);
 }
 
 // ===== Anleitung =====
@@ -362,6 +362,16 @@ function focusAnchorInput() {
 }
 
 // ===== Ereignisse =====
+// Zeile sichtbar machen: Scrollt die rechte Spalte für sich (breite Ansicht), sonst wie gewohnt die Seite
+function showRow(id) {
+  const row = document.querySelector(`[data-row="${id}"]`); if (!row) return;
+  const box = row.closest('.side');
+  if (box && box.scrollHeight > box.clientHeight + 1 && getComputedStyle(box).overflowY !== 'visible') {
+    const r = row.getBoundingClientRect(), b = box.getBoundingClientRect();
+    if (r.top < b.top) box.scrollTop -= b.top - r.top + 8;
+    else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom + 8;
+  } else row.scrollIntoView({ block: 'nearest' });
+}
 // Setzen mit Angebot zur Spielzeit-Korrektur, falls die Stelle nicht zur Reihenfolge passt
 function placeEvent(ev, v) {
   const wanted = place(ev, v);
@@ -537,6 +547,11 @@ numberSetting('#otLenInput', 'otLen', 60);
 numberSetting('#pauseLenInput', 'pauseLen', 60);
 numberSetting('#leadInput', 'leadIn');
 $('#penaltyCheck').addEventListener('change', e => { state.includePenalties = e.target.checked; commit(); });
+$('#chapterTags').addEventListener('change', e => {
+  const k = e.target.dataset.chapterTag; if (!k) return;
+  state.chapterTags = e.target.checked ? [...new Set([...state.chapterTags, k])] : state.chapterTags.filter(x => x !== k);
+  commit();
+});
 $('#youthCheck').addEventListener('change', e => { state.hideYouth = e.target.checked; commit(); });
 $('#kleinfeldCheck').addEventListener('change', e => { state.kleinfeld = e.target.checked; commit(); });
 
@@ -627,7 +642,7 @@ document.addEventListener('keydown', e => {
     const evs = events(), i = evs.findIndex(x => x.event_id === ui.selectedId);
     const next = evs[(i + 1) % evs.length];
     selectEvent(next, false);
-    const row = document.querySelector(`[data-row="${ui.selectedId}"]`); if (row) row.scrollIntoView({ block: 'nearest' });
+    showRow(ui.selectedId);
   }
 });
 

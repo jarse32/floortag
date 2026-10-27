@@ -22,7 +22,7 @@ export const CATALOG = [
     places: [['center', 'Mittellinie'], ['half_home', 'Hälfte {home}'], ['half_guest', 'Hälfte {guest}']],
     derived: { home: 'Bully verloren', guest: 'Bully verloren' } },
   { key: 'free_hit', label: 'Freistoß', players: 'team',
-    places: [['corner', 'Ecke'], ['middle', 'Mitte'], ['own_half', 'eigene Hälfte']],
+    places: [['corner', 'Ecke'], ['side', 'außen'], ['middle', 'Mitte'], ['own_half', 'eigene Hälfte']],
     derivedAll: 'Freistoßabwehr' },
   { key: 'turnover', label: 'Ballgewinn', players: 'team', derivedAll: 'Ballverlust' },
   { key: 'counter', label: 'Konter', players: 'team', duration: 'counterLen', derivedAll: 'Konterabwehr' },
