@@ -18,6 +18,7 @@ export const GUIDES = {
       'Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, Komma/Punkt ±1 s, − / + Tempo, Enter setzt das gewählte Ereignis.',
       'Streamlücke? Setz in der Drittelkarte je einen „freien Anker“ vor und nach der Lücke. Ereignisse in der Lücke markierst du als „Nicht im Video“.',
       'Spielzeit im Saisonmanager falsch? Setz das Ereignis an die richtige Stelle. Passt sie nicht zur Reihenfolge, bietet FloorTag an, die Spielzeit zu korrigieren (markiert mit *).',
+      'Eine einzelne Szene verschicken: Ereignis antippen und „Link zur Szene kopieren“ (auf dem Handy „Szene teilen“). Der Link öffnet das Spiel im Modus Ansehen ab der Szene.',
       'Unter „Übersicht“ siehst du alle Spiele dieses Browsers mit ihrer Stufe und den Spielplan einer Liga.',
       'Dein Stand wird automatisch in diesem Browser gespeichert, nicht auf anderen Geräten. Fürs Handy oder für andere schickst du einen Link über „Link teilen“. „Sync speichern“ legt zusätzlich eine Datei an.'
     ]
@@ -37,6 +38,7 @@ export const GUIDES = {
     tips: [
       'Jede Szene wird einmal aus Sicht des handelnden Teams getaggt. Die Gegenseite (Save, Block, Ballverlust …) entsteht im Export automatisch.',
       'Penaltyschießen: Setz im Sync den Beginn des Penaltyschießens, dann zählt jeder Penalty-Tag danach als Versuch (ohne gesetzten Beginn das Häkchen „Penaltyschießen“ setzen). Pro Versuch V = verwandelt, X = nicht verwandelt, das Team wechselt automatisch. Der Saisonmanager kennt nur das entscheidende Tor, alle Versuche taggst du selbst.',
+      'Das Kettensymbol in der Tag-Liste kopiert einen Link zur Szene des Tags. Wer ihn öffnet, sieht das Video ab dieser Stelle, aber nicht deine Tags; dafür gibt es „Link teilen“.',
       'Unter „Export“ wählst du, welche Tags zusätzlich als YouTube-Kapitel erscheinen: verschossene Penaltys, Penaltyschießen, Torhüter raus, besondere Ereignisse.',
       'Tags liegen nur in deinem Browser. Sichere sie zwischendurch über „Tags speichern“ im Reiter „Tags“.'
     ]
@@ -50,7 +52,7 @@ export const GUIDES = {
       { title: 'Tags und Statistik', text: 'In den Reitern „Tags“ und „Statistik“ findest du die zusätzlichen Szenen und Auswertungen, sofern sie getaggt wurden.', target: '.tabs' },
       { title: 'Tempo', text: 'Mit 0,5× bis 2× siehst du Szenen langsamer oder schneller.', target: '.rates' }
     ],
-    tips: ['Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, − / + Tempo, N nächstes Ereignis.', 'Szenen und Tags sind nur dort zu sehen, wo sie gesetzt wurden, oder über einen geteilten Link. Fehlt beides, bekommst du einen Hinweis in der Ereignisliste.']
+    tips: ['Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, − / + Tempo, N nächstes Ereignis.', 'Szenen und Tags sind nur dort zu sehen, wo sie gesetzt wurden, oder über einen geteilten Link. Fehlt beides, bekommst du einen Hinweis in der Ereignisliste.', 'Eine Szene weiterschicken: Ereignis antippen und „Link zur Szene kopieren“ bzw. „Szene teilen“, bei Tags über das Kettensymbol.']
   }
 };
 

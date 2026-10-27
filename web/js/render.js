@@ -12,6 +12,7 @@ import { statPeriods, statRows, computeStats, signed, goalSituations, situationL
 import { lineupOf, forcedPlayers, fieldPlayers } from './lineups.js';
 import { getToken } from './publish.js';
 import * as yt from './player.js';
+import { canShareNative } from './scenelink.js';
 
 export const $ = s => document.querySelector(s);
 
@@ -146,6 +147,7 @@ function renderEvents() {
         <div class="row">
           <button class="btn small" data-act="setnow" data-id="${e.event_id}">Auf aktuelle Videozeit setzen</button>
           <button class="btn small ghost" data-act="jump" data-id="${e.event_id}" ${t == null ? 'disabled' : ''}>Ab ${state.leadIn} s vorher abspielen</button>
+          ${t != null ? linkBtn(e.event_id) : ''}
         </div>
         <div class="row">
           <button class="btn small ghost" data-act="nudge" data-d="-5" data-id="${e.event_id}" ${t == null ? 'disabled' : ''}>−5 s</button>
@@ -161,6 +163,7 @@ function renderEvents() {
         ${ui.mode === 'analysis' && e.event_type === 'goal' && Math.floor(e.period) <= 4 ? lineupHtml(e) : ''}
       </div>`;
     }
+    else if (sel && t != null) tools = `<div class="ev-tools"><div class="row">${linkBtn(e.event_id)}</div></div>`;
     return `<li class="event ${e.event_team} ${sel ? 'sel' : ''}" data-row="${e.event_id}">
       <button class="ev-head" data-act="select" data-id="${e.event_id}" aria-expanded="${sel}">
         <span class="ev-gt">${esc(periodTitle(Math.floor(e.period), true))}<br>${isCorrected(e) ? `<span class="gt-fixed" title="Spielzeit korrigiert, laut Saisonmanager ${fmtGame(state.gs[e.event_id])}">${fmtGame(gameSec(e))}*</span>` : fmtGame(gameSec(e))}</span>
@@ -170,6 +173,10 @@ function renderEvents() {
       </button>${tools}</li>`;
   }).join('');
 }
+// Link zur Szene: auf Handy und Tablet über das Teilen-Menü, sonst kopieren
+const linkLabel = () => canShareNative() ? 'Szene teilen' : 'Link zur Szene kopieren';
+const linkBtn = id => `<button class="btn small ghost" data-act="link" data-id="${id}">${linkLabel()}</button>`;
+const LINK_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>';
 // Spielzeit korrigieren: Angebot nach einem Setzen außerhalb der Reihenfolge, Hinweis bei bestehender Korrektur
 function fixHtml(e) {
   const o = ui.outOfOrder && ui.outOfOrder.id === e.event_id ? ui.outOfOrder : null;
@@ -358,7 +365,7 @@ function renderTagList() {
       <button data-act="selecttag" data-id="${t.id}">
         <span class="tr-time">${fmt(t.v)}</span>
         <span><span class="tr-main">${esc(main)}</span>${sub ? `<br><span class="tr-sub">${esc(sub)}</span>` : ''}</span>
-      </button><button class="tr-del" data-act="deltag" data-id="${t.id}" data-modes="analysis" title="Tag löschen" aria-label="Tag löschen">✕</button></li>`;
+      </button><button class="tr-link" data-act="linktag" data-id="${t.id}" title="${linkLabel()}" aria-label="${linkLabel()}">${LINK_ICON}</button><button class="tr-del" data-act="deltag" data-id="${t.id}" data-modes="analysis" title="Tag löschen" aria-label="Tag löschen">✕</button></li>`;
   }).join('');
 }
 

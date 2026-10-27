@@ -92,6 +92,12 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 - Wer den Link öffnet, sieht das Spiel fest im Modus Ansehen. Es wird nichts im Browser gespeichert (`state.sharedView`), der eigene Stand bleibt unberührt. Jugendspieler erscheinen dort immer nur mit Rückennummer. Der Balken bietet „Eigenen Stand öffnen“ und „Als eigenen Stand übernehmen“ (mit Rückfrage).
 - Größe: etwa 3 kB bei 400 Tags.
 
+## Link zu einer Szene
+
+- Jedes Ereignis (ausgewählt, mit Zeit) und jeder Tag (Kettensymbol in der Tag-Liste) lässt sich als Link verschicken: `?spiel=…&video=…&t=…&e=…&modus=ansehen` (`web/js/scenelink.js`). `t` ist die Startzeit in Videosekunden (Szene minus Vorlauf), `e` die Ereignis-ID (nur bei Saisonmanager-Ereignissen). Auf Touch-Geräten öffnet sich das Teilen-Menü (`navigator.share`), sonst wird kopiert.
+- Beim Öffnen (`applyScene` in `main.js`): Modus Ansehen, das Ereignis ist ausgewählt, nach der YouTube-Zustimmung springt der Player an `t`; danach werden `t`, `e` und `video` aus der Adresse entfernt.
+- Im Link stehen keine Namen und keine Tags. Wer die Tags mitsehen soll, braucht „Link teilen“. Die Zeiten der Ereignisliste kommen beim Empfänger aus dem eigenen bzw. veröffentlichten Sync; `t` gilt unabhängig davon.
+
 ## Sync-Logik
 
 Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnitten.

@@ -229,6 +229,8 @@ main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr
 .tr-sub { color: var(--muted); font-size: .85rem; }
 .tr-del { flex: none; width: 2.4rem; background: none; border: 0; border-left: 1px solid var(--line); color: var(--muted); font-size: .95rem; cursor: pointer; }
 .tr-del:hover, .tr-del:focus-visible { color: var(--danger); background: var(--bg); }
+.tr-link { flex: none; width: 2.4rem; display: grid; place-items: center; background: none; border: 0; border-left: 1px solid var(--line); color: var(--muted); cursor: pointer; }
+.tr-link:hover, .tr-link:focus-visible { color: var(--pine); background: var(--bg); }
 .toast-action { margin-left: .6rem; padding: .2rem .65rem; border: 1px solid currentColor; border-radius: 6px; background: none; color: inherit; font: 600 .85rem var(--body); cursor: pointer; }
 .so-hint { color: var(--muted); font-size: .8rem; }
 .taglist .empty { color: var(--muted); padding: .8rem .2rem; list-style: none; }

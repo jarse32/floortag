@@ -1,7 +1,7 @@
 // ===== Einstieg: Spiel laden und Bedienung verdrahten =====
 import { state, ui } from './state.js';
 import { extractVideoId, fmt, fmtGame, esc } from './format.js';
-import { prepareGame, events, findEvent, periodLength } from './game.js';
+import { prepareGame, events, findEvent, periodLength, teamShort } from './game.js';
 import { timeOf, place, setMissing, addAnchor, removeAnchor, gameTimeFor, correctGameTime } from './sync.js';
 import { save, restore, buildSyncFile, syncFileName, applySyncFile, saveTags, buildTagFile, tagFileName, applyTagFile } from './storage.js';
 import { CATALOG, codeOf, addTag, findTag, updateTag, setPlayer, removeTag, restoreTag, openPhase, nextShootoutTeam, inShootout } from './tags.js';
@@ -15,6 +15,7 @@ import { GUIDES, introSeen, markIntroSeen } from './help.js';
 import { leagueLengths, shouldApplyLeague, applyLeagueLengths, fetchLeagueInfo } from './leagueinfo.js';
 import { decideOnLoad, adoptPublished, publishSync, fetchPublished, fetchVersions, setToken, getToken, tokenValid } from './publish.js';
 import { toggleLineupPlayer } from './lineups.js';
+import { sceneUrl, parseScene, stripScene, canShareNative } from './scenelink.js';
 
 // Zustand geändert: speichern und neu zeichnen
 function commit() {
@@ -25,7 +26,7 @@ function commit() {
 
 yt.initPlayer('player', {
   onLoad: () => { $('#playerEmpty').hidden = true; $('#consent').hidden = true; },
-  onReady: () => { yt.setRate(ui.rate); renderAll(); renderRates(); },
+  onReady: () => { yt.setRate(ui.rate); renderAll(); renderRates(); applyScene(); },
   onRateChange: () => { ui.rate = yt.getRate(); renderRates(); },
   onStateChange: renderStrip,
   onError: showPlayerMessage
@@ -240,13 +241,39 @@ function loadGame(data) {
   renderMatchline();
   $('#loader').hidden = true;
   $('#app').hidden = false;
-  const link = ui.shared && ui.shared.vid ? `https://www.youtube.com/watch?v=${ui.shared.vid}` : data.vod_link || data.live_stream_link || '';
+  const vid = (ui.shared && ui.shared.vid) || (ui.scene && ui.scene.video);
+  const link = vid ? `https://www.youtube.com/watch?v=${vid}` : data.vod_link || data.live_stream_link || '';
   $('#videoInput').value = link;
   const id = extractVideoId(link);
   ui.leagueInfo = null;
   if (id) setVideo(id); else { state.videoId = null; const had = restoreState(); renderAll(); checkLeague(had); }
   // Beim ersten Spiel in diesem Modus die Anleitung zeigen
-  if (!introSeen(ui.mode)) openHelp(ui.mode);
+  if (!introSeen(ui.mode) && !ui.scene) openHelp(ui.mode);
+  applyScene();
+}
+
+// ===== Link zu einer Szene =====
+// Geöffneter Szenen-Link: Ereignis auswählen und an die Startzeit springen, sobald der Player bereit ist
+function applyScene() {
+  const sc = ui.scene;
+  if (!sc || !state.game) return;
+  if (sc.event != null && findEvent(sc.event)) { ui.selectedId = sc.event; renderAll(); showRow(sc.event); }
+  if (!yt.isReady()) return;
+  ui.scene = null;
+  history.replaceState(null, '', stripScene(location.href));
+  yt.seek(sc.t); yt.play();
+  showToast(`Szene ab ${fmt(sc.t)}. Startet das Video nicht von selbst, drück auf Play.`);
+}
+// Link zur Szene teilen (Handy) oder kopieren; t ist die Videozeit der Szene
+async function shareScene(t, title) {
+  const url = sceneUrl(location.href, { game: state.game.id, video: state.videoId, t: t - state.leadIn, event: title.event ?? null });
+  const text = `${title.text} · ${teamShort('home')} – ${teamShort('guest')}`;
+  if (canShareNative()) {
+    try { await navigator.share({ title: text, url }); } catch (err) { /* abgebrochen */ }
+    return;
+  }
+  try { await navigator.clipboard.writeText(url); showToast(`Link zur Szene kopiert: ${text}, ab ${fmt(Math.max(0, t - state.leadIn))}.`); }
+  catch (err) { window.prompt('Link zur Szene', url); }
 }
 function showLoadError(msg) {
   const err = $('#loadError');
@@ -380,7 +407,7 @@ function placeEvent(ev, v) {
 }
 function handleEventAction(e) {
   const b = e.target.closest('[data-act]'); if (!b) return;
-  if (b.dataset.act !== 'select' && b.dataset.act !== 'placeback' && b.dataset.act !== 'goback') ui.jumpFrom = null;
+  if (!['select', 'placeback', 'goback', 'link'].includes(b.dataset.act)) ui.jumpFrom = null;
   const ev = findEvent(b.dataset.id); if (!ev) return;
   const t = timeOf(ev);
   switch (b.dataset.act) {
@@ -408,6 +435,13 @@ function handleEventAction(e) {
     case 'fixdismiss': ui.outOfOrder = null; renderAll(); break;
     case 'unfix': ui.outOfOrder = null; correctGameTime(ev, null); commit(); break;
     case 'jump': yt.seek(t - state.leadIn); yt.play(); break;
+    case 'link': {
+      if (t == null) break;
+      const kind = { goal: 'Tor', penalty: 'Strafe', timeout: 'Auszeit' }[ev.event_type] || 'Szene';
+      const score = ev.event_type === 'goal' ? ` ${ev.home_goals}:${ev.guest_goals}` : '';
+      shareScene(t, { text: `${kind} ${teamShort(ev.event_team)}${score}`, event: ev.event_id });
+      break;
+    }
     case 'nudge': placeEvent(ev, t + Number(b.dataset.d)); yt.seek(timeOf(ev) - 3); break;
     case 'unplace': delete state.placed[ev.event_id]; commit(); break;
     case 'missing': setMissing(ev, true); commit(); break;
@@ -495,6 +529,12 @@ document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click',
 $('#tagList').addEventListener('click', e => {
   const del = e.target.closest('[data-act="deltag"]');
   if (del) { if (ui.mode !== 'view') deleteTag(del.dataset.id); return; }
+  const link = e.target.closest('[data-act="linktag"]');
+  if (link) {
+    const tag = findTag(link.dataset.id);
+    if (tag) shareScene(tag.v, { text: [codeOf(tag.code).label, tag.team ? teamShort(tag.team) : ''].filter(Boolean).join(' ') });
+    return;
+  }
   const b = e.target.closest('[data-act="selecttag"]'); if (!b) return;
   const tag = findTag(b.dataset.id); if (!tag) return;
   if (ui.mode === 'view') { yt.seek(tag.v - state.leadIn); yt.play(); return; }
@@ -660,6 +700,7 @@ if (location.hash.startsWith(SHARE_PREFIX)) {
     loadById(String(p.g));
   }).catch(err => showLoadError(`Der geteilte Link lässt sich nicht öffnen: ${err.message}`));
 } else {
+  ui.scene = parseScene(location.search);
   const startId = extractGameId(new URLSearchParams(location.search).get('spiel'));
   if (startId) { $('#idInput').value = startId; loadById(startId); }
 }
