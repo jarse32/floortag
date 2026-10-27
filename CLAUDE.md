@@ -67,7 +67,8 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 - **Analyse:** zusätzlich Tag-Leiste, Tags, Statistik, Aufstellung bei Toren und der Export für Analyse und Schnitt.
 - **Ansehen:** nur Video, Ereignisse, Tags und Statistik. Ein Klick spielt die Szene ab Vorlauf ab, nichts lässt sich verändern. Gedacht für Spielerinnen und Spieler, die Szenen eines Trainers ansehen.
 - Sichtbarkeit über `data-modes="…"` im Markup und `body[data-mode]` im CSS. Die Wahl merkt sich der Browser (`floortag:mode`), `?modus=ansehen|sync|analyse` in der Adresse hat Vorrang.
-- Tore in der Ereignisliste tragen Marken zur Spielsituation (Überzahl 5:4, Unterzahl 4:5, „6:5 ohne Torhüter“ für Tore des Teams mit 6. Feldspieler, leeres Tor für Tore ins leere Tor des Gegners, Penalty), berechnet wie in der Statistik (`goalSituations` in `stats.js`); im Export als Label „Spielsituation“ und in den YouTube-Kapiteln als Zusatz in eckigen Klammern (z. B. „[Unterzahl 4:5]“).
+- Auf breiten Bildschirmen (ab 961 px) scrollt die rechte Spalte für sich (`position: sticky`, eigene Scrollleiste); „N“ und Klicks auf der Zeitleiste scrollen nur die Liste (`showRow` in `main.js`), das Video bleibt im Bild.
+- Tore in der Ereignisliste tragen Marken zur Spielsituation (Überzahl 5:4, Unterzahl 4:5, „6:5 ohne Torhüter“ für Tore des Teams mit 6. Feldspieler, leeres Tor für Tore ins leere Tor des Gegners, Penalty), berechnet wie in der Statistik (`goalSituations` in `stats.js`); im Export als Label „Spielsituation“ und in den YouTube-Kapiteln als Zusatz nach „·“ (z. B. „· Unterzahl 4:5“).
 - **Anleitung** (`web/js/help.js`): „?“ in der Kopfzeile öffnet eine Anleitung je Modus mit „Zeigen“ (scrollt zur Stelle und hebt sie hervor). Beim ersten Spiel bzw. ersten Wechsel in einen Modus erscheint sie einmal automatisch (`floortag:intro-seen`). Texte bei neuen Funktionen mitpflegen.
 - Klick auf ein Ereignis springt in Sync/Analyse zur Szene. War das Video vorher woanders, bietet die Zeile „Dort setzen“ (Ereignis an die vorherige Stelle) und „Zurück“ an. Ohne das ging die Position verloren, wenn man erst spulte und dann das Ereignis antippte.
 
@@ -121,6 +122,8 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 - `getCurrentTime()`/`seekTo()` sind nicht framegenau; für Szenen reicht das.
 - iOS ignoriert `seekTo()`, solange das Video noch nie lief. `player.js` setzt dann stattdessen die Startzeit (`cueVideoById` mit `startSeconds`); Play beginnt an der Szene. Auf echtem iPhone zu prüfen, im eingebauten Browser nicht nachstellbar.
 - Kapitelmarken-Regeln: erstes Kapitel bei `0:00`, mindestens drei Kapitel, mindestens 10 Sekunden pro Kapitel. Kapitel zu Ereignissen beginnen mit einem einstellbaren Vorlauf (Standard 8 Sekunden) vor dem Ereignis.
+- Kapitelformat (`web/js/chapters.js`): einheitlich „Stand Art Team · Spieler, Vorlage · Zusatz“, z. B. „6:0 Tor EJB · #29 Sikiö, Vorlage #34 Mix · Überzahl 5:4“, „Strafe RSA · #93 Pohl · 2 Min., Stoßen“; Pausen mit „· Stand 4:0“, am Ende „Spielende · Endstand 12:5 n. PS“.
+- Tags als Kapitel (Analyse, optional, `state.chapterTags`): verschossene Penaltys, Penaltyschießen (jeder Versuch mit laufendem Stand, ersetzt dann das einzelne Siegtor aus dem Saisonmanager), Torhüter raus (Beginn), besondere Ereignisse (mit Kommentar). Schüsse, Bullys usw. nie.
 
 ## Export für Videoanalyse und Schnitt
 
