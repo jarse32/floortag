@@ -37,7 +37,7 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 3. **In Arbeit:** Prototyp in sinnvolle Dateien aufteilen (erledigt), API-Proxy als PHP (erledigt, lokal getestet), Spiel per ID laden statt per Datei (erledigt). Online unter `https://tag.floorballdashboard.app` seit 17.10.2026.
 4. Backend und gemeinsame Syncs: PocketBase (braucht einen eigenen Server, siehe Hosting), Accounts, ein gemeinsamer Sync pro Video mit Änderungshistorie, Deploy unter `tag.floorballdashboard.app`, geschlossene Beta mit wenigen Vereinen.
 5. Analyse-Tags: Code-Panel mit Floorball-Taxonomie und Tastenkürzeln, auch Ereignisse, die nicht im Saisonmanager stehen (z. B. verschossene Penaltys, Save, Block, Konter), dazu Phasen mit Dauer (z. B. Überzahl/Unterzahl), eigene Layer pro Nutzer/Verein, Sichtbarkeit privat/Verein/öffentlich, Export über das bestehende Clip-Modell (Sportscode-XML, CSV, EDL).
-6. Anschauen und Vernetzen: Filter, Playlists über mehrere Spiele, Deeplinks auf Szenen, Button „Szenen ansehen“ in der Floorball-Dashboard-App.
+6. Anschauen und Vernetzen: Filter, Playlists über mehrere Spiele (begonnen: Seite „Szenen“), Deeplinks auf Szenen, Button „Szenen ansehen“ in der Floorball-Dashboard-App.
 
 ## Saisonmanager-API
 
@@ -78,6 +78,14 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 - **Deine Spiele:** alle Spiele mit Stand in diesem Browser, nach Stufen filterbar: 0 · Video, 1 · Sync (Fortschritt Ereignisse und Abschnitte), 2 · Tags, 3 · Vollständig analysiert (Schüsse aller Drittel vollständig und Aufstellung bei allen zählenden Toren). Berechnung in `js/progress.js`, beim Speichern als `floortag-meta:<Spiel>:<Video>` abgelegt; ältere Stände werden beim Öffnen der Übersicht einmal über den Proxy nachberechnet.
 - **Liga-Spielplan:** Buttons für alle Ligen von Floorball Deutschland der aktuellen Saison (Bundesligen, Pokal; `api/league.php?list=1` über `game_operations/1/leagues`, Cache 1 Tag), weitere Ligen per ID. Spielplan über `api/league.php?id=…` (kompakt mit Spieltag und Ligadaten, Cache 1 Stunde, gemeinsames Abrufbudget mit `game.php`), angezeigt **pro Spieltag** mit ‹ › bzw. Pfeiltasten und Auswahlliste; zuerst der letzte Spieltag mit Ergebnissen (`js/schedule.js`). `?liga=2449&spieltag=5` öffnet direkt. Ohne eigene Spiele öffnet die Übersicht gleich den Liga-Spielplan. Der Spielplan des Saisonmanagers enthält **keine Video-Links**.
 - Mit dem Backend (Etappe 4) kommen veröffentlichte Syncs anderer dazu; die Stufen-Logik bleibt.
+
+## Szenen eines Teams (Beginn von Etappe 6)
+
+- Eigene Seite `web/szenen.html` (`js/scenespage.js`, Logik in `js/scenes.js`), verlinkt in den Kopfzeilen. Liga und Team wählen (`?liga=2449&team=…&filter=goal,pp`; letzte Wahl unter `floortag:scenes`).
+- **Nur gesyncte Szenen:** pro Spiel der eigene Stand aus diesem Browser (mit Tags), sonst der veröffentlichte Sync (ohne Tags). `loadGameState` lädt ein Spiel nach dem anderen in den globalen Zustand (Einstellungen auf Standard, Ligalängen, `sharedView = true`, damit nichts gespeichert wird), `collectScenes` wertet `buildClips` aus. Clips tragen dafür `side` (und bei Tags `label`).
+- Kategorien aus Sicht des Teams (`classify`): Tore/Gegentore, Überzahlspiel, Überzahltore, Gegentore in Überzahl, Unterzahlspiel, Unterzahltore, Gegentore in Unterzahl, eigener Torhüter raus/Gegner ohne Torhüter mit den Toren dazu, leeres Tor, Penaltytore, Strafen, Auszeiten; eigene Tags als `tag:<Bezeichnung>` (auch die Gegenperspektive, z. B. Save). Mehrere Chips = Vereinigung.
+- Player mit Playlist: Klick spielt ab Vorlauf, „Alle abspielen“ schaltet nach dem Nachlauf weiter, auch über Videos hinweg (`playAt` in `player.js`), N/P. Szenen-Link pro Szene.
+- Reiter „Spiele“: alle Spiele des Teams mit Sync-Quelle, Tags und Szenenzahl; Filter „Ohne Tags“ und „Ohne Sync“.
 
 ## Veröffentlichte Syncs (gemeinsamer Sync pro Video, Zwischenlösung bis Etappe 4)
 

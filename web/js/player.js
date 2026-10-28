@@ -99,3 +99,15 @@ export function setRate(r) { if (playerReady) player.setPlaybackRate(r); }
 export function getRate() { return playerReady ? player.getPlaybackRate() : 1; }
 export function availableRates() { return playerReady ? player.getAvailablePlaybackRates() : []; }
 export function togglePlay() { if (!playerReady) return; player.getPlayerState() === 1 ? player.pauseVideo() : player.playVideo(); }
+// Ein anderes Video ab einer Stelle abspielen (Szenen über mehrere Spiele); beim selben Video nur springen
+export function playAt(id, t) {
+  if (!playerReady) return;
+  if (id !== currentId) {
+    currentId = id; captionsHandled = false;
+    seekTarget = Math.max(0, t); seekAt = Date.now();
+    player.loadVideoById({ videoId: id, startSeconds: seekTarget });
+    return;
+  }
+  seek(t); play();
+}
+export function isPlaying() { return playerReady && player.getPlayerState() === 1; }

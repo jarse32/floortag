@@ -391,3 +391,42 @@ main.overview { display: block; max-width: 1100px; margin: 0 auto; padding: 1.5r
 .fix-input { width: 4.2rem; padding: .25rem .4rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: 600 .95rem var(--display); font-variant-numeric: tabular-nums; }
 .fixnote { margin-top: .3rem; font-size: .85rem; color: var(--muted); }
 .gt-fixed { color: var(--estimate); cursor: help; }
+
+/* ===== Seite „Szenen“ ===== */
+main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1.5rem; }
+.sc-pick { display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center; margin-bottom: 1rem; }
+.sc-pick label { display: inline-flex; gap: .4rem; align-items: center; font-weight: 600; }
+.sc-pick select { max-width: 22rem; }
+.sc-tabs { margin-bottom: 1rem; }
+.sc-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(20rem, 1fr); gap: 1.5rem; align-items: start; }
+.sc-player { display: grid; gap: .6rem; }
+.sc-transport { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.sc-now { color: var(--muted); font-size: .9rem; }
+.sc-filters { display: grid; gap: .45rem; margin-bottom: .8rem; }
+.sc-group { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
+.sc-gtitle { width: 100%; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.sc-chip { padding: .25rem .6rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: .88rem; cursor: pointer; }
+.sc-chip span { color: var(--muted); font-variant-numeric: tabular-nums; margin-left: .15rem; }
+.sc-chip[aria-pressed="true"] { background: var(--pine); border-color: var(--pine); color: #fff; }
+.sc-chip[aria-pressed="true"] span { color: inherit; opacity: .85; }
+.sc-chip:disabled { opacity: .45; cursor: default; }
+.sc-clear { justify-self: start; }
+.sc-list { list-style: none; margin: 0; padding: 0; }
+.sc-game { padding: .7rem 0 .3rem; font: 700 1.05rem var(--display); }
+.sc-game .score { color: var(--pine); padding-left: .3rem; }
+.sc-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--line); border-left: 4px solid var(--muted); background: var(--surface); }
+.sc-row.home { border-left-color: var(--pine); }
+.sc-row.guest { border-left-color: var(--guest); }
+.sc-row.sel { background: var(--pine-soft); }
+.sc-play { flex: 1; min-width: 0; display: grid; grid-template-columns: 6.5rem 1fr; gap: .6rem; padding: .5rem .7rem; background: none; border: 0; text-align: left; color: inherit; cursor: pointer; }
+.sc-where { font-size: .82rem; color: var(--muted); }
+.sc-where small { display: block; }
+.sc-code { font-weight: 600; }
+.sc-detail { font-size: .85rem; color: var(--muted); }
+.sc-games td:nth-child(4), .sc-games td:nth-child(5) { text-align: center; }
+@media (min-width: 961px) {
+  .sc-player { position: sticky; top: 0; }
+  .sc-side { position: sticky; top: 0; max-height: 100vh; overflow-y: auto; overscroll-behavior: contain; padding-right: .3rem; scrollbar-gutter: stable; }
+}
+@media (max-width: 960px) { .sc-layout { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { main.scenes-page { padding: 1rem; } .sc-play { grid-template-columns: 5rem 1fr; } }

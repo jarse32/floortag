@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FloorTag · Szenen</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%231D6A4B'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/barlow-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+<script type="module" src="js/scenespage.js"></script>
+</head>
+<body data-page="scenes">
+
+<header class="topbar">
+  <a class="brand brand-link" href="./">FloorTag</a>
+  <span class="matchline"><span class="teams">Szenen</span></span>
+  <div class="header-actions">
+    <a class="btn ghost" href="uebersicht.html">Übersicht</a>
+    <a class="btn" href="./">Spiel laden</a>
+  </div>
+</header>
+
+<main class="scenes-page">
+  <form id="teamForm" class="sc-pick">
+    <label>Liga <select id="leagueSelect" aria-label="Liga wählen"><option value="">Liga wählen …</option></select></label>
+    <label>Team <select id="teamSelect" aria-label="Team wählen" disabled><option value="">zuerst Liga wählen</option></select></label>
+    <span id="loadNote" class="note" role="status"></span>
+  </form>
+  <p id="pageError" class="error" hidden></p>
+
+  <div class="tabs sc-tabs" role="tablist" hidden>
+    <button class="tab" role="tab" data-stab="scenes" aria-selected="true">Szenen <span id="sceneCount"></span></button>
+    <button class="tab" role="tab" data-stab="games" aria-selected="false">Spiele <span id="gameCount"></span></button>
+  </div>
+
+  <section id="scenesPanel" class="sc-layout" hidden>
+    <div class="sc-player">
+      <div class="player-wrap">
+        <div id="player"></div>
+        <div id="consent" class="consent" hidden>
+          <p class="consent-title">Video von YouTube</p>
+          <p>Die Spielvideos liegen bei YouTube. Wenn du sie lädst, überträgt dein Browser Daten an Google, darunter deine IP-Adresse, und YouTube kann Cookies oder ähnliche Techniken einsetzen. FloorTag nutzt dafür den erweiterten Datenschutzmodus von YouTube. Mehr dazu steht in der <a href="https://floorballdashboard.app/datenschutz/#floortag" target="_blank" rel="noopener">Datenschutzerklärung</a>.</p>
+          <div class="consent-actions">
+            <button id="consentBtn" class="btn">YouTube-Videos laden</button>
+            <label><input type="checkbox" id="consentRemember"> Für FloorTag merken</label>
+          </div>
+        </div>
+        <div id="playerEmpty" class="player-empty">Wähle eine Szene oder „Alle abspielen“.</div>
+      </div>
+      <div class="sc-transport">
+        <button id="playAllBtn" class="btn">Alle abspielen</button>
+        <button id="prevBtn" class="btn ghost" aria-label="Vorherige Szene" title="Vorherige Szene (P)">‹</button>
+        <button id="nextBtn" class="btn ghost" aria-label="Nächste Szene" title="Nächste Szene (N)">›</button>
+        <span id="nowPlaying" class="sc-now"></span>
+      </div>
+      <p class="hint">Tastatur: K oder Leertaste Play/Pause, N nächste Szene, P vorherige Szene. Ein Klick auf eine Szene spielt sie ab Vorlauf ab; bei „Alle abspielen“ geht es nach dem Nachlauf von selbst weiter.</p>
+    </div>
+    <div class="sc-side">
+      <div id="filters" class="sc-filters"></div>
+      <ol id="sceneList" class="sc-list"></ol>
+    </div>
+  </section>
+
+  <section id="gamesPanel" hidden>
+    <div id="gameFilter" class="segbtns ov-filter" role="group" aria-label="Spiele filtern"></div>
+    <div id="gameList"></div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<footer class="source">
+  Daten: Saisonmanager / Floorball Deutschland ·
+  <a href="https://floorballdashboard.app/impressum/" target="_blank" rel="noopener">Impressum</a> ·
+  <a href="https://floorballdashboard.app/datenschutz/#floortag" target="_blank" rel="noopener">Datenschutz</a>
+</footer>
+</body>
+</html>

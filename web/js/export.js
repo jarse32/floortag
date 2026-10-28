@@ -50,7 +50,7 @@ export function buildClips() {
       code = `Auszeit ${team}`;
       color = COLORS.timeout;
     }
-    clips.push({ code, kind: e.event_type, color, eventId: e.event_id,
+    clips.push({ code, kind: e.event_type, color, eventId: e.event_id, side: e.event_team,
       start: Math.max(0, t - state.leadIn), end: t + state.leadOut,
       labels: labels.filter(([, v]) => v) });
   }
@@ -62,9 +62,9 @@ export function buildClips() {
     const common = [['Abschnitt', periodTitle(ph.p)], ['Spielzeit', `${fmtGame(ph.from)}–${fmtGame(ph.to)}`]];
     if (ph.emptyNet.length) common.push(['Torhüter raus', ph.emptyNet.map(teamShort).join(', ')]);
     const range = { start: Math.max(0, start), end };
-    clips.push({ code: `Überzahl ${teamShort(ph.team)}`, kind: 'powerplay', color: COLORS[ph.team], ...range,
+    clips.push({ code: `Überzahl ${teamShort(ph.team)}`, kind: 'powerplay', side: ph.team, color: COLORS[ph.team], ...range,
       labels: [['Team', teamShort(ph.team)], ...common, ['Stärke', `${ph.strength[0]} gegen ${ph.strength[1]}`]] });
-    clips.push({ code: `Unterzahl ${teamShort(opp)}`, kind: 'boxplay', color: COLORS[opp], ...range,
+    clips.push({ code: `Unterzahl ${teamShort(opp)}`, kind: 'boxplay', side: opp, color: COLORS[opp], ...range,
       labels: [['Team', teamShort(opp)], ...common, ['Stärke', `${ph.strength[1]} gegen ${ph.strength[0]}`]] });
   }
   // Eigene Tags, jeweils mit Gegenperspektive
@@ -108,7 +108,7 @@ export function tagClips(tag, names) {
   }
   if (isShootout(tag)) labels.push(['Penaltyschießen', 'ja']);
   if (tag.comment) labels.push(['Kommentar', tag.comment]);
-  const clips = [{ code: team ? `${def.label} ${names[team]}` : def.label, kind: 'tag', tagKey: def.key,
+  const clips = [{ code: team ? `${def.label} ${names[team]}` : def.label, kind: 'tag', tagKey: def.key, side: team || null, label: def.label,
     color: team ? COLORS[team] : COLORS.special, start, end, labels }];
   const derived = def.derivedAll || (def.derived && def.derived[tag.outcome]);
   if (derived && opp) {
@@ -119,7 +119,7 @@ export function tagClips(tag, names) {
       const gk = goalieAt(opp, tag.v);
       if (gk != null) flipped.push(['Torhüter', personLabel(opp, gk)]);
     }
-    clips.push({ code: `${derived} ${names[opp]}`, kind: 'tag-derived', tagKey: def.key, color: COLORS[opp], start, end,
+    clips.push({ code: `${derived} ${names[opp]}`, kind: 'tag-derived', tagKey: def.key, side: opp, label: derived, color: COLORS[opp], start, end,
       labels: [['Team', names[opp]], ...flipped] });
   }
   return clips;
