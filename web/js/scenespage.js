@@ -13,7 +13,7 @@ const $ = s => document.querySelector(s);
 const PREFS = 'floortag:scenes';
 const view = {
   leagues: [], schedule: null, team: null, games: [], scenes: [], run: 0,
-  filter: new Set(['goal']), gameFilter: 'all', tab: 'scenes',
+  filter: new Set(['goal']), gameFilter: 'all', tab: 'scenes', ppDelay: 30,
   current: null, playAll: false, pending: null
 };
 
@@ -34,7 +34,7 @@ function showToast(text) {
 $('#toast').addEventListener('click', () => { $('#toast').hidden = true; });
 
 function savePrefs() {
-  try { localStorage.setItem(PREFS, JSON.stringify({ league: $('#leagueSelect').value, team: view.team, filter: [...view.filter] })); } catch (e) { /* ignorieren */ }
+  try { localStorage.setItem(PREFS, JSON.stringify({ league: $('#leagueSelect').value, team: view.team, filter: [...view.filter], ppDelay: view.ppDelay })); } catch (e) { /* ignorieren */ }
 }
 function readPrefs() {
   try { return JSON.parse(localStorage.getItem(PREFS) || '{}') || {}; } catch (e) { return {}; }
@@ -135,7 +135,7 @@ async function loadTeam(team) {
       // Laden und Auswerten ohne await dazwischen: der Zustand gehört in dieser Zeit diesem Spiel
       if (!loadGameState(data, video, { pub, league: view.schedule.league })) continue;
       const opp = g.side === 'home' ? g.guest : g.home;
-      const list = collectScenes(g.side).map(c => ({ ...c, gameId: g.id, video, date: g.date, opp, home: g.side === 'home', result: g.result }));
+      const list = collectScenes(g.side, { ppDelay: view.ppDelay }).map(c => ({ ...c, gameId: g.id, video, date: g.date, opp, home: g.side === 'home', result: g.result }));
       g.scenes = list.length; g.tags = state.tags.length; g.video = video;
       view.scenes.push(...list);
     } catch (e) { g.error = e.message; }
@@ -298,6 +298,13 @@ async function shareScene(s) {
 $('#leagueSelect').addEventListener('change', e => { view.games = []; view.scenes = []; render(); if (e.target.value) loadSchedule(e.target.value); savePrefs(); });
 $('#teamSelect').addEventListener('change', e => { if (e.target.value) loadTeam(e.target.value); });
 $('#teamForm').addEventListener('submit', e => e.preventDefault());
+$('#ppDelayInput').addEventListener('change', e => {
+  const v = Number(e.target.value);
+  view.ppDelay = Number.isFinite(v) ? Math.min(120, Math.max(0, Math.round(v))) : 30;
+  e.target.value = view.ppDelay;
+  savePrefs();
+  if (view.team) loadTeam(view.team);
+});
 document.querySelectorAll('[data-stab]').forEach(b => b.addEventListener('click', () => { view.tab = b.dataset.stab; render(); }));
 $('#filters').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]');
@@ -339,6 +346,8 @@ async function init() {
   const params = new URLSearchParams(location.search), prefs = readPrefs();
   const filter = params.get('filter') ?? (Array.isArray(prefs.filter) ? prefs.filter.join(',') : null);
   if (filter != null) view.filter = new Set(filter.split(',').filter(Boolean));
+  if (Number.isFinite(prefs.ppDelay) && prefs.ppDelay >= 0 && prefs.ppDelay <= 120) view.ppDelay = prefs.ppDelay;
+  $('#ppDelayInput').value = view.ppDelay;
   await loadLeagues();
   const league = params.get('liga') || prefs.league;
   const team = params.get('team') || prefs.team || null;

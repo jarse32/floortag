@@ -397,6 +397,7 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
 .sc-pick { display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center; margin-bottom: 1rem; }
 .sc-pick label { display: inline-flex; gap: .4rem; align-items: center; font-weight: 600; }
 .sc-pick select { max-width: 22rem; }
+.sc-pick input[type="number"] { width: 4.2rem; }
 .sc-tabs { margin-bottom: 1rem; }
 .sc-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(20rem, 1fr); gap: 1.5rem; align-items: start; }
 .sc-player { display: grid; gap: .6rem; }

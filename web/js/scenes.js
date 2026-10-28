@@ -45,9 +45,9 @@ export function classify(clip, side, sit = null) {
 }
 
 // Szenen des geladenen Spiels für ein Team
-export function collectScenes(side) {
+export function collectScenes(side, { ppDelay = 0 } = {}) {
   const sits = goalSituations();
-  return buildClips()
+  return buildClips({ ppDelay })
     .filter(c => c.kind !== 'period')
     .map(c => ({ ...c, cats: classify(c, side, c.eventId != null ? sits[c.eventId] : null) }))
     .filter(c => c.cats.length);

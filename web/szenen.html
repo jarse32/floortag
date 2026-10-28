@@ -27,6 +27,7 @@
   <form id="teamForm" class="sc-pick">
     <label>Liga <select id="leagueSelect" aria-label="Liga wählen"><option value="">Liga wählen …</option></select></label>
     <label>Team <select id="teamSelect" aria-label="Team wählen" disabled><option value="">zuerst Liga wählen</option></select></label>
+    <label title="Bei der Strafe steht die Uhr; gespielt wird in Über- und Unterzahl erst danach">Überzahl beginnt <input id="ppDelayInput" type="number" min="0" max="120" step="5" value="30" aria-label="Sekunden nach der Strafe"> s nach der Strafe</label>
     <span id="loadNote" class="note" role="status"></span>
   </form>
   <p id="pageError" class="error" hidden></p>
