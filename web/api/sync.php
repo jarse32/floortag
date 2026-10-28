@@ -84,12 +84,19 @@ function sanitize_sync(array $s, int $gameId, string $video): array {
         $fixes[] = ['event_id' => $f['event_id'], 'time' => $f['time']];
         if (count($fixes) >= 100) break;
     }
+    $ppStarts = [];
+    foreach ((array) ($s['pp_starts'] ?? []) as $x) {
+        if (!is_array($x) || !is_int($x['event_id'] ?? null)) continue;
+        $v = num($x['video_sec'] ?? null, 0, 86400);
+        if ($v !== null) $ppStarts[] = ['event_id' => $x['event_id'], 'video_sec' => $v];
+        if (count($ppStarts) >= 100) break;
+    }
     $len = fn($k, $min, $max) => is_int($s[$k] ?? null) && $s[$k] >= $min && $s[$k] <= $max ? $s[$k] : null;
     return [
         'format' => 'floortag-sync', 'version' => 2, 'game_id' => $gameId, 'video_id' => $video,
         'period_length_sec' => $len('period_length_sec', 300, 1800), 'overtime_length_sec' => $len('overtime_length_sec', 60, 1200),
-        'pause_length_sec' => $len('pause_length_sec', 60, 1800),
-        'periods' => (object) $periods, 'events' => $events, 'free_anchors' => $anchors, 'not_in_video' => $missing, 'game_time_fixes' => $fixes
+        'pause_length_sec' => $len('pause_length_sec', 60, 1800), 'pp_delay_sec' => $len('pp_delay_sec', 0, 180),
+        'periods' => (object) $periods, 'events' => $events, 'free_anchors' => $anchors, 'not_in_video' => $missing, 'game_time_fixes' => $fixes, 'pp_starts' => $ppStarts
     ];
 }
 function summary(array $sync): array {

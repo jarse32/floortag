@@ -6,7 +6,7 @@ import { state } from './state.js';
 import { codeOf } from './tags.js';
 
 export const SHARE_PREFIX = '#ft=';
-const SETTINGS = ['periodLen', 'otLen', 'pauseLen', 'leadIn', 'leadOut', 'counterLen', 'kleinfeld'];
+const SETTINGS = ['periodLen', 'otLen', 'pauseLen', 'leadIn', 'leadOut', 'counterLen', 'kleinfeld', 'ppDelay'];
 
 // Tags kompakt: nur gefüllte Felder, Kurznamen
 function packTag(t) {
@@ -34,7 +34,7 @@ export function buildSharePayload() {
   for (const k of SETTINGS) settings[k] = state[k];
   return {
     v: 1, g: state.game.id, vid: state.videoId,
-    s: { periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing, gsFix: state.gsFix, ...settings },
+    s: { periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing, gsFix: state.gsFix, ppStart: state.ppStart, ...settings },
     t: state.tags.map(packTag),
     c: state.complete, l: state.lineups
   };
@@ -45,7 +45,7 @@ export function applySharePayload(p) {
   if (!p || p.v !== 1) throw new Error('Dieser Link stammt aus einer anderen FloorTag-Version.');
   if (p.g !== state.game.id) throw new Error(`Der Link gehört zu Spiel ${p.g}.`);
   const s = p.s || {};
-  state.periods = s.periods || {}; state.placed = s.placed || {}; state.anchors = s.anchors || {}; state.missing = s.missing || {}; state.gsFix = s.gsFix || {};
+  state.periods = s.periods || {}; state.placed = s.placed || {}; state.anchors = s.anchors || {}; state.missing = s.missing || {}; state.gsFix = s.gsFix || {}; state.ppStart = s.ppStart || {};
   for (const k of SETTINGS) if (s[k] !== undefined) state[k] = s[k];
   state.tags = (p.t || []).filter(x => codeOf(x.c)).map(unpackTag).sort((a, b) => a.v - b.v);
   state.complete = p.c || {};

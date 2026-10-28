@@ -16,6 +16,7 @@ import { leagueLengths, shouldApplyLeague, applyLeagueLengths, fetchLeagueInfo }
 import { decideOnLoad, adoptPublished, publishSync, fetchPublished, fetchVersions, setToken, getToken, tokenValid } from './publish.js';
 import { toggleLineupPlayer } from './lineups.js';
 import { sceneUrl, parseScene, stripScene, canShareNative } from './scenelink.js';
+import { ppStartOf, setPpStart } from './ppstart.js';
 
 // Zustand geändert: speichern und neu zeichnen
 function commit() {
@@ -435,6 +436,15 @@ function handleEventAction(e) {
     case 'fixdismiss': ui.outOfOrder = null; renderAll(); break;
     case 'unfix': ui.outOfOrder = null; correctGameTime(ev, null); commit(); break;
     case 'jump': yt.seek(t - state.leadIn); yt.play(); break;
+    // Beginn der Über-/Unterzahl nach einer Strafe
+    case 'ppnow': setPpStart(ev, yt.now()); commit(); break;
+    case 'ppnudge': {
+      const s = ppStartOf(ev); if (!s) break;
+      setPpStart(ev, s.v + Number(b.dataset.d)); yt.seek(state.ppStart[ev.event_id] - 2); commit();
+      break;
+    }
+    case 'ppplay': { const s = ppStartOf(ev); if (s) { yt.seek(s.v); yt.play(); } break; }
+    case 'ppunset': setPpStart(ev, null); commit(); break;
     case 'link': {
       if (t == null) break;
       const kind = { goal: 'Tor', penalty: 'Strafe', timeout: 'Auszeit' }[ev.event_type] || 'Szene';
@@ -585,6 +595,7 @@ function numberSetting(sel, key, factor = 1) {
 numberSetting('#periodLenInput', 'periodLen', 60);
 numberSetting('#otLenInput', 'otLen', 60);
 numberSetting('#pauseLenInput', 'pauseLen', 60);
+numberSetting('#ppDelayInput', 'ppDelay');
 numberSetting('#leadInput', 'leadIn');
 $('#penaltyCheck').addEventListener('change', e => { state.includePenalties = e.target.checked; commit(); });
 $('#chapterTags').addEventListener('change', e => {

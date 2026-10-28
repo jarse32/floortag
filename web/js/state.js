@@ -6,6 +6,7 @@ export const state = {
   periodLen: 1200,     // Drittellänge in Sekunden
   otLen: 600,          // Verlängerung in Sekunden
   pauseLen: 600,       // Drittelpause in Sekunden
+  ppDelay: 30,         // geschätzter Abstand zwischen Strafe und Beginn der Über-/Unterzahl in Sekunden
   leadIn: 8,           // Vorlauf für Kapitelmarken und Clips in Sekunden
   leadOut: 5,          // Nachlauf für Clips im Analyse-Export in Sekunden
   fps: 25,             // Bildrate des Videos für die Schnittliste (EDL)
@@ -18,7 +19,8 @@ export const state = {
   placed: {},          // { event_id: videoSec } manuell gesetzte Ereignisse = Ankerpunkte
   anchors: {},         // { 2: [{ g, v }, ...] } freie Anker ohne Ereignis, z. B. vor und nach einer Streamlücke
   missing: {},         // { event_id: true } Ereignisse, die nicht im Video zu sehen sind
-  gsFix: {},           // { event_id: Sekunden } korrigierte Spielzeit, wenn der Saisonmanager falsch liegt
+  gsFix: {},
+  ppStart: {},         // { event_id: Videosekunde } Beginn der Über-/Unterzahl nach einer Strafe, siehe ppstart.js           // { event_id: Sekunden } korrigierte Spielzeit, wenn der Saisonmanager falsch liegt
   gs: {},              // { event_id: Spielsekunde im Abschnitt }
   counterLen: 10,      // Dauer eines Konter-Clips in Sekunden
   tags: [],            // eigene Tags (Analyse-Ebene), getrennt vom Sync gespeichert, siehe tags.js

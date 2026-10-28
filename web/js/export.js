@@ -8,15 +8,14 @@ import { events, periodList, periodTitle, teamShort, personLabel, gameSec } from
 import { timeOf, videoTimeAt, periodAtVideo } from './sync.js';
 import { codeOf, other, outcomeLabel, placeLabel, faceoffAdvantage, goalieAt, isShootout } from './tags.js';
 import { powerPlayPhases } from './phases.js';
+import { ppDelayEstimate, phaseStart } from './ppstart.js';
 import { lineupOf, hasLineup } from './lineups.js';
 import { goalSituations, situationLabels } from './stats.js';
 
 // Farben der Zeilen (0–255), für Sportscode auf 0–65535 umgerechnet
 const COLORS = { home: [29, 106, 75], guest: [45, 85, 132], period: [140, 150, 145], timeout: [181, 118, 27], special: [128, 90, 150] };
 
-// ppDelay: Sekunden, um die Über- und Unterzahl nach einer ausgesprochenen Strafe später beginnt
-// (die Uhr steht beim Pfiff, gespielt wird erst danach); 0 = Beginn beim Pfiff wie im Export
-export function buildClips({ ppDelay = 0 } = {}) {
+export function buildClips() {
   const clips = [];
   for (const p of periodList()) {
     const st = state.periods[p] || {};
@@ -57,18 +56,16 @@ export function buildClips({ ppDelay = 0 } = {}) {
       labels: labels.filter(([, v]) => v) });
   }
   // Über- und Unterzahl: zwei Clips pro Phase, damit jedes Team seine eigene Zeile hat
+  // Beginn nach einer Strafe: gesetzt oder geschätzt (Pfiff + Abstand), siehe ppstart.js
+  const delay = ppDelayEstimate();
   for (const ph of powerPlayPhases()) {
-    const start = videoTimeAt(ph.p, ph.from), end = videoTimeAt(ph.p, ph.to);
-    if (start == null || end == null || end <= start || end < 0) continue;
+    const raw = videoTimeAt(ph.p, ph.from), end = videoTimeAt(ph.p, ph.to);
+    if (raw == null || end == null || end <= raw || end < 0) continue;
+    const start = phaseStart(ph, raw, end, delay);
     const opp = ph.team === 'home' ? 'guest' : 'home';
     const common = [['Abschnitt', periodTitle(ph.p)], ['Spielzeit', `${fmtGame(ph.from)}–${fmtGame(ph.to)}`]];
     if (ph.emptyNet.length) common.push(['Torhüter raus', ph.emptyNet.map(teamShort).join(', ')]);
-    let begin = start;
-    // Nur Phasen, die mit einer Strafe beginnen; nicht Teile nach der Drittelpause oder nach Ablauf einer Strafe
-    if (ppDelay > 0 && events().some(e => e.event_type === 'penalty' && Math.floor(e.period) === ph.p && gameSec(e) === ph.from)) {
-      if (start + ppDelay < end - 3) begin = start + ppDelay;
-    }
-    const range = { start: Math.max(0, begin), end };
+    const range = { start: Math.max(0, start), end };
     clips.push({ code: `Überzahl ${teamShort(ph.team)}`, kind: 'powerplay', side: ph.team, color: COLORS[ph.team], ...range,
       labels: [['Team', teamShort(ph.team)], ...common, ['Stärke', `${ph.strength[0]} gegen ${ph.strength[1]}`]] });
     clips.push({ code: `Unterzahl ${teamShort(opp)}`, kind: 'boxplay', side: opp, color: COLORS[opp], ...range,

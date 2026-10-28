@@ -6,6 +6,7 @@ import { timeOf, bounds, suggestStart, suggestEnd, gameTimeAt, videoTimeAt } fro
 import { buildChapters, CHAPTER_TAGS } from './chapters.js';
 import { buildClips, EDL_SCOPES } from './export.js';
 import { powerPlayPhases } from './phases.js';
+import { ppDelayEstimate, phaseStart, phaseOfPenalty, ppStartOf } from './ppstart.js';
 import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, isShootout, faceoffAdvantage, goalieAt, goalkeepers } from './tags.js';
 import { personLabel } from './game.js';
 import { statPeriods, statRows, computeStats, signed, goalSituations, situationLabels } from './stats.js';
@@ -52,6 +53,7 @@ function renderSettings() {
   $('#periodLenInput').value = state.periodLen / 60;
   $('#otLenInput').value = state.otLen / 60;
   $('#pauseLenInput').value = state.pauseLen / 60;
+  $('#ppDelayInput').value = state.ppDelay;
   $('#leadInput').value = state.leadIn;
   $('#penaltyCheck').checked = state.includePenalties;
   $('#chapterTags').innerHTML = '<legend>Aus deinen Tags als Kapitel</legend>' + CHAPTER_TAGS.map(([k, l]) =>
@@ -159,6 +161,7 @@ function renderEvents() {
         </div>
         ${t != null && max > min ? `<input type="range" data-id="${e.event_id}" min="${min}" max="${max}" step="0.5" value="${c}" aria-label="Videozeit feinjustieren">
         <span class="hint">Der Regler bleibt zwischen den benachbarten gesetzten Punkten.</span>` : '<span class="hint">Setze zuerst den Anpfiff des Abschnitts, dann wird die Position geschätzt.</span>'}
+        ${ppHtml(e)}
         ${fixHtml(e)}
         ${ui.mode === 'analysis' && e.event_type === 'goal' && Math.floor(e.period) <= 4 ? lineupHtml(e) : ''}
       </div>`;
@@ -177,6 +180,23 @@ function renderEvents() {
 const linkLabel = () => canShareNative() ? 'Szene teilen' : 'Link zur Szene kopieren';
 const linkBtn = id => `<button class="btn small ghost" data-act="link" data-id="${id}">${linkLabel()}</button>`;
 const LINK_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>';
+// Beginn der Über-/Unterzahl nach einer Strafe: gesetzt oder geschätzt, feinjustierbar wie das Ereignis selbst
+function ppHtml(e) {
+  const t = timeOf(e), ph = t != null ? phaseOfPenalty(e) : null, s = ph && ppStartOf(e);
+  if (!s) return '';
+  const id = e.event_id, nudge = d => `<button class="btn small ghost" data-act="ppnudge" data-d="${d}" data-id="${id}">${d > 0 ? '+' : '−'}${Math.abs(d)} s</button>`;
+  return `<div class="pp-start">
+    <div><strong>Beginn Überzahl ${esc(describeTeam(ph.team))} ${ph.strength[0]} gegen ${ph.strength[1]}</strong> bei ${fmt(s.v)}
+      <span class="hint">${s.set ? 'gesetzt' : `geschätzt, ${Math.round(s.v - t)} s nach der Strafe`}</span></div>
+    <div class="row">
+      <button class="btn small" data-act="ppnow" data-id="${id}">Auf aktuelle Videozeit setzen</button>
+      <button class="btn small ghost" data-act="ppplay" data-id="${id}">Ab hier abspielen</button>
+    </div>
+    <div class="row">${nudge(-5)}${nudge(-1)}${nudge(1)}${nudge(5)}
+      ${s.set ? `<button class="btn small quiet" data-act="ppunset" data-id="${id}">Schätzung verwenden</button>` : ''}</div>
+    <span class="hint">Die Strafe liegt beim Pfiff, die Uhr steht dann. Setz hier, wann wieder gespielt wird; dort beginnen Über- und Unterzahl in Clips und Szenen.</span>
+  </div>`;
+}
 // Spielzeit korrigieren: Angebot nach einem Setzen außerhalb der Reihenfolge, Hinweis bei bestehender Korrektur
 function fixHtml(e) {
   const o = ui.outOfOrder && ui.outOfOrder.id === e.event_id ? ui.outOfOrder : null;
@@ -211,9 +231,11 @@ export function renderStrip() {
     html += `<button class="pin ${cls}" style="left:${pct(t)}%" data-act="select" data-id="${e.event_id}" title="${esc(describe(e).text)} (${fmt(t)})"></button>`;
   }
   // Überzahlphasen als schmales Band: Heim oben, Gast unten
+  const delay = ppDelayEstimate();
   for (const ph of powerPlayPhases()) {
-    const a = videoTimeAt(ph.p, ph.from), b = videoTimeAt(ph.p, ph.to);
-    if (a == null || b == null || b <= a) continue;
+    const raw = videoTimeAt(ph.p, ph.from), b = videoTimeAt(ph.p, ph.to);
+    if (raw == null || b == null || b <= raw) continue;
+    const a = phaseStart(ph, raw, b, delay);
     html += `<div class="pp-band ${ph.team}" style="left:${pct(a)}%;width:${pct(b) - pct(a)}%" title="Überzahl ${esc(describeTeam(ph.team))} ${ph.strength[0]} gegen ${ph.strength[1]}"></div>`;
   }
   for (const [p, list] of Object.entries(state.anchors)) {

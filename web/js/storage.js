@@ -13,8 +13,8 @@ export function save() {
   if (state.sharedView) return; // geteilte Ansicht überschreibt nie den eigenen Stand
   try {
     localStorage.setItem(storageKey(), JSON.stringify({
-      periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing, gsFix: state.gsFix,
-      periodLen: state.periodLen, otLen: state.otLen, pauseLen: state.pauseLen,
+      periods: state.periods, placed: state.placed, anchors: state.anchors, missing: state.missing, gsFix: state.gsFix, ppStart: state.ppStart,
+      periodLen: state.periodLen, otLen: state.otLen, pauseLen: state.pauseLen, ppDelay: state.ppDelay,
       leadIn: state.leadIn, leadOut: state.leadOut, fps: state.fps, edlScope: state.edlScope, counterLen: state.counterLen,
       kleinfeld: state.kleinfeld, includePenalties: state.includePenalties, chapterTags: state.chapterTags, hideYouth: state.hideYouth,
       syncSource: state.syncSource, lengthSource: state.lengthSource
@@ -36,7 +36,7 @@ export function saveMeta() {
 }
 // Liefert true, wenn es für dieses Spiel und Video einen eigenen Sync-Stand gab
 export function restore() {
-  state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.gsFix = {}; state.tags = []; state.complete = {}; state.lineups = {};
+  state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.gsFix = {}; state.ppStart = {}; state.tags = []; state.complete = {}; state.lineups = {};
   state.syncSource = null; state.lengthSource = null;
   let hadLocal = false;
   try {
@@ -59,7 +59,7 @@ export function restore() {
 // Ohne gültige Drittellänge fehlt das Drittelende als Anker und alle Schätzungen verrutschen.
 const SETTING_RULES = {
   periodLen: [300, 1800, 1200], otLen: [60, 1200, 600], pauseLen: [60, 1800, 600],
-  leadIn: [0, 30, 8], leadOut: [0, 60, 5], counterLen: [2, 60, 10]
+  leadIn: [0, 30, 8], leadOut: [0, 60, 5], counterLen: [2, 60, 10], ppDelay: [0, 180, 30]
 };
 export function sanitizeSettings() {
   const fixed = [];
@@ -122,7 +122,10 @@ export function buildSyncFile() {
     free_anchors: freeAnchors,
     not_in_video: events().filter(e => state.missing[e.event_id]).map(e => e.event_id),
     // Spielzeiten, die im Saisonmanager falsch stehen (optional, ältere Versionen ignorieren das Feld)
-    game_time_fixes: events().filter(e => state.gsFix[e.event_id] != null).map(e => ({ event_id: e.event_id, time: fmtGame(state.gsFix[e.event_id]) }))
+    game_time_fixes: events().filter(e => state.gsFix[e.event_id] != null).map(e => ({ event_id: e.event_id, time: fmtGame(state.gsFix[e.event_id]) })),
+    // Beginn der Über-/Unterzahl nach Strafen und geschätzter Abstand (optional)
+    pp_starts: events().filter(e => state.ppStart[e.event_id] != null).map(e => ({ event_id: e.event_id, video_sec: state.ppStart[e.event_id] })),
+    pp_delay_sec: state.ppDelay
   };
 }
 export function syncFileName() {
@@ -145,6 +148,9 @@ export function applySyncFile(d) {
   for (const id of d.not_in_video || []) state.missing[id] = true;
   state.gsFix = {};
   for (const f of d.game_time_fixes || []) if (Number.isInteger(f.event_id) && /^\d{1,3}:\d{2}$/.test(f.time || '')) state.gsFix[f.event_id] = parseTime(f.time);
+  state.ppStart = {};
+  for (const x of d.pp_starts || []) if (Number.isInteger(x.event_id) && typeof x.video_sec === 'number' && x.video_sec >= 0) state.ppStart[x.event_id] = x.video_sec;
+  if (typeof d.pp_delay_sec === 'number') state.ppDelay = d.pp_delay_sec;
   if (d.period_length_sec) state.periodLen = d.period_length_sec;
   if (d.overtime_length_sec) state.otLen = d.overtime_length_sec;
   if (d.pause_length_sec) state.pauseLen = d.pause_length_sec;

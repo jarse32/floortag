@@ -397,7 +397,6 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
 .sc-pick { display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center; margin-bottom: 1rem; }
 .sc-pick label { display: inline-flex; gap: .4rem; align-items: center; font-weight: 600; }
 .sc-pick select { max-width: 22rem; }
-.sc-pick input[type="number"] { width: 4.2rem; }
 .sc-tabs { margin-bottom: 1rem; }
 .sc-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(20rem, 1fr); gap: 1.5rem; align-items: start; }
 .sc-player { display: grid; gap: .6rem; }
@@ -431,3 +430,6 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
 }
 @media (max-width: 960px) { .sc-layout { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { main.scenes-page { padding: 1rem; } .sc-play { grid-template-columns: 5rem 1fr; } }
+
+/* Beginn der Über-/Unterzahl in der Strafen-Zeile */
+.pp-start { display: grid; gap: .35rem; margin-top: .5rem; padding: .55rem .7rem; border-left: 3px solid var(--pine); background: var(--pine-soft); border-radius: 4px; }

@@ -91,6 +91,7 @@ cat > "$TMP/pub1.json" <<'J'
 {"game_id": 58668, "video_id": "lfIFpRsE55I", "sync": {"format": "floortag-sync", "version": 2, "periods": {"1": {"start": 300, "end": 1920}, "9": {"start": 1}},
  "events": [{"event_id": 1, "period": 1, "time": "6:04", "video_sec": 900}, {"event_id": "x", "video_sec": 5}], "free_anchors": [], "not_in_video": [6],
  "game_time_fixes": [{"event_id": 2, "time": "7:05"}, {"event_id": 3, "time": "<b>"}, {"event_id": "y", "time": "1:00"}],
+ "pp_starts": [{"event_id": 4, "video_sec": 2135}, {"event_id": 5, "video_sec": "x"}], "pp_delay_sec": 40,
  "period_length_sec": 1200, "tags": [{"code": "shot"}], "kommentar": "Max Mustermann"}}
 J
 post "Sync veröffentlichen"                 200 "$TMP/pub1.json"
@@ -103,6 +104,7 @@ d = json.load(open(sys.argv[1])); s = d['sync']; raw = json.dumps(d)
 assert d['version'] == 1 and d['game_id'] == 58668
 assert list(s['periods']) == ['1'] and [e['event_id'] for e in s['events']] == [1] and s['not_in_video'] == [6]
 assert s['game_time_fixes'] == [{'event_id': 2, 'time': '7:05'}]
+assert s['pp_starts'] == [{'event_id': 4, 'video_sec': 2135.0}] and s['pp_delay_sec'] == 40
 assert 'tags' not in s and 'Mustermann' not in raw and 'token' not in raw
 PY
 post "Ändern ohne Schlüssel"                403 "$TMP/pub1.json"

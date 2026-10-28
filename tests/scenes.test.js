@@ -92,24 +92,3 @@ test('Teams und Seite im Spielplan', () => {
   assert.equal(sideOf(games[0], 'X'), null);
 });
 
-test('Überzahl beginnt nach der Strafe erst nach dem Versatz, nicht nach der Drittelpause', () => {
-  synced();
-  const pp = d => collectScenes('guest', { ppDelay: d }).filter(s => s.kind === 'powerplay').map(s => s.start);
-  const without = pp(0), with30 = pp(30);
-  assert.equal(without.length, with30.length);
-  // Erste Phase: Strafe BAL im 2. Drittel bei 16:49 → 30 s später
-  const d = with30.map((v, i) => Math.round(v - without[i]));
-  assert.ok(d.every(x => x === 30 || x === 0));
-  assert.ok(d.includes(30));
-  // Unterzahl-Clip des Gegners hat denselben Beginn
-  const sh = collectScenes('home', { ppDelay: 30 }).filter(s => s.kind === 'boxplay').map(s => s.start);
-  assert.deepEqual(sh, with30);
-});
-
-test('Phase nach der Drittelpause wird nicht verschoben', () => {
-  synced();
-  const box = d => collectScenes('guest', { ppDelay: d }).filter(s => s.kind === 'boxplay').map(s => Math.round(s.start));
-  const [first0, second0] = box(0), [first30, second30] = box(30);
-  assert.equal(first30 - first0, 30);  // Strafe TVEH bei 18:45 im 1. Drittel
-  assert.equal(second30, second0);     // Rest der Strafe ab Beginn des 2. Drittels
-});

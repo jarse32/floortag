@@ -17,6 +17,7 @@ export const GUIDES = {
     tips: [
       'Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, Komma/Punkt ±1 s, − / + Tempo, Enter setzt das gewählte Ereignis.',
       'Streamlücke? Setz in der Drittelkarte je einen „freien Anker“ vor und nach der Lücke. Ereignisse in der Lücke markierst du als „Nicht im Video“.',
+      'Bei einer Strafe steht die Uhr. In der Zeile der Strafe setzt du, wann das Spiel in Über- und Unterzahl weitergeht; dort beginnen Clips und Szenen. Ohne gesetzten Beginn schätzt FloorTag (Einstellung, danach der Durchschnitt der gesetzten).',
       'Spielzeit im Saisonmanager falsch? Setz das Ereignis an die richtige Stelle. Passt sie nicht zur Reihenfolge, bietet FloorTag an, die Spielzeit zu korrigieren (markiert mit *).',
       'Eine einzelne Szene verschicken: Ereignis antippen und „Link zur Szene kopieren“ (auf dem Handy „Szene teilen“). Der Link öffnet das Spiel im Modus Ansehen ab der Szene.',
       'Unter „Übersicht“ siehst du alle Spiele dieses Browsers mit ihrer Stufe und den Spielplan einer Liga.',

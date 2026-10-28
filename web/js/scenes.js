@@ -45,9 +45,9 @@ export function classify(clip, side, sit = null) {
 }
 
 // Szenen des geladenen Spiels für ein Team
-export function collectScenes(side, { ppDelay = 0 } = {}) {
+export function collectScenes(side) {
   const sits = goalSituations();
-  return buildClips({ ppDelay })
+  return buildClips()
     .filter(c => c.kind !== 'period')
     .map(c => ({ ...c, cats: classify(c, side, c.eventId != null ? sits[c.eventId] : null) }))
     .filter(c => c.cats.length);
@@ -59,7 +59,7 @@ export function hasSyncData(s = state) {
 }
 
 // Einstellungen, die pro Spiel neu beginnen (sonst erbt ein Spiel die Längen des vorherigen)
-const SETTINGS = ['periodLen', 'otLen', 'pauseLen', 'leadIn', 'leadOut', 'counterLen', 'kleinfeld', 'hideYouth', 'lengthSource', 'syncSource'];
+const SETTINGS = ['periodLen', 'otLen', 'pauseLen', 'ppDelay', 'leadIn', 'leadOut', 'counterLen', 'kleinfeld', 'hideYouth', 'lengthSource', 'syncSource'];
 const DEFAULTS = Object.fromEntries(SETTINGS.map(k => [k, state[k]]));
 
 // Lädt ein Spiel mit eigenem Stand (aus diesem Browser) oder veröffentlichtem Sync; speichert nie etwas
