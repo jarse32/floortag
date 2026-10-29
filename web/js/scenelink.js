@@ -16,6 +16,18 @@ export function sceneUrl(base, { game, video = null, t, event = null }) {
   return url.toString();
 }
 
+// Link zu einem Spiel, mit Video, wenn bekannt (z. B. wenn im Saisonmanager kein YouTube-Link steht)
+export function gameUrl(game, video = null) {
+  const v = video && VIDEO_ID.test(video) ? `&video=${video}` : '';
+  return `./?spiel=${encodeURIComponent(game)}${v}`;
+}
+
+// Video aus der Adresse, auch ohne Szenenzeit (?spiel=…&video=…)
+export function parseVideoParam(search) {
+  const v = new URLSearchParams(search).get('video');
+  return v && VIDEO_ID.test(v) ? v : null;
+}
+
 // Liest die Szene aus der Adresse; ohne gültiges t gibt es keine Szene
 export function parseScene(search) {
   const p = new URLSearchParams(search);

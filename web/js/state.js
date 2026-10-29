@@ -34,6 +34,7 @@ export const state = {
 // Zustand der Oberfläche, wird nicht gespeichert
 export const ui = {
   selectedId: null,
+  urlVideo: null,      // Video aus ?video= (ohne Szenenzeit), gilt nur für das erste geladene Spiel
   scene: null,         // { t, video, event } aus einem geöffneten Szenen-Link, bis der Player dorthin gesprungen ist
   outOfOrder: null,    // { id, v, g } Ereignis sollte außerhalb der Reihenfolge liegen: Korrektur der Spielzeit anbieten
   rate: 1,             // Abspieltempo, bleibt beim Videowechsel, wird nicht gespeichert

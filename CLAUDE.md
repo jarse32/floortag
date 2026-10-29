@@ -52,6 +52,7 @@ Repo: privat auf GitHub unter `jarse32/floortag`, Branch `main`.
 ### Relevante Felder der Spiel-JSON
 
 - `live_stream_link`, `vod_link`: YouTube-Links, `vod_link` hat Vorrang, wenn vorhanden.
+- Manchmal steht dort kein YouTube-Link (z. B. Twitch, Spiel 58959). `loadGame` wählt das Video deshalb so: Teilen-Link bzw. `?video=` (auch ohne Szenenzeit), dann YouTube-Link aus dem Saisonmanager, dann das zuletzt bearbeitete Video mit eigenem Stand zu diesem Spiel (`ownVideos` in `storage.js`), zuletzt das Video eines veröffentlichten Syncs zu diesem Spiel (`index.json`). „Öffnen“ in Übersicht, Spielplan und Szenen gibt `&video=` mit (`gameUrl` in `scenelink.js`).
 - `events[]`: `event_id`, `event_type` (`goal`, `penalty`, `timeout`), `event_team` (`home`/`guest`), `period` (1–3, 4 = Verlängerung, 5 = Penaltyschießen), `time` (Spielzeit **innerhalb des Abschnitts**, Format `m:ss`), `sortkey` (`"2-05:53"`).
 - Tore: `home_goals`/`guest_goals` (Stand nach dem Tor), `number` (Rückennummer Schütze), `assist` (Rückennummer Vorlage), `goal_type`/`goal_type_string`.
 - Strafen: `number`, `penalty_type` (z. B. `penalty_2`), `penalty_type_string`, `penalty_reason_string`.

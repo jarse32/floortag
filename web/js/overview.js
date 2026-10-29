@@ -7,6 +7,7 @@ import { restore, saveMeta, metaKey } from './storage.js';
 import { STAGES } from './progress.js';
 import { esc } from './format.js';
 import { fetchIndex } from './publish.js';
+import { gameUrl } from './scenelink.js';
 import { groupByDay, defaultDay, dayRange } from './schedule.js';
 
 const $ = s => document.querySelector(s);
@@ -86,7 +87,7 @@ function renderMine(games) {
   $('#mineList').innerHTML = shown.map(g => {
     const m = g.meta;
     if (!m) return `<article class="ov-card"><div><strong>Spiel ${g.gameId}</strong><p class="note">Eckdaten konnten nicht geladen werden.</p></div>
-      <div class="ov-actions"><a class="btn small" href="./?spiel=${g.gameId}">Öffnen</a></div></article>`;
+      <div class="ov-actions"><a class="btn small" href="${gameUrl(g.gameId, g.video)}">Öffnen</a></div></article>`;
     return `<article class="ov-card">
       <div class="ov-main">
         <div class="ov-date">${esc(date(m.date))}${m.league ? ` · ${esc(m.league)}` : ''}</div>
@@ -95,7 +96,7 @@ function renderMine(games) {
         <div class="ov-details">${esc(progressDetails(m.progress))}${multiVideo(g.gameId) ? ` · Video ${esc(g.video)}` : ''}</div>
       </div>
       <div class="ov-actions">
-        <a class="btn small" href="./?spiel=${g.gameId}">Öffnen</a>
+        <a class="btn small" href="${gameUrl(g.gameId, g.video)}">Öffnen</a>
         ${m.leagueId ? `<button class="btn small ghost" data-open-league="${m.leagueId}">Liga ansehen</button>` : ''}
         <button class="btn small quiet" data-remove="${g.gameId}:${esc(g.video)}" aria-label="Spiel aus diesem Browser löschen">Löschen</button>
       </div>
@@ -173,7 +174,7 @@ function renderLeague(games) {
   const mine = new Map();
   for (const g of games) if (g.meta) {
     const prev = mine.get(g.gameId);
-    if (!prev || g.meta.progress.stage > prev.progress.stage) mine.set(g.gameId, g.meta);
+    if (!prev || g.meta.progress.stage > prev.progress.stage) mine.set(g.gameId, { ...g.meta, video: g.video });
   }
   const days = groupByDay(data.games, data.league.day_titles || {});
   if (view.day == null || !days.some(d => d.day === view.day)) view.day = defaultDay(days);
@@ -197,7 +198,7 @@ function renderLeague(games) {
       <td>${esc(g.home)} <span class="score">${esc(g.result || '–')}</span> ${esc(g.guest)}</td>
       ${hasVideoInfo ? `<td class="ov-v">${videoCell}</td>` : ''}
       <td>${status}${pubBadge}</td>
-      <td class="ov-a">${g.result ? `<a class="btn small ${m || pub ? '' : 'ghost'}" href="./?spiel=${esc(g.id)}">${m || pub ? 'Öffnen' : 'Bearbeiten'}</a>` : ''}</td>
+      <td class="ov-a">${g.result ? `<a class="btn small ${m || pub ? '' : 'ghost'}" href="${esc(gameUrl(g.id, (m && m.video) || (pub && pub.video)))}">${m || pub ? 'Öffnen' : 'Bearbeiten'}</a>` : ''}</td>
     </tr>`;
   }).join('');
   const options = days.map(d => `<option value="${d.day}" ${d.day === view.day ? 'selected' : ''}>${esc(d.title)}${d.from ? ` · ${esc(dayRange(d.from, d.to))}` : ''}${d.played ? '' : ' (offen)'}</option>`).join('');

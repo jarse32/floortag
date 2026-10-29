@@ -34,6 +34,21 @@ export function saveMeta() {
     localStorage.setItem(metaKey(), JSON.stringify({ ...gameMeta(), progress: computeProgress(), updated: new Date().toISOString() }));
   } catch (e) { /* Speicher nicht verfügbar */ }
 }
+// Videos mit eigenem Stand zu einem Spiel in diesem Browser, zuletzt bearbeitetes zuerst
+export function ownVideos(gameId, store = localStorage) {
+  const found = new Map();
+  try {
+    for (let i = 0; i < store.length; i++) {
+      const m = (store.key(i) || '').match(/^floortag(?:-tags|-meta)?:(\d+):(.+)$/);
+      if (!m || Number(m[1]) !== Number(gameId) || m[2] === 'ohne-video') continue;
+      let updated = '';
+      try { updated = (JSON.parse(store.getItem(`floortag-meta:${m[1]}:${m[2]}`) || 'null') || {}).updated || ''; } catch (e) { /* ohne Datum */ }
+      found.set(m[2], updated);
+    }
+  } catch (e) { /* Speicher nicht verfügbar */ }
+  return [...found].sort((a, b) => b[1].localeCompare(a[1])).map(([v]) => v);
+}
+
 // Liefert true, wenn es für dieses Spiel und Video einen eigenen Sync-Stand gab
 export function restore() {
   state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.gsFix = {}; state.ppStart = {}; state.tags = []; state.complete = {}; state.lineups = {};

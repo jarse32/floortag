@@ -5,7 +5,7 @@ import { state } from './state.js';
 import { fmt, esc } from './format.js';
 import { SCENE_GROUPS, catLabel, collectScenes, countByCat, loadGameState, sideOf, teamsOf, hasSyncData } from './scenes.js';
 import { fetchIndex, fetchPublished } from './publish.js';
-import { sceneUrl, canShareNative } from './scenelink.js';
+import { sceneUrl, gameUrl, canShareNative } from './scenelink.js';
 import { hasConsent, giveConsent } from './consent.js';
 import * as yt from './player.js';
 
@@ -230,7 +230,7 @@ function renderGames() {
       <td>${syncCell(g)}</td>
       <td>${g.result ? (g.tags || '–') : ''}</td>
       <td>${g.source && g.result ? g.scenes : ''}</td>
-      <td class="ov-a">${g.result ? `<a class="btn small ${g.source ? 'ghost' : ''}" href="./?spiel=${esc(g.id)}">${g.source ? 'Öffnen' : 'Syncen'}</a>` : '<span class="te-info">noch nicht gespielt</span>'}</td>
+      <td class="ov-a">${g.result ? `<a class="btn small ${g.source ? 'ghost' : ''}" href="${esc(gameUrl(g.id, g.video || (g.own && g.own.video) || (g.pub && g.pub.video)))}">${g.source ? 'Öffnen' : 'Syncen'}</a>` : '<span class="te-info">noch nicht gespielt</span>'}</td>
     </tr>`).join('')}</tbody></table></div>`;
 }
 

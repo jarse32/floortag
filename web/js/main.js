@@ -3,7 +3,7 @@ import { state, ui } from './state.js';
 import { extractVideoId, fmt, fmtGame, esc } from './format.js';
 import { prepareGame, events, findEvent, periodLength, teamShort } from './game.js';
 import { timeOf, place, setMissing, addAnchor, removeAnchor, gameTimeFor, correctGameTime } from './sync.js';
-import { save, restore, buildSyncFile, syncFileName, applySyncFile, saveTags, buildTagFile, tagFileName, applyTagFile } from './storage.js';
+import { save, restore, ownVideos, buildSyncFile, syncFileName, applySyncFile, saveTags, buildTagFile, tagFileName, applyTagFile } from './storage.js';
 import { CATALOG, codeOf, addTag, findTag, updateTag, setPlayer, removeTag, restoreTag, openPhase, nextShootoutTeam, inShootout } from './tags.js';
 import { buildClips, toSportscodeXml, toCsv, toEdl } from './export.js';
 import * as yt from './player.js';
@@ -13,9 +13,9 @@ import { statsAsTsv } from './stats.js';
 import { SHARE_PREFIX, decodeShare, applySharePayload, shareUrl } from './share.js';
 import { GUIDES, introSeen, markIntroSeen } from './help.js';
 import { leagueLengths, shouldApplyLeague, applyLeagueLengths, fetchLeagueInfo } from './leagueinfo.js';
-import { decideOnLoad, adoptPublished, publishSync, fetchPublished, fetchVersions, setToken, getToken, tokenValid } from './publish.js';
+import { decideOnLoad, adoptPublished, publishSync, fetchPublished, fetchIndex, fetchVersions, setToken, getToken, tokenValid } from './publish.js';
 import { toggleLineupPlayer } from './lineups.js';
-import { sceneUrl, parseScene, stripScene, canShareNative } from './scenelink.js';
+import { sceneUrl, parseScene, parseVideoParam, stripScene, canShareNative } from './scenelink.js';
 import { ppStartOf, setPpStart } from './ppstart.js';
 
 // Zustand geändert: speichern und neu zeichnen
@@ -242,15 +242,35 @@ function loadGame(data) {
   renderMatchline();
   $('#loader').hidden = true;
   $('#app').hidden = false;
-  const vid = (ui.shared && ui.shared.vid) || (ui.scene && ui.scene.video);
-  const link = vid ? `https://www.youtube.com/watch?v=${vid}` : data.vod_link || data.live_stream_link || '';
-  $('#videoInput').value = link;
-  const id = extractVideoId(link);
+  // Video: Teilen-Link oder Adresse, dann Saisonmanager (nur YouTube), dann eigener Stand in diesem Browser
+  const smLink = data.vod_link || data.live_stream_link || '';
+  const smId = extractVideoId(smLink);
+  const own = !ui.shared && !smId ? ownVideos(state.game.id)[0] : null;
+  const id = (ui.shared && ui.shared.vid) || (ui.scene && ui.scene.video) || ui.urlVideo || smId || own;
+  $('#videoInput').value = id ? `https://www.youtube.com/watch?v=${id}` : smLink;
   ui.leagueInfo = null;
   if (id) setVideo(id); else { state.videoId = null; const had = restoreState(); renderAll(); checkLeague(had); }
+  if (own && id === own) showToast('Im Saisonmanager steht kein YouTube-Link. Geladen ist das Video aus deinem Stand.');
+  if (!id && !ui.shared) videoFromPublished(state.game.id);
   // Beim ersten Spiel in diesem Modus die Anleitung zeigen
   if (!introSeen(ui.mode) && !ui.scene) openHelp(ui.mode);
   applyScene();
+}
+
+// Kein YouTube-Link und kein eigener Stand: Video eines veröffentlichten Syncs zu diesem Spiel suchen
+async function videoFromPublished(gameId) {
+  let found = null;
+  try {
+    for (const [video, entry] of Object.entries(await fetchIndex() || {})) {
+      if (Number(entry.game_id) !== Number(gameId)) continue;
+      if (!found || entry.periods > found.periods || (entry.periods === found.periods && entry.updated > found.updated)) found = { ...entry, video };
+    }
+  } catch (e) { return; } // ohne Server geht es ohne
+  // Inzwischen anderes Spiel oder schon ein Video eingetragen: nichts überschreiben
+  if (!found || !state.game || state.game.id !== gameId || state.videoId) return;
+  $('#videoInput').value = `https://www.youtube.com/watch?v=${found.video}`;
+  setVideo(found.video);
+  showToast('Im Saisonmanager steht kein YouTube-Link. Geladen ist das Video aus dem veröffentlichten Sync.');
 }
 
 // ===== Link zu einer Szene =====
@@ -302,9 +322,11 @@ async function loadById(id) {
     if (!type.includes('application/json')) throw new Error('Der Proxy antwortet nicht. Lokal muss das Frontend über „php -S localhost:8000 -t web“ laufen.');
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `Fehler ${res.status} beim Laden.`);
+    const url = new URL(location.href);
+    // Anderes Spiel als in der Adresse: das Video aus der Adresse gehört nicht dazu
+    if (url.searchParams.get('spiel') !== String(id)) { ui.urlVideo = null; url.searchParams.delete('video'); }
     loadGame(data);
     showLoadError('');
-    const url = new URL(location.href);
     url.searchParams.set('spiel', id);
     history.replaceState(null, '', url);
   } catch (e) {
@@ -330,8 +352,13 @@ $('#pasteBtn').addEventListener('click', () => handleText($('#pasteArea').value)
 // ===== Video und Transport =====
 $('#videoBtn').addEventListener('click', () => {
   const id = extractVideoId($('#videoInput').value);
-  if (id) setVideo(id);
-  else showPlayerMessage('Daraus konnte keine YouTube-Video-ID gelesen werden.');
+  if (id) {
+    // Steht ein Video in der Adresse, mitziehen, damit Neuladen nicht das alte lädt
+    if (new URLSearchParams(location.search).has('video')) {
+      const url = new URL(location.href); url.searchParams.set('video', id); history.replaceState(null, '', url);
+    }
+    setVideo(id);
+  } else showPlayerMessage('Daraus konnte keine YouTube-Video-ID gelesen werden.');
 });
 document.querySelectorAll('[data-seek]').forEach(b => b.addEventListener('click', () => yt.seek(yt.now() + Number(b.dataset.seek))));
 $('#playBtn').addEventListener('click', yt.togglePlay);
@@ -713,6 +740,7 @@ if (location.hash.startsWith(SHARE_PREFIX)) {
   }).catch(err => showLoadError(`Der geteilte Link lässt sich nicht öffnen: ${err.message}`));
 } else {
   ui.scene = parseScene(location.search);
+  ui.urlVideo = parseVideoParam(location.search);
   const startId = extractGameId(new URLSearchParams(location.search).get('spiel'));
   if (startId) { $('#idInput').value = startId; loadById(startId); }
 }
