@@ -2,7 +2,7 @@
 // Grundlage sind nur gesyncte Szenen: eigener Stand in diesem Browser (mit Tags) oder ein veröffentlichter Sync.
 // Pro Spiel wird der Stand in den globalen Zustand geladen und mit buildClips ausgewertet, ein Spiel nach dem anderen.
 import { state } from './state.js';
-import { prepareGame, findEvent, personLabel } from './game.js';
+import { prepareGame, findEvent } from './game.js';
 import { restore, applySyncFile } from './storage.js';
 import { buildClips } from './export.js';
 import { goalSituations } from './stats.js';
@@ -45,13 +45,22 @@ export function classify(clip, side, sit = null) {
 }
 
 // Beteiligte Spieler des Teams an einer Szene: Torschütze, Vorlage, bestrafter Spieler.
-// Kennung ist die Rückennummer im Team (über die Saison praktisch gleich, kein Name in der Adresse).
+// Kennung ist die player_id aus dem Kader dieses Spiels (Rückennummern wechseln zwischen Spielen),
+// ohne Kadereintrag notfalls die Rückennummer („n7“). In der Adresse steht nur die Kennung, kein Name.
 export const PERSON_ROLES = [['goal', 'Tore'], ['assist', 'Vorlagen'], ['penalty', 'Strafen']];
 export function peopleOf(clip, side) {
   if (clip.eventId == null || clip.side !== side) return [];
   const e = findEvent(clip.eventId);
   if (!e) return [];
-  const person = (nr, role) => ({ nr: Number(nr), label: personLabel(side, Number(nr)), role });
+  const roster = (state.game.players || {})[side] || [];
+  const person = (nr, role) => {
+    const p = roster.find(x => x.trikot_number === Number(nr));
+    const hidden = !p || (p.youth && state.hideYouth); // Jugendspieler nur mit Nummer
+    return {
+      id: p && p.player_id != null ? String(p.player_id) : `n${Number(nr)}`, nr: Number(nr), role,
+      name: hidden ? '' : [p.player_firstname, p.player_name].filter(Boolean).join(' ')
+    };
+  };
   if (e.event_type === 'goal') return [e.number && person(e.number, 'goal'), e.assist && person(e.assist, 'assist')].filter(Boolean);
   if (e.event_type === 'penalty' && e.number) return [person(e.number, 'penalty')];
   return [];
@@ -66,26 +75,28 @@ export function collectScenes(side) {
     .filter(c => c.cats.length);
 }
 
-// Spieler über alle Szenen: Rückennummer → { nr, label, goal, assist, penalty }, nach Nummer sortiert.
-// Steht dieselbe Nummer im Lauf der Saison für verschiedene Namen, werden sie zusammen genannt.
+// Spieler über alle Szenen: [{ id, label, numbers, goal, assist, penalty }], Namen alphabetisch, ohne Namen nach Nummer dahinter.
+// Bei Nummernwechseln stehen alle Nummern im Label, z. B. „Lars Schönfelder · #7, #17“.
 export function playersOf(scenes) {
   const map = new Map();
   for (const s of scenes) for (const p of s.people || []) {
-    const x = map.get(p.nr) || { nr: p.nr, labels: new Set(), goal: 0, assist: 0, penalty: 0 };
-    x.labels.add(p.label.replace(/^#\d+\s*/, ''));
+    const x = map.get(p.id) || { id: p.id, name: '', numbers: new Set(), goal: 0, assist: 0, penalty: 0 };
+    if (p.name) x.name = p.name;
+    x.numbers.add(p.nr);
     x[p.role]++;
-    map.set(p.nr, x);
+    map.set(p.id, x);
   }
-  return [...map.values()].sort((a, b) => a.nr - b.nr).map(({ labels, ...x }) => {
-    const names = [...labels].filter(Boolean);
-    return { ...x, label: names.length ? `#${x.nr} ${names.join(' / ')}` : `#${x.nr}` };
-  });
+  return [...map.values()].map(x => {
+    const numbers = [...x.numbers].sort((a, b) => a - b);
+    const nrs = numbers.map(n => `#${n}`).join(', ');
+    return { id: x.id, numbers, goal: x.goal, assist: x.assist, penalty: x.penalty, name: x.name, label: x.name ? `${x.name} · ${nrs}` : nrs };
+  }).sort((a, b) => (!a.name - !b.name) || (a.name ? a.name.split(' ').pop().localeCompare(b.name.split(' ').pop(), 'de') || a.name.localeCompare(b.name, 'de') : a.numbers[0] - b.numbers[0]));
 }
 
-// Passt eine Szene zur Spielerauswahl? nr = Rückennummer oder null (alle), roles = Set der Rollen
-export function matchesPlayer(scene, nr, roles) {
-  if (nr == null) return true;
-  return (scene.people || []).some(p => p.nr === nr && roles.has(p.role));
+// Passt eine Szene zur Spielerauswahl? id = Kennung oder null (alle), roles = Set der Rollen
+export function matchesPlayer(scene, id, roles) {
+  if (id == null) return true;
+  return (scene.people || []).some(p => p.id === id && roles.has(p.role));
 }
 
 // Gibt es im geladenen Zustand einen Sync?

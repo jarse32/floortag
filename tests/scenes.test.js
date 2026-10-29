@@ -93,27 +93,41 @@ test('Teams und Seite im Spielplan', () => {
 });
 
 
-test('Spieler an Szenen: Torschütze, Vorlage, Strafe; Jugendspieler nur mit Nummer', () => {
+test('Spieler an Szenen über die player_id; Namen aus dem Kader, Jugendspieler nur mit Nummer', () => {
   synced();
   const scenes = collectScenes('guest');
   const players = playersOf(scenes);
-  const p7 = players.find(p => p.nr === 7), p6 = players.find(p => p.nr === 6), p17 = players.find(p => p.nr === 17);
-  assert.deepEqual([p7.goal, p7.assist, p7.label], [0, 2, '#7 Schönfelder']);
+  const by = nr => players.find(p => p.numbers.includes(nr));
+  const p7 = by(7), p6 = by(6), p17 = by(17);
+  assert.equal(p7.id, String(FIXTURE.players.guest.find(p => p.trikot_number === 7).player_id));
+  assert.deepEqual([p7.goal, p7.assist, p7.label], [0, 2, `${FIXTURE.players.guest.find(p => p.trikot_number === 7).player_firstname} Schönfelder · #7`]);
   assert.deepEqual([p6.goal, p6.assist, p6.label], [1, 1, '#6']); // youth: true
   assert.deepEqual([p17.goal, p17.penalty], [1, 1]);
   // Gegentore tragen keine eigenen Spieler
   assert.ok(scenes.filter(s => s.cats.includes('goal_against')).every(s => !s.people.length));
-  // Nach Nummern sortiert
-  assert.deepEqual(players.map(p => p.nr), [...players.map(p => p.nr)].sort((a, b) => a - b));
+  // Spieler mit Namen zuerst, Jugendspieler dahinter
+  assert.equal(players[players.length - 1].name, '');
+});
+
+test('Nummernwechsel: dieselbe player_id mit zwei Nummern ist ein Spieler', () => {
+  const a = { people: [{ id: '42', nr: 7, name: 'Lars Beispiel', role: 'goal' }] };
+  const b = { people: [{ id: '42', nr: 17, name: 'Lars Beispiel', role: 'assist' }, { id: 'n9', nr: 9, name: '', role: 'goal' }] };
+  const players = playersOf([a, b]);
+  assert.equal(players.length, 2);
+  assert.deepEqual([players[0].label, players[0].goal, players[0].assist], ['Lars Beispiel · #7, #17', 1, 1]);
+  assert.equal(players[1].label, '#9');
+  assert.equal(matchesPlayer(b, '42', new Set(['goal'])), false);
+  assert.equal(matchesPlayer(b, '42', new Set(['assist'])), true);
 });
 
 test('Spielerauswahl filtert nach Rolle', () => {
   synced();
   const scenes = collectScenes('guest');
+  const id = nr => String(FIXTURE.players.guest.find(p => p.trikot_number === nr).player_id);
   const goals = new Set(['goal']), assists = new Set(['assist']), both = new Set(['goal', 'assist']);
-  assert.equal(scenes.filter(s => matchesPlayer(s, 7, goals)).length, 0);
-  assert.equal(scenes.filter(s => matchesPlayer(s, 7, assists)).length, 2);
-  assert.equal(scenes.filter(s => matchesPlayer(s, 6, both)).length, 2);
-  assert.equal(scenes.filter(s => matchesPlayer(s, 17, new Set(['penalty']))).length, 1);
+  assert.equal(scenes.filter(s => matchesPlayer(s, id(7), goals)).length, 0);
+  assert.equal(scenes.filter(s => matchesPlayer(s, id(7), assists)).length, 2);
+  assert.equal(scenes.filter(s => matchesPlayer(s, id(6), both)).length, 2);
+  assert.equal(scenes.filter(s => matchesPlayer(s, id(17), new Set(['penalty']))).length, 1);
   assert.equal(scenes.filter(s => matchesPlayer(s, null, goals)).length, scenes.length);
 });

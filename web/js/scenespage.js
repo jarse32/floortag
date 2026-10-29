@@ -14,7 +14,7 @@ const PREFS = 'floortag:scenes';
 const view = {
   leagues: [], schedule: null, team: null, games: [], scenes: [], run: 0,
   filter: new Set(['goal']), gameFilter: 'all', tab: 'scenes',
-  player: null, roles: new Set(['goal', 'assist']), // Spielerauswahl: Rückennummer im Team und Rollen
+  player: null, roles: new Set(['goal', 'assist']), // Spielerauswahl: Kennung (player_id) und Rollen
   current: null, playAll: false, pending: null
 };
 
@@ -106,7 +106,7 @@ async function loadSchedule(id, team = null) {
 // Spiele des Teams sammeln und die Szenen aller gesyncten Spiele laden
 async function loadTeam(team) {
   const run = ++view.run;
-  if (team !== view.team && view.team != null) view.player = null; // Rückennummern gelten nur im Team
+  if (team !== view.team && view.team != null) view.player = null; // anderes Team, andere Spieler
   view.team = team; view.current = null; view.playAll = false;
   savePrefs(); updateUrl();
   const local = scanLocal();
@@ -181,7 +181,7 @@ function renderPlayerFilter() {
   const count = (n, one, many) => (n ? `${n} ${n === 1 ? one : many}` : '');
   const opt = p => {
     const info = [count(p.goal, 'Tor', 'Tore'), count(p.assist, 'Vorlage', 'Vorlagen'), count(p.penalty, 'Strafe', 'Strafen')].filter(Boolean).join(', ');
-    return `<option value="${p.nr}" ${p.nr === view.player ? 'selected' : ''}>${esc(p.label)}${info ? ` (${esc(info)})` : ''}</option>`;
+    return `<option value="${esc(p.id)}" ${p.id === view.player ? 'selected' : ''}>${esc(p.label)}${info ? ` (${esc(info)})` : ''}</option>`;
   };
   $('#playerFilter').innerHTML = `<div class="sc-group"><span class="sc-gtitle">Spieler</span>
     <select id="playerSelect" aria-label="Spieler wählen"><option value="">Alle Spieler</option>${players.map(opt).join('')}</select>
@@ -334,7 +334,7 @@ $('#filters').addEventListener('click', e => {
 });
 $('#playerFilter').addEventListener('change', e => {
   if (e.target.id !== 'playerSelect') return;
-  view.player = e.target.value === '' ? null : Number(e.target.value);
+  view.player = e.target.value || null;
   view.playAll = false;
   updateUrl(); render();
 });
@@ -376,8 +376,8 @@ async function init() {
   const params = new URLSearchParams(location.search), prefs = readPrefs();
   const filter = params.get('filter') ?? (Array.isArray(prefs.filter) ? prefs.filter.join(',') : null);
   if (filter != null) view.filter = new Set(filter.split(',').filter(Boolean));
-  const nr = params.get('spieler');
-  if (nr && /^\d{1,3}$/.test(nr)) view.player = Number(nr);
+  const pid = params.get('spieler');
+  if (pid && /^n?\d{1,9}$/.test(pid)) view.player = pid;
   const roles = (params.get('rolle') || '').split(',').filter(r => PERSON_ROLES.some(([k]) => k === r));
   if (roles.length) view.roles = new Set(roles);
   await loadLeagues();
