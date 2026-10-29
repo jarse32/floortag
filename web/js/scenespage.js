@@ -3,7 +3,7 @@
 // Es wird nichts gespeichert außer der zuletzt gewählten Liga und dem Team.
 import { state } from './state.js';
 import { fmt, esc } from './format.js';
-import { SCENE_GROUPS, catLabel, collectScenes, countByCat, loadGameState, sideOf, teamsOf, hasSyncData } from './scenes.js';
+import { SCENE_GROUPS, PERSON_ROLES, catLabel, collectScenes, countByCat, loadGameState, sideOf, teamsOf, hasSyncData, playersOf, matchesPlayer } from './scenes.js';
 import { fetchIndex, fetchPublished } from './publish.js';
 import { sceneUrl, gameUrl, canShareNative } from './scenelink.js';
 import { hasConsent, giveConsent } from './consent.js';
@@ -14,6 +14,7 @@ const PREFS = 'floortag:scenes';
 const view = {
   leagues: [], schedule: null, team: null, games: [], scenes: [], run: 0,
   filter: new Set(['goal']), gameFilter: 'all', tab: 'scenes',
+  player: null, roles: new Set(['goal', 'assist']), // Spielerauswahl: Rückennummer im Team und Rollen
   current: null, playAll: false, pending: null
 };
 
@@ -45,6 +46,7 @@ function updateUrl() {
   if ($('#leagueSelect').value) url.searchParams.set('liga', $('#leagueSelect').value);
   if (view.team) url.searchParams.set('team', view.team);
   if (view.filter.size) url.searchParams.set('filter', [...view.filter].join(','));
+  if (view.player != null) { url.searchParams.set('spieler', view.player); url.searchParams.set('rolle', [...view.roles].join(',')); }
   history.replaceState(null, '', url);
 }
 
@@ -104,6 +106,7 @@ async function loadSchedule(id, team = null) {
 // Spiele des Teams sammeln und die Szenen aller gesyncten Spiele laden
 async function loadTeam(team) {
   const run = ++view.run;
+  if (team !== view.team && view.team != null) view.player = null; // Rückennummern gelten nur im Team
   view.team = team; view.current = null; view.playAll = false;
   savePrefs(); updateUrl();
   const local = scanLocal();
@@ -150,7 +153,13 @@ async function loadTeam(team) {
 // ===== Darstellung =====
 const date = d => (d ? new Date(`${d}T12:00`).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: '2-digit' }) : '');
 const sceneKey = s => `${s.gameId}:${s.video}:${s.start}:${s.code}`;
-function filtered() { return view.scenes.filter(s => s.cats.some(c => view.filter.has(c))); }
+// Szenen des gewählten Spielers (ohne Auswahl alle); Kategorien grenzen weiter ein, ohne Kategorie gilt beim Spieler alles
+const byPlayer = () => view.scenes.filter(s => matchesPlayer(s, view.player, view.roles));
+function filtered() {
+  const list = byPlayer();
+  if (view.player != null && !view.filter.size) return list;
+  return list.filter(s => s.cats.some(c => view.filter.has(c)));
+}
 
 function render() {
   const list = filtered();
@@ -159,14 +168,28 @@ function render() {
   document.querySelectorAll('[data-stab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.stab === view.tab)));
   $('#scenesPanel').hidden = view.tab !== 'scenes' || !view.team;
   $('#gamesPanel').hidden = view.tab !== 'games' || !view.team;
+  renderPlayerFilter();
   renderFilters();
   renderScenes(list);
   renderGames();
   renderNow();
 }
 
+function renderPlayerFilter() {
+  const players = playersOf(view.scenes);
+  if (!players.length) { $('#playerFilter').innerHTML = ''; return; }
+  const count = (n, one, many) => (n ? `${n} ${n === 1 ? one : many}` : '');
+  const opt = p => {
+    const info = [count(p.goal, 'Tor', 'Tore'), count(p.assist, 'Vorlage', 'Vorlagen'), count(p.penalty, 'Strafe', 'Strafen')].filter(Boolean).join(', ');
+    return `<option value="${p.nr}" ${p.nr === view.player ? 'selected' : ''}>${esc(p.label)}${info ? ` (${esc(info)})` : ''}</option>`;
+  };
+  $('#playerFilter').innerHTML = `<div class="sc-group"><span class="sc-gtitle">Spieler</span>
+    <select id="playerSelect" aria-label="Spieler wählen"><option value="">Alle Spieler</option>${players.map(opt).join('')}</select>
+    ${view.player != null ? PERSON_ROLES.map(([k, l]) => `<button class="sc-chip" data-role="${k}" aria-pressed="${view.roles.has(k)}">${l}</button>`).join('') : ''}</div>`;
+}
+
 function renderFilters() {
-  const n = countByCat(view.scenes);
+  const n = countByCat(byPlayer());
   const chip = k => `<button class="sc-chip" data-cat="${esc(k)}" aria-pressed="${view.filter.has(k)}" ${n[k] ? '' : 'disabled'}>${esc(catLabel(k))} <span>${n[k] || 0}</span></button>`;
   const tagCats = Object.keys(n).filter(k => k.startsWith('tag:')).sort((a, b) => catLabel(a).localeCompare(catLabel(b), 'de'));
   $('#filters').innerHTML = SCENE_GROUPS.map(g => `<div class="sc-group"><span class="sc-gtitle">${esc(g.title)}</span>${g.cats.map(([k]) => chip(k)).join('')}</div>`).join('') +
@@ -190,8 +213,9 @@ function renderScenes(list) {
     el.innerHTML = `<li class="ov-empty">${view.games.some(g => g.source) ? 'Szenen werden geladen …' : 'Für dieses Team gibt es noch kein Spiel mit Sync. Unter „Spiele“ siehst du, welche Spiele noch fehlen.'}</li>`;
     return;
   }
-  if (!view.filter.size) { el.innerHTML = '<li class="ov-empty">Wähl oben mindestens eine Kategorie.</li>'; return; }
-  if (!list.length) { el.innerHTML = '<li class="ov-empty">Keine Szenen in dieser Auswahl.</li>'; return; }
+  if (!view.filter.size && view.player == null) { el.innerHTML = '<li class="ov-empty">Wähl oben mindestens eine Kategorie oder einen Spieler.</li>'; return; }
+  if (view.player != null && !view.roles.size) { el.innerHTML = '<li class="ov-empty">Wähl beim Spieler mindestens eine Rolle: Tore, Vorlagen oder Strafen.</li>'; return; }
+  if (!list.length) { el.innerHTML = `<li class="ov-empty">Keine Szenen in dieser Auswahl.${view.player != null && view.filter.size ? ' Mit „Auswahl aufheben“ siehst du alle Szenen des Spielers.' : ''}</li>`; return; }
   const linkLabel = canShareNative() ? 'Szene teilen' : 'Link zur Szene kopieren';
   let html = '', lastGame = null;
   list.forEach((s, i) => {
@@ -308,6 +332,18 @@ $('#filters').addEventListener('click', e => {
   view.playAll = false;
   savePrefs(); updateUrl(); render();
 });
+$('#playerFilter').addEventListener('change', e => {
+  if (e.target.id !== 'playerSelect') return;
+  view.player = e.target.value === '' ? null : Number(e.target.value);
+  view.playAll = false;
+  updateUrl(); render();
+});
+$('#playerFilter').addEventListener('click', e => {
+  const b = e.target.closest('[data-role]'); if (!b) return;
+  const k = b.dataset.role; view.roles.has(k) ? view.roles.delete(k) : view.roles.add(k);
+  view.playAll = false;
+  updateUrl(); render();
+});
 $('#sceneList').addEventListener('click', e => {
   const p = e.target.closest('[data-play]');
   if (p) { play(Number(p.dataset.play)); return; }
@@ -340,6 +376,10 @@ async function init() {
   const params = new URLSearchParams(location.search), prefs = readPrefs();
   const filter = params.get('filter') ?? (Array.isArray(prefs.filter) ? prefs.filter.join(',') : null);
   if (filter != null) view.filter = new Set(filter.split(',').filter(Boolean));
+  const nr = params.get('spieler');
+  if (nr && /^\d{1,3}$/.test(nr)) view.player = Number(nr);
+  const roles = (params.get('rolle') || '').split(',').filter(r => PERSON_ROLES.some(([k]) => k === r));
+  if (roles.length) view.roles = new Set(roles);
   await loadLeagues();
   const league = params.get('liga') || prefs.league;
   const team = params.get('team') || prefs.team || null;

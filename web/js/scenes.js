@@ -2,7 +2,7 @@
 // Grundlage sind nur gesyncte Szenen: eigener Stand in diesem Browser (mit Tags) oder ein veröffentlichter Sync.
 // Pro Spiel wird der Stand in den globalen Zustand geladen und mit buildClips ausgewertet, ein Spiel nach dem anderen.
 import { state } from './state.js';
-import { prepareGame } from './game.js';
+import { prepareGame, findEvent, personLabel } from './game.js';
 import { restore, applySyncFile } from './storage.js';
 import { buildClips } from './export.js';
 import { goalSituations } from './stats.js';
@@ -44,13 +44,48 @@ export function classify(clip, side, sit = null) {
   return cats;
 }
 
+// Beteiligte Spieler des Teams an einer Szene: Torschütze, Vorlage, bestrafter Spieler.
+// Kennung ist die Rückennummer im Team (über die Saison praktisch gleich, kein Name in der Adresse).
+export const PERSON_ROLES = [['goal', 'Tore'], ['assist', 'Vorlagen'], ['penalty', 'Strafen']];
+export function peopleOf(clip, side) {
+  if (clip.eventId == null || clip.side !== side) return [];
+  const e = findEvent(clip.eventId);
+  if (!e) return [];
+  const person = (nr, role) => ({ nr: Number(nr), label: personLabel(side, Number(nr)), role });
+  if (e.event_type === 'goal') return [e.number && person(e.number, 'goal'), e.assist && person(e.assist, 'assist')].filter(Boolean);
+  if (e.event_type === 'penalty' && e.number) return [person(e.number, 'penalty')];
+  return [];
+}
+
 // Szenen des geladenen Spiels für ein Team
 export function collectScenes(side) {
   const sits = goalSituations();
   return buildClips()
     .filter(c => c.kind !== 'period')
-    .map(c => ({ ...c, cats: classify(c, side, c.eventId != null ? sits[c.eventId] : null) }))
+    .map(c => ({ ...c, cats: classify(c, side, c.eventId != null ? sits[c.eventId] : null), people: peopleOf(c, side) }))
     .filter(c => c.cats.length);
+}
+
+// Spieler über alle Szenen: Rückennummer → { nr, label, goal, assist, penalty }, nach Nummer sortiert.
+// Steht dieselbe Nummer im Lauf der Saison für verschiedene Namen, werden sie zusammen genannt.
+export function playersOf(scenes) {
+  const map = new Map();
+  for (const s of scenes) for (const p of s.people || []) {
+    const x = map.get(p.nr) || { nr: p.nr, labels: new Set(), goal: 0, assist: 0, penalty: 0 };
+    x.labels.add(p.label.replace(/^#\d+\s*/, ''));
+    x[p.role]++;
+    map.set(p.nr, x);
+  }
+  return [...map.values()].sort((a, b) => a.nr - b.nr).map(({ labels, ...x }) => {
+    const names = [...labels].filter(Boolean);
+    return { ...x, label: names.length ? `#${x.nr} ${names.join(' / ')}` : `#${x.nr}` };
+  });
+}
+
+// Passt eine Szene zur Spielerauswahl? nr = Rückennummer oder null (alle), roles = Set der Rollen
+export function matchesPlayer(scene, nr, roles) {
+  if (nr == null) return true;
+  return (scene.people || []).some(p => p.nr === nr && roles.has(p.role));
 }
 
 // Gibt es im geladenen Zustand einen Sync?

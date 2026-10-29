@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { state } from '../web/js/state.js';
-import { classify, collectScenes, countByCat, loadGameState, sideOf, teamsOf, hasSyncData } from '../web/js/scenes.js';
+import { classify, collectScenes, countByCat, loadGameState, sideOf, teamsOf, hasSyncData, playersOf, matchesPlayer } from '../web/js/scenes.js';
 import { buildSyncFile } from '../web/js/storage.js';
 import { addTag, updateTag } from '../web/js/tags.js';
 import { setup } from './helpers.js';
@@ -92,3 +92,28 @@ test('Teams und Seite im Spielplan', () => {
   assert.equal(sideOf(games[0], 'X'), null);
 });
 
+
+test('Spieler an Szenen: Torschütze, Vorlage, Strafe; Jugendspieler nur mit Nummer', () => {
+  synced();
+  const scenes = collectScenes('guest');
+  const players = playersOf(scenes);
+  const p7 = players.find(p => p.nr === 7), p6 = players.find(p => p.nr === 6), p17 = players.find(p => p.nr === 17);
+  assert.deepEqual([p7.goal, p7.assist, p7.label], [0, 2, '#7 Schönfelder']);
+  assert.deepEqual([p6.goal, p6.assist, p6.label], [1, 1, '#6']); // youth: true
+  assert.deepEqual([p17.goal, p17.penalty], [1, 1]);
+  // Gegentore tragen keine eigenen Spieler
+  assert.ok(scenes.filter(s => s.cats.includes('goal_against')).every(s => !s.people.length));
+  // Nach Nummern sortiert
+  assert.deepEqual(players.map(p => p.nr), [...players.map(p => p.nr)].sort((a, b) => a - b));
+});
+
+test('Spielerauswahl filtert nach Rolle', () => {
+  synced();
+  const scenes = collectScenes('guest');
+  const goals = new Set(['goal']), assists = new Set(['assist']), both = new Set(['goal', 'assist']);
+  assert.equal(scenes.filter(s => matchesPlayer(s, 7, goals)).length, 0);
+  assert.equal(scenes.filter(s => matchesPlayer(s, 7, assists)).length, 2);
+  assert.equal(scenes.filter(s => matchesPlayer(s, 6, both)).length, 2);
+  assert.equal(scenes.filter(s => matchesPlayer(s, 17, new Set(['penalty']))).length, 1);
+  assert.equal(scenes.filter(s => matchesPlayer(s, null, goals)).length, scenes.length);
+});

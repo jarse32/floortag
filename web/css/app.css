@@ -421,6 +421,8 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
 .sc-transport { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .sc-now { color: var(--muted); font-size: .9rem; }
 .sc-filters { display: grid; gap: .45rem; margin-bottom: .8rem; }
+.sc-pfilter { margin-bottom: .6rem; }
+.sc-pfilter select { max-width: 100%; padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: .92rem; }
 .sc-group { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
 .sc-gtitle { width: 100%; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .sc-chip { padding: .25rem .6rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: .88rem; cursor: pointer; }
