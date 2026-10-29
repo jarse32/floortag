@@ -24,7 +24,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .btn.quiet:hover { color: var(--danger); }
 
 /* Ladebereich */
-.loader { max-width: 40rem; margin: 4rem auto; padding: 0 1.5rem; }
+.loader { max-width: 48rem; margin: 3rem auto 4rem; padding: 0 1.5rem; }
 .loader h1 { font: 700 2.6rem/1.05 var(--display); margin: 0 0 .6rem; }
 .loader p { color: var(--muted); }
 .idform { display: flex; gap: .5rem; margin: 1.5rem 0 .5rem; }
@@ -316,8 +316,26 @@ dialog.help::backdrop { background: rgba(10, 20, 15, .55); }
 @media (prefers-reduced-motion: reduce) { .spotlight { animation: none; } }
 
 /* Dreizeiler auf der Startseite */
-.loader .intro { margin: 1.2rem 0 0; padding-left: 1.3rem; display: grid; gap: .35rem; color: var(--muted); }
-.loader .intro strong { color: var(--ink); }
+/* Startseite: Einstiege und Anleitung */
+.loader .lead { font-size: 1.08rem; }
+.loader-h { font: 700 1.45rem/1.15 var(--display); margin: 2.4rem 0 .7rem; }
+.starts, .modes-intro { display: grid; gap: .75rem; }
+@media (min-width: 760px) { .starts, .modes-intro { grid-template-columns: repeat(3, 1fr); } }
+.start-card { display: flex; flex-direction: column; gap: .35rem; padding: .9rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--muted); text-decoration: none; font-size: .93rem; }
+.start-card:hover, .start-card:focus-visible { border-color: var(--pine); }
+.start-card strong { color: var(--ink); font: 700 1.15rem/1.2 var(--display); }
+.start-card .start-go { margin-top: auto; padding-top: .3rem; color: var(--pine); font-weight: 600; }
+.loader .demo { margin: .3rem 0 0; font-size: .93rem; }
+.howto { margin: .5rem 0; padding: .55rem .8rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.howto summary { cursor: pointer; font-weight: 600; }
+.howto p, .howto ul { margin: .5rem 0 .2rem; color: var(--muted); }
+.howto ul { padding-left: 1.2rem; display: grid; gap: .3rem; }
+.howto .dropzone { margin: .7rem 0; }
+.howto p.or { margin: .5rem 0 0; font-size: .9rem; }
+.modes-intro { margin: 0; }
+.modes-intro div { padding: .7rem .9rem; border-left: 3px solid var(--pine); background: var(--surface); border-radius: 0 8px 8px 0; }
+.modes-intro dt { font-weight: 700; }
+.modes-intro dd { margin: .25rem 0 0; color: var(--muted); font-size: .93rem; }
 
 /* Hinweis in der Ereignisliste ohne Sync */
 .events-notice { list-style: none; padding: .7rem .8rem; background: var(--surface); border-left: 4px solid var(--estimate); border-bottom: 1px solid var(--line); font-size: .9rem; color: var(--ink); }

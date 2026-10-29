@@ -335,6 +335,13 @@ async function loadById(id) {
     btn.disabled = false; btn.textContent = 'Spiel laden';
   }
 }
+// Startseite: „Ein Spiel syncen“ führt zum Eingabefeld und stellt auf Sync
+document.querySelector('[data-focus-id]')?.addEventListener('click', e => {
+  e.preventDefault();
+  document.querySelector('.modes [data-mode="sync"]')?.click();
+  $('#loadTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('#idInput').focus({ preventScroll: true });
+});
 $('#idForm').addEventListener('submit', e => {
   e.preventDefault();
   const id = extractGameId($('#idInput').value);

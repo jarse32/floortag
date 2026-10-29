@@ -37,29 +37,76 @@
 </div>
 
 <section id="loader" class="loader">
-  <h1>Spiel laden</h1>
+  <h1>Floorball-Videos mit den Spieldaten verbinden</h1>
+  <p class="lead">FloorTag legt Tore, Strafen und Auszeiten aus dem Saisonmanager auf das YouTube-Video eines Spiels. Danach springst du mit einem Klick zu jeder Szene, erzeugst YouTube-Kapitel oder taggst eigene Szenen für die Videoanalyse.</p>
+
+  <h2 class="loader-h">Was möchtest du tun?</h2>
+  <div class="starts">
+    <a class="start-card" href="szenen.html">
+      <strong>Szenen ansehen</strong>
+      <span>Tore, Überzahl, Unterzahl und Strafen eines Teams über die ganze Saison, direkt nacheinander abspielbar.</span>
+      <span class="start-go">Team wählen →</span>
+    </a>
+    <a class="start-card" href="#idInput" data-focus-id>
+      <strong>Ein Spiel syncen</strong>
+      <span>Drittelgrenzen im Video setzen, Ereignisse feinjustieren, Kapitel für YouTube kopieren und den Sync für alle veröffentlichen.</span>
+      <span class="start-go">Spiel laden ↓</span>
+    </a>
+    <a class="start-card" href="uebersicht.html">
+      <strong>Spiele finden</strong>
+      <span>Liga und Spieltag durchgehen und sehen, welche Spiele schon gesynct sind. Deine eigenen Spiele stehen dort auch.</span>
+      <span class="start-go">Zur Übersicht →</span>
+    </a>
+  </div>
+
+  <h2 class="loader-h" id="loadTitle">Spiel laden</h2>
   <p>Gib die Spiel-ID aus dem Saisonmanager ein oder füge den Link zum Spiel ein. Das Video wird, wenn vorhanden, automatisch aus dem Livestream-Link übernommen.</p>
-  <ol class="intro">
-    <li><strong>Spiel laden:</strong> Spiel-ID oder Link aus dem Saisonmanager eingeben.</li>
-    <li><strong>Szenen verorten:</strong> Drittelgrenzen setzen, dann springen Tore und Strafen direkt an die richtige Stelle im Video.</li>
-    <li><strong>Weitergeben:</strong> YouTube-Kapitel kopieren, Szenen taggen oder alles per Link teilen.</li>
-  </ol>
   <form id="idForm" class="idform">
-    <input id="idInput" type="text" inputmode="numeric" placeholder="z. B. 58668 oder Link zum Spiel" aria-label="Spiel-ID oder Saisonmanager-Link" autocomplete="off">
+    <input id="idInput" type="text" inputmode="numeric" placeholder="Spiel-ID oder Link, z. B. 58668" aria-label="Spiel-ID oder Saisonmanager-Link" autocomplete="off">
     <button id="idBtn" class="btn" type="submit">Spiel laden</button>
   </form>
-  <p class="or">Oder lade die Spiel-JSON als Datei:</p>
-  <div id="dropzone" class="dropzone">
-    <input type="file" id="fileInput" accept=".json,application/json">
-    <label for="fileInput" class="btn">JSON-Datei auswählen</label>
-    <span>oder hierher ziehen</span>
-  </div>
-  <details>
-    <summary>JSON stattdessen einfügen</summary>
-    <textarea id="pasteArea" rows="8" aria-label="JSON einfügen"></textarea>
+  <p id="loadError" class="error" hidden></p>
+  <p class="demo">Zum Ausprobieren: <a href="./?spiel=58668&amp;modus=ansehen">Beispielspiel ansehen</a> (Baltic Storms – TV Eiche Horn Bremen, schon gesynct).</p>
+  <details class="howto">
+    <summary>Wo finde ich die Spiel-ID?</summary>
+    <ul>
+      <li>Am einfachsten über die <a href="uebersicht.html">Übersicht</a>: Liga wählen, Spieltag wählen, beim Spiel auf „Öffnen“ bzw. „Bearbeiten“ klicken.</li>
+      <li>Oder öffne das Spiel auf saisonmanager.de und kopiere die Adresse aus der Adresszeile. FloorTag liest die Spiel-ID selbst heraus.</li>
+    </ul>
+  </details>
+
+  <h2 class="loader-h">Drei Ansichten</h2>
+  <dl class="modes-intro">
+    <div><dt>Ansehen</dt><dd>Nur Video und Szenen. Ein Klick spielt die Szene ab, verändern lässt sich nichts. Gut für Spielerinnen und Spieler.</dd></div>
+    <div><dt>Sync</dt><dd>Drittelgrenzen und Ereignisse im Video setzen, Kapitel und Sync-Datei erzeugen, den Sync veröffentlichen.</dd></div>
+    <div><dt>Analyse</dt><dd>Eigene Szenen taggen (Torschüsse, Bullys, Ballgewinne …), Statistik, Aufstellungen und Export für Spiideo, Nacsport oder DaVinci Resolve.</dd></div>
+  </dl>
+  <p class="note">Umschalten kannst du oben rechts. Das „?“ daneben erklärt jede Ansicht Schritt für Schritt und zeigt die Stellen auf der Seite.</p>
+
+  <h2 class="loader-h">Häufige Fragen</h2>
+  <details class="howto">
+    <summary>Im Saisonmanager steht kein YouTube-Link</summary>
+    <p>Lade das Spiel trotzdem und füge den YouTube-Link über dem Video ein. FloorTag merkt sich das Video zu diesem Spiel. Wenn du den Sync veröffentlichst, bekommen ihn auch alle anderen.</p>
+  </details>
+  <details class="howto">
+    <summary>Wo wird mein Stand gespeichert?</summary>
+    <p>Nur in diesem Browser. Auf dem Server landet nur, was du ausdrücklich veröffentlichst, und das ist nur der Sync (Zeiten der Ereignisse und Drittel), keine Tags und keine Namen. Das YouTube-Video wird erst geladen, wenn du zustimmst.</p>
+  </details>
+  <details class="howto">
+    <summary>Wie arbeite ich mit anderen zusammen?</summary>
+    <p>Ein veröffentlichter Sync gilt für alle, die das Spiel öffnen. Mit dem Bearbeitungsschlüssel kann ihn auch ein Co-Trainer oder ein zweites Gerät ändern. „Link teilen“ verschickt zusätzlich deine Tags zum Ansehen, ein Kettensymbol verschickt eine einzelne Szene.</p>
+  </details>
+  <details class="howto">
+    <summary>Spiel-JSON als Datei laden (ohne Verbindung zum Saisonmanager)</summary>
+    <div id="dropzone" class="dropzone">
+      <input type="file" id="fileInput" accept=".json,application/json">
+      <label for="fileInput" class="btn">JSON-Datei auswählen</label>
+      <span>oder hierher ziehen</span>
+    </div>
+    <p class="or">Oder füge die JSON ein:</p>
+    <textarea id="pasteArea" rows="6" aria-label="JSON einfügen"></textarea>
     <button id="pasteBtn" class="btn">Einfügen und laden</button>
   </details>
-  <p id="loadError" class="error" hidden></p>
 </section>
 
 <main id="app" hidden>
