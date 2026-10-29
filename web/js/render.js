@@ -250,6 +250,7 @@ function renderChapters() {
   const notes = [];
   if (c.missing) notes.push(`${c.missing} Ereignis(se) noch ohne Zeit, sie fehlen in den Kapiteln.`);
   if (c.notInVideo) notes.push(`${c.notInVideo} Ereignis(se) sind als „nicht im Video“ markiert und haben kein Kapitel.`);
+  if (c.notInVideoGoals) notes.push(`${c.notInVideoGoals} Tor(e) fehlen im Video und stehen mit „nicht im Video“ an der geschätzten Stelle, damit der Stand stimmt.`);
   if (c.shifted) notes.push(`${c.shifted} Kapitel wurden verschoben, weil YouTube mindestens 10 Sekunden Abstand verlangt.`);
   if (c.count < 3) notes.push('YouTube zeigt Kapitel erst ab drei Einträgen an.');
   const n = $('#chapterNote');

@@ -167,3 +167,27 @@ test('Getaggtes Penaltyschießen ersetzt das Siegtor aus dem Saisonmanager', asy
   assert.ok(t.includes('1:57:32 Penalty GAST · verwandelt · 0:1'));
   assert.ok(t.includes('2:01:40 Spielende · Endstand 3:4 n. PS'));
 });
+
+test('Tor „nicht im Video“ steht trotzdem in den Kapiteln, an der geschätzten Stelle ohne Vorlauf', () => {
+  const s = fullySynced();
+  s.missing[2] = true; // 2:0 bei 12:27
+  // Streamlücke: freie Anker direkt davor und danach (gleiche Videozeit)
+  s.anchors = { 1: [{ g: 700, v: 1200 }, { g: 800, v: 1200 }] };
+  const c = buildChapters();
+  const line = lines(c).find(l => l.includes('2:0 Tor'));
+  assert.ok(line, 'Kapitel für das fehlende Tor');
+  assert.match(line, / · nicht im Video$/);
+  assert.equal(toSec(line.split(' ')[0]) >= 1200, true);
+  assert.equal(c.notInVideoGoals, 1);
+  assert.equal(c.notInVideo, 0);
+});
+
+test('Strafe „nicht im Video“ bekommt weiter kein Kapitel', () => {
+  const s = fullySynced();
+  const penalties = c => lines(c).filter(l => l.includes(' Strafe ')).length;
+  const before = penalties(buildChapters());
+  s.missing[4] = true;
+  const c = buildChapters();
+  assert.equal(penalties(c), before - 1);
+  assert.equal(c.notInVideo, 1);
+});

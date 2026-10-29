@@ -3,8 +3,8 @@
 // Pausen und Spielende nennen den Stand. Ausgewählte eigene Tags kommen auf Wunsch dazu (state.chapterTags).
 import { state } from './state.js';
 import { fmt } from './format.js';
-import { events, periodList, periodTitle, pauseTitle, teamShort, personLabel } from './game.js';
-import { timeOf } from './sync.js';
+import { events, gameSec, periodList, periodTitle, pauseTitle, teamShort, personLabel } from './game.js';
+import { timeOf, videoTimeAt } from './sync.js';
 import { goalSituations, situationLabels } from './stats.js';
 import { isShootout } from './tags.js';
 
@@ -65,7 +65,7 @@ function tagItems(wanted) {
 
 export function buildChapters() {
   const items = [];
-  let missing = 0, notInVideo = 0;
+  let missing = 0, notInVideo = 0, notInVideoGoals = 0;
   const situations = goalSituations();
   const wanted = new Set(state.chapterTags || []);
   // Getaggtes Penaltyschießen ersetzt das einzelne Siegtor aus dem Saisonmanager
@@ -78,11 +78,19 @@ export function buildChapters() {
       if (Math.floor(e.period) !== p || e.event_type === 'timeout') continue;
       if (e.event_type === 'penalty' && !state.includePenalties) continue;
       if (p === 5 && taggedShootout) continue;
-      if (state.missing[e.event_id]) { notInVideo++; continue; }
-      const t = timeOf(e);
-      if (t == null) { missing++; continue; }
       // Spielsituation bei Toren, z. B. „Überzahl 5:4“; Penalty steht schon als Torart im Text
       const sit = e.event_type === 'goal' ? situationLabels(situations[e.event_id]).filter(l => l !== 'Penalty') : [];
+      if (state.missing[e.event_id]) {
+        // Tore trotzdem nennen, damit der Stand in den Kapiteln stimmt: an der geschätzten Stelle
+        // (bei einer Streamlücke dort, wo das Video weitergeht), ohne Vorlauf
+        const v = e.event_type === 'goal' && e.period < 5 ? videoTimeAt(Math.floor(e.period), gameSec(e)) : null;
+        if (v == null) { notInVideo++; continue; }
+        notInVideoGoals++;
+        items.push({ t: Math.max(0, v), label: join([goalLabel(e, sit), 'nicht im Video']) });
+        continue;
+      }
+      const t = timeOf(e);
+      if (t == null) { missing++; continue; }
       items.push({ t: Math.max(0, t - state.leadIn), label: e.event_type === 'goal' ? goalLabel(e, sit) : penaltyLabel(e) });
     }
     if (st.end != null) {
@@ -102,5 +110,5 @@ export function buildChapters() {
     if (t < last + 10) { t = last + 10; shifted++; }
     it.t = t; last = t;
   }
-  return { text: items.map(it => `${fmt(it.t)} ${it.label}`).join('\n'), count: items.length, missing, notInVideo, shifted };
+  return { text: items.map(it => `${fmt(it.t)} ${it.label}`).join('\n'), count: items.length, missing, notInVideo, notInVideoGoals, shifted };
 }

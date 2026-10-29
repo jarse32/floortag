@@ -109,13 +109,16 @@ test('Setzen nimmt „nicht im Video“ zurück', () => {
   assert.equal(timeOf(ev(2)), 400 + (747 - 364));
 });
 
-test('Kapitel lassen Ereignisse „nicht im Video“ weg und zählen sie getrennt', () => {
+test('Kapitel: Tore „nicht im Video“ mit Hinweis, Strafen weggelassen, getrennt gezählt', () => {
   const s = setup();
   s.periods[1] = { start: 300, end: 1920 };
   setMissing(ev(2), true);
+  setMissing(ev(4), true);
   const c = buildChapters();
-  assert.equal(c.notInVideo, 1);
-  assert.ok(!c.text.includes('2:0 Tor BAL'));
+  assert.equal(c.notInVideoGoals, 1);
+  assert.equal(c.notInVideo, 1); // die Strafe
+  assert.match(c.text, /2:0 Tor BAL · .* · nicht im Video/);
+  assert.ok(!c.text.includes('Strafe TVEH · #17'));
   assert.ok(c.text.includes('1:0 Tor BAL'));
   assert.equal(c.missing, 8); // Drittel 2 und 3 (3 + 5 Tore und Strafen) haben noch keine Zeiten
 });
