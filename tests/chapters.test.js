@@ -168,16 +168,22 @@ test('Getaggtes Penaltyschießen ersetzt das Siegtor aus dem Saisonmanager', asy
   assert.ok(t.includes('2:01:40 Spielende · Endstand 3:4 n. PS'));
 });
 
-test('Tor „nicht im Video“ steht trotzdem in den Kapiteln, an der geschätzten Stelle ohne Vorlauf', () => {
+test('Tor „nicht im Video“ steht als Zeile ohne Zeit an seiner Stelle, ohne Kapitel', () => {
   const s = fullySynced();
   s.missing[2] = true; // 2:0 bei 12:27
   // Streamlücke: freie Anker direkt davor und danach (gleiche Videozeit)
   s.anchors = { 1: [{ g: 700, v: 1200 }, { g: 800, v: 1200 }] };
   const c = buildChapters();
-  const line = lines(c).find(l => l.includes('2:0 Tor'));
-  assert.ok(line, 'Kapitel für das fehlende Tor');
-  assert.match(line, / · nicht im Video$/);
-  assert.equal(toSec(line.split(' ')[0]) >= 1200, true);
+  const ls = lines(c);
+  const i = ls.findIndex(l => l.includes('2:0 Tor'));
+  assert.match(ls[i], /^Nicht im Video: 2:0 Tor BAL · /);
+  assert.ok(ls[i - 1].includes('1:0 Tor') && ls[i + 1].includes('2:1 Tor'), 'zwischen 1:0 und 2:1');
+  // Alle übrigen Zeilen beginnen mit einer Zeit und liegen mindestens 10 s auseinander
+  const timed = ls.filter((l, j) => j !== i);
+  assert.ok(timed.every(l => /^\d+(:\d\d)+ /.test(l)));
+  const ts = timed.map(l => toSec(l.split(' ')[0]));
+  assert.ok(ts.every((t, j) => j === 0 || t >= ts[j - 1] + 10));
+  assert.equal(c.count, timed.length);
   assert.equal(c.notInVideoGoals, 1);
   assert.equal(c.notInVideo, 0);
 });

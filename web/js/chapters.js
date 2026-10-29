@@ -81,12 +81,12 @@ export function buildChapters() {
       // Spielsituation bei Toren, z. B. „Überzahl 5:4“; Penalty steht schon als Torart im Text
       const sit = e.event_type === 'goal' ? situationLabels(situations[e.event_id]).filter(l => l !== 'Penalty') : [];
       if (state.missing[e.event_id]) {
-        // Tore trotzdem nennen, damit der Stand in den Kapiteln stimmt: an der geschätzten Stelle
-        // (bei einer Streamlücke dort, wo das Video weitergeht), ohne Vorlauf
+        // Tore trotzdem nennen, damit der Stand stimmt: als Zeile ohne Zeitstempel (kein Kapitel bei YouTube),
+        // einsortiert an der geschätzten Stelle. Beginnt mit Text, damit YouTube den Stand nicht als Zeit liest.
         const v = e.event_type === 'goal' && e.period < 5 ? videoTimeAt(Math.floor(e.period), gameSec(e)) : null;
         if (v == null) { notInVideo++; continue; }
         notInVideoGoals++;
-        items.push({ t: Math.max(0, v), label: join([goalLabel(e, sit), 'nicht im Video']) });
+        items.push({ t: Math.max(0, v), label: `Nicht im Video: ${goalLabel(e, sit)}`, untimed: true });
         continue;
       }
       const t = timeOf(e);
@@ -99,16 +99,21 @@ export function buildChapters() {
     }
   });
   for (const it of tagItems(wanted)) items.push({ t: Math.max(0, it.t), label: it.label });
-  items.sort((a, b) => a.t - b.t);
+  // Bei gleicher Stelle steht die Zeile ohne Zeit nach dem Kapitel
+  items.sort((a, b) => a.t - b.t || !!a.untimed - !!b.untimed);
   // YouTube verlangt ein erstes Kapitel bei 0:00
-  if (!items.length || items[0].t >= 10) items.unshift({ t: 0, label: 'Vor dem Spiel' });
-  else items[0].t = 0;
-  // YouTube verlangt mindestens 10 Sekunden pro Kapitel
+  const first = items.find(it => !it.untimed);
+  if (!first || first.t >= 10) items.unshift({ t: 0, label: 'Vor dem Spiel' });
+  else first.t = 0;
+  if (items[0].untimed) items.unshift({ t: 0, label: 'Vor dem Spiel' });
+  // YouTube verlangt mindestens 10 Sekunden pro Kapitel; Zeilen ohne Zeit zählen nicht
   let last = -Infinity, shifted = 0;
   for (const it of items) {
+    if (it.untimed) continue;
     let t = Math.round(it.t);
     if (t < last + 10) { t = last + 10; shifted++; }
     it.t = t; last = t;
   }
-  return { text: items.map(it => `${fmt(it.t)} ${it.label}`).join('\n'), count: items.length, missing, notInVideo, notInVideoGoals, shifted };
+  const text = items.map(it => it.untimed ? it.label : `${fmt(it.t)} ${it.label}`).join('\n');
+  return { text, count: items.filter(it => !it.untimed).length, missing, notInVideo, notInVideoGoals, shifted };
 }

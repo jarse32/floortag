@@ -124,7 +124,7 @@ Pro Video gibt es eine Zuordnung Spielzeit → Videozeit, getrennt nach Abschnit
 
 - Bei einem Livestream-Abbruch setzt man zwei freie Anker, einen direkt vor und einen direkt nach der Lücke. Das reicht, weil die Interpolation dann an der Lücke getrennt wird. Auch ein später Streambeginn lässt sich so abbilden (Anker statt Anpfiff).
 - Die Videozeit wird beim Öffnen des Formulars festgehalten. Die Spielzeit ist mit der Rückwärtsschätzung (`gameTimeAt`) vorausgefüllt und korrigierbar. Die eingeblendete virtuelle Anzeigetafel stimmt nicht sicher 1:1 mit der echten Spieluhr überein.
-- Ereignisse in der Lücke werden als **„nicht im Video“** markiert (`state.missing`): keine Zeit, kein Anker, im Export nicht enthalten. Kapitel bekommen nur Tore, damit der Stand stimmt: an der geschätzten Stelle (`videoTimeAt`, bei einer Streamlücke dort, wo das Video weitergeht), ohne Vorlauf, mit Zusatz „· nicht im Video“. Strafen ohne Kapitel.
+- Ereignisse in der Lücke werden als **„nicht im Video“** markiert (`state.missing`): keine Zeit, kein Anker, im Export nicht enthalten. In der Kapitelliste stehen nur Tore, damit der Stand stimmt: als Zeile **ohne Zeitstempel** („Nicht im Video: 2:0 Tor BAL · …“, YouTube macht daraus kein Kapitel), einsortiert an der geschätzten Stelle (`videoTimeAt`). Die Zeile beginnt mit Text, damit YouTube den Stand nicht als Zeit liest. Strafen fehlen ganz.
 - Sync-Datei Version 2: `free_anchors`, `not_in_video` und `pause_length_sec`. Version 1 wird weiter gelesen.
 
 ### Erkenntnisse aus dem ersten Test

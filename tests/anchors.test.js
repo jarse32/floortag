@@ -117,7 +117,7 @@ test('Kapitel: Tore „nicht im Video“ mit Hinweis, Strafen weggelassen, getre
   const c = buildChapters();
   assert.equal(c.notInVideoGoals, 1);
   assert.equal(c.notInVideo, 1); // die Strafe
-  assert.match(c.text, /2:0 Tor BAL · .* · nicht im Video/);
+  assert.match(c.text, /\nNicht im Video: 2:0 Tor BAL · /);
   assert.ok(!c.text.includes('Strafe TVEH · #17'));
   assert.ok(c.text.includes('1:0 Tor BAL'));
   assert.equal(c.missing, 8); // Drittel 2 und 3 (3 + 5 Tore und Strafen) haben noch keine Zeiten
