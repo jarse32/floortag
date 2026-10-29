@@ -53,7 +53,7 @@ function renderSettings() {
   $('#periodLenInput').value = state.periodLen / 60;
   $('#otLenInput').value = state.otLen / 60;
   $('#pauseLenInput').value = state.pauseLen / 60;
-  $('#ppDelayInput').value = state.ppDelay;
+  const ppd = $('#ppDelayInput'); if (ppd) ppd.value = state.ppDelay;
   $('#leadInput').value = state.leadIn;
   $('#penaltyCheck').checked = state.includePenalties;
   $('#chapterTags').innerHTML = '<legend>Aus deinen Tags als Kapitel</legend>' + CHAPTER_TAGS.map(([k, l]) =>

@@ -582,7 +582,8 @@ $('#tagsInput').addEventListener('change', async e => {
 // ===== Einstellungen =====
 // Zahl aus einem Eingabefeld übernehmen; leere oder ungültige Eingaben stellen den alten Wert wieder her
 function numberSetting(sel, key, factor = 1) {
-  $(sel).addEventListener('change', e => {
+  // Fehlt das Feld (z. B. alte index.html nach halbem Upload), nicht den ganzen Start abbrechen
+  $(sel)?.addEventListener('change', e => {
     const v = e.target.value.trim().replace(',', '.'), n = Number(v);
     const ok = v !== '' && isFinite(n) && n >= Number(e.target.min) && n <= Number(e.target.max);
     if (ok) {
