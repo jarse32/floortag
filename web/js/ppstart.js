@@ -3,7 +3,7 @@
 // Der Beginn lässt sich pro Strafe setzen (state.ppStart, Sync-Ebene). Sonst wird geschätzt:
 // Strafe + Durchschnitt der bereits gesetzten Abstände in diesem Video, ohne gesetzte Abstände die Einstellung (state.ppDelay).
 import { state } from './state.js';
-import { events, gameSec } from './game.js';
+import { events, gameSec, periodLength } from './game.js';
 import { timeOf } from './sync.js';
 import { powerPlayPhases } from './phases.js';
 
@@ -26,6 +26,15 @@ function penaltiesAt(p, g) {
 export function phaseOfPenalty(e, phases = powerPlayPhases()) {
   if (e.event_type !== 'penalty') return null;
   return phases.find(ph => ph.p === Math.floor(e.period) && ph.from === gameSec(e)) || null;
+}
+
+// Strafe am Drittelende (Spielzeit = Drittellänge): Die Phase beginnt erst mit dem nächsten Abschnitt bei 0:00,
+// also beim Anpfiff, der als Drittelbeginn schon gesetzt ist. Liefert diese Phase oder null
+export function phaseAfterBreak(e, phases = powerPlayPhases()) {
+  if (e.event_type !== 'penalty') return null;
+  const p = Math.floor(e.period);
+  if (gameSec(e) < periodLength(p)) return null;
+  return phases.find(ph => ph.p === p + 1 && ph.from === 0) || null;
 }
 
 // Beginn für eine Strafe: { v, set } oder null ohne Videozeit

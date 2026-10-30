@@ -6,7 +6,7 @@ import { timeOf, bounds, suggestStart, suggestEnd, gameTimeAt, videoTimeAt } fro
 import { buildChapters, CHAPTER_TAGS } from './chapters.js';
 import { buildClips, EDL_SCOPES } from './export.js';
 import { powerPlayPhases } from './phases.js';
-import { ppDelayEstimate, phaseStart, phaseOfPenalty, ppStartOf } from './ppstart.js';
+import { ppDelayEstimate, phaseStart, phaseOfPenalty, phaseAfterBreak, ppStartOf } from './ppstart.js';
 import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, shootoutScore, nextShootoutTeam, isShootout, faceoffAdvantage, goalieAt, goalkeepers } from './tags.js';
 import { personLabel } from './game.js';
 import { statPeriods, statRows, computeStats, signed, goalSituations, situationLabels } from './stats.js';
@@ -183,7 +183,14 @@ const LINK_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="
 // Beginn der Über-/Unterzahl nach einer Strafe: gesetzt oder geschätzt, feinjustierbar wie das Ereignis selbst
 function ppHtml(e) {
   const t = timeOf(e), ph = t != null ? phaseOfPenalty(e) : null, s = ph && ppStartOf(e);
-  if (!s) return '';
+  if (!s) {
+    // Strafe am Drittelende: Überzahl beginnt mit dem Anpfiff des nächsten Abschnitts, nichts zu setzen
+    const next = t != null && phaseAfterBreak(e);
+    if (!next) return '';
+    const start = (state.periods[next.p] || {}).start;
+    return `<div class="pp-start"><div><strong>Überzahl ${esc(describeTeam(next.team))} ${next.strength[0]} gegen ${next.strength[1]}</strong> beginnt mit dem Anpfiff: ${esc(periodTitle(next.p))}${start != null ? ` bei ${fmt(start)}` : ''}</div>
+      <span class="hint">Die Strafe kam am Drittelende. Der Beginn ist der Anpfiff des nächsten Abschnitts${start != null ? '' : ', sobald du ihn setzt'}; extra setzen musst du hier nichts.</span></div>`;
+  }
   const id = e.event_id, nudge = d => `<button class="btn small ghost" data-act="ppnudge" data-d="${d}" data-id="${id}">${d > 0 ? '+' : '−'}${Math.abs(d)} s</button>`;
   return `<div class="pp-start">
     <div><strong>Beginn Überzahl ${esc(describeTeam(ph.team))} ${ph.strength[0]} gegen ${ph.strength[1]}</strong> bei ${fmt(s.v)}

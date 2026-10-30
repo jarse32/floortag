@@ -69,3 +69,13 @@ test('Sync-Datei enthält gesetzte Beginne und den Abstand', () => {
   assert.equal(state.ppStart[first.event_id], file.pp_starts[0].video_sec);
   assert.equal(state.ppDelay, 40);
 });
+
+test('Strafe am Drittelende: Phase beginnt mit dem nächsten Abschnitt, dort nichts zu setzen', async () => {
+  const { phaseAfterBreak } = await import('../web/js/ppstart.js');
+  const { miniGame } = await import('./helpers.js');
+  setup(miniGame([{ event_id: 8, event_type: 'penalty', event_team: 'guest', period: 1, time: '20:00', penalty_type: 'penalty_2' }]));
+  const e = events().find(x => x.event_id === 8);
+  assert.equal(phaseOfPenalty(e), null);
+  const ph = phaseAfterBreak(e);
+  assert.deepEqual([ph.team, ph.p, ph.from], ['home', 2, 0]);
+});
