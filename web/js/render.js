@@ -359,7 +359,9 @@ function tagEditor(names) {
     rows.push([def.players === 'both' ? `Spieler ${names[side]}` : def.goalieOnly ? 'Torhüter' : 'Spieler', chips || '<span class="te-info">Kein Kader im Saisonmanager</span>']);
   }
   if (def.comment) rows.push(['Kommentar', `<input type="text" data-edit-comment value="${esc(tag.comment)}" placeholder="optional" maxlength="300">`]);
-  if (def.phase) rows.push(['Ende', tag.end != null ? `<span class="te-info">${fmt(tag.end)}</span> <button data-tagact="endnow">Auf aktuelle Zeit setzen</button>` : '<button data-tagact="endnow">Jetzt beenden</button>']);
+  // Beendete Phase: neu starten, z. B. wenn der Torhüter am Spielende mehrmals raus- und reingeht
+  const restart = def.key === 'empty_net' ? 'Torhüter wieder raus' : 'Neue Phase ab jetzt';
+  if (def.phase) rows.push(['Ende', tag.end != null ? `<span class="te-info">${fmt(tag.end)}</span> <button data-tagact="endnow">Auf aktuelle Zeit setzen</button> <button data-tagact="restart">${restart}</button>` : '<button data-tagact="endnow">Jetzt beenden</button>']);
   const title = [def.label, tag.outcome && outcomeLabel(def, tag.outcome, names)].filter(Boolean).join(' · ');
   return `
     <div class="tag-editor">

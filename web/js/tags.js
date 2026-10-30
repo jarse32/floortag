@@ -21,7 +21,8 @@ export const CATALOG = [
     outcomes: [['home', '{home} gewinnt'], ['guest', '{guest} gewinnt'], ['draw', 'unentschieden']],
     places: [['center', 'Mittellinie'], ['half_home', 'Hälfte {home}'], ['half_guest', 'Hälfte {guest}']],
     derived: { home: 'Bully verloren', guest: 'Bully verloren' } },
-  { key: 'free_hit', label: 'Freistoß', players: 'team',
+  // Ohne Spieler: Wer den Freistoß ausführt, sagt für die Analyse wenig
+  { key: 'free_hit', label: 'Freistoß',
     places: [['corner', 'Ecke'], ['side', 'außen'], ['middle', 'Mitte'], ['own_half', 'eigene Hälfte']],
     derivedAll: 'Freistoßabwehr' },
   { key: 'turnover', label: 'Ballgewinn', players: 'team', derivedAll: 'Ballverlust' },

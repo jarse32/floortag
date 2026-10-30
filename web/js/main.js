@@ -559,6 +559,11 @@ $('#tagbar').addEventListener('click', e => {
   else if (d.tagact === 'nudge') updateTag(tag.id, { v: tag.v + Number(d.d) });
   else if (d.tagact === 'seek') { yt.seek(tag.v - 3); return; }
   else if (d.tagact === 'endnow') updateTag(tag.id, { end: yt.now() });
+  else if (d.tagact === 'restart') {
+    // Neue Phase für dasselbe Team ab der aktuellen Stelle; läuft schon eine, diese auswählen
+    const open = openPhase(tag.code, tag.team);
+    ui.tagId = open ? open.id : addTag({ code: tag.code, v: yt.now(), team: tag.team }).id;
+  }
   else if (d.tagact === 'delete') { deleteTag(tag.id); return; }
   else if (d.tagact === 'close') { ui.tagId = null; renderAll(); return; }
   else return;
