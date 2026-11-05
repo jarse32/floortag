@@ -13,7 +13,7 @@ import { statsAsTsv } from './stats.js';
 import { SHARE_PREFIX, decodeShare, applySharePayload, shareUrl } from './share.js';
 import { GUIDES, introSeen, markIntroSeen } from './help.js';
 import { leagueLengths, shouldApplyLeague, applyLeagueLengths, fetchLeagueInfo } from './leagueinfo.js';
-import { decideOnLoad, adoptPublished, publishSync, fetchPublished, fetchIndex, fetchVersions, setToken, getToken, tokenValid } from './publish.js';
+import { decideOnLoad, adoptPublished, publishSync, fetchPublished, fetchIndex, fetchVersions, fetchProposals, decideProposal, contributionText, setToken, getToken, tokenValid } from './publish.js';
 import { toggleLineupPlayer } from './lineups.js';
 import { sceneUrl, parseScene, parseVideoParam, stripScene, canShareNative } from './scenelink.js';
 import { ppStartOf, setPpStart } from './ppstart.js';
@@ -159,7 +159,7 @@ function restoreState() {
 function setVideo(id) {
   state.videoId = id;
   const hadLocal = restoreState();
-  ui.published = null; ui.publishOffer = false; ui.pubVersions = null;
+  ui.published = null; ui.publishOffer = false; ui.pubVersions = null; ui.proposals = null;
   renderAll();
   showVideo(id);
   checkLeague(hadLocal);
@@ -194,6 +194,14 @@ async function checkPublished(id, hadLocal) {
   }
   ui.publishOffer = action === 'offer';
   renderAll();
+  loadProposals();
+}
+// Offene Vorschläge anderer laden, nur mit Bearbeitungsschlüssel
+async function loadProposals() {
+  const video = state.videoId;
+  if (!video || !ui.published || !getToken(video)) { ui.proposals = null; return; }
+  try { const r = await fetchProposals(video); if (state.videoId === video) { ui.proposals = (r && r.proposals) || []; renderAll(); } }
+  catch (e) { /* ohne Vorschläge */ }
 }
 $('#publishPanel').addEventListener('click', async e => {
   const b = e.target.closest('[data-pub]'); if (!b) return;
@@ -201,11 +209,24 @@ $('#publishPanel').addEventListener('click', async e => {
   try {
     if (act === 'publish') {
       b.disabled = true;
-      const first = !getToken(state.videoId);
+      const hadToken = !!getToken(state.videoId), existed = !!ui.published;
       const res = await publishSync();
       ui.published = await fetchPublished(state.videoId);
       ui.publishOffer = false; ui.pubVersions = null;
-      showToast(first ? `Sync veröffentlicht (Version ${res.version}). Den Bearbeitungsschlüssel hat sich dieser Browser gemerkt.` : `Änderungen als Version ${res.version} veröffentlicht.`);
+      showToast(existed && !hadToken ? contributionText(res)
+        : !hadToken ? `Sync veröffentlicht (Version ${res.version}). Den Bearbeitungsschlüssel hat sich dieser Browser gemerkt.`
+        : `Änderungen als Version ${res.version} veröffentlicht.`);
+    } else if (act === 'accept' || act === 'reject') {
+      b.disabled = true;
+      const res = await decideProposal(b.dataset.p, act);
+      ui.published = await fetchPublished(state.videoId);
+      // Eigener Stand unverändert: gleich auf die neue Version, sonst Übernehmen anbieten
+      if (act === 'accept') {
+        if (state.syncSource && !state.syncSource.edited) adoptPublished(ui.published); else ui.publishOffer = true;
+      }
+      ui.pubVersions = null;
+      await loadProposals();
+      showToast(act === 'accept' ? `Vorschlag übernommen, jetzt Version ${res.version}.` : 'Vorschlag verworfen.');
     } else if (act === 'adopt' && ui.published) {
       adoptPublished(ui.published); ui.publishOffer = false;
       showToast(`Veröffentlichte Version ${ui.published.version} übernommen.`);
@@ -233,6 +254,7 @@ $('#publishPanel').addEventListener('submit', e => {
   setToken(state.videoId, value);
   showToast('Schlüssel gespeichert. Du kannst jetzt Änderungen veröffentlichen.');
   renderAll();
+  loadProposals();
 });
 
 // ===== Spiel laden =====

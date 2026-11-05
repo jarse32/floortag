@@ -453,3 +453,10 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
 
 /* Beginn der Über-/Unterzahl in der Strafen-Zeile */
 .pp-start { display: grid; gap: .35rem; margin-top: .5rem; padding: .55rem .7rem; border-left: 3px solid var(--pine); background: var(--pine-soft); border-radius: 4px; }
+
+/* Änderungsvorschläge zum veröffentlichten Sync */
+.pub-proposals { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .6rem; }
+.pub-proposal { padding-top: .5rem; border-top: 1px solid var(--line); }
+.pub-proposal ul { margin: .3rem 0 .4rem; padding-left: 1.1rem; font-size: .9rem; }
+.pub-keybox { margin-top: .6rem; }
+.pub-keybox summary { cursor: pointer; color: var(--muted); font-size: .9rem; }

@@ -107,7 +107,8 @@ assert s['game_time_fixes'] == [{'event_id': 2, 'time': '7:05'}]
 assert s['pp_starts'] == [{'event_id': 4, 'video_sec': 2135.0}] and s['pp_delay_sec'] == 40
 assert 'tags' not in s and 'Mustermann' not in raw and 'token' not in raw
 PY
-post "Ändern ohne Schlüssel"                403 "$TMP/pub1.json"
+post "Ohne Schlüssel und ohne Neues"       200 "$TMP/pub1.json"
+[[ $(json "d['unchanged'], d['version']") == "True 1" ]] && echo "ok    Nichts geändert, Version 1" || { echo "FEHLER unverändert $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
 python3 -I -c "import json;d=json.load(open('$TMP/pub1.json'));d['token']='$TOKEN';d['sync']['events'].append({'event_id':2,'video_sec':1100});json.dump(d,open('$TMP/pub2.json','w'))"
 post "Ändern mit Schlüssel"                 200 "$TMP/pub2.json"
 [[ $(json "d['version']") == 2 && -z $(json "d.get('token','')") ]] && echo "ok    Version 2, kein neuer Schlüssel" || { echo "FEHLER Version 2"; FAILS=$((FAILS+1)); }
@@ -117,6 +118,36 @@ check "Ältere Version lesen"                 200 - "/api/sync.php?video=lfIFpRs
 [[ $(json "len(d['sync']['events'])") == 1 ]] && echo "ok    Version 1 unverändert" || { echo "FEHLER Version 1"; FAILS=$((FAILS+1)); }
 check "Übersicht der Syncs"                  200 - "/api/sync.php?index=1"
 [[ $(json "d['lfIFpRsE55I']['game_id'], d['lfIFpRsE55I']['version'], d['lfIFpRsE55I']['periods']") == "58668 2 1" ]] && echo "ok    Index aktuell" || { echo "FEHLER Index $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+# Ohne Schlüssel: Ergänzungen sofort, Änderungen als Vorschlag
+python3 -I -c "import json;d=json.load(open('$TMP/pub2.json'));d.pop('token');d['sync']['events'].append({'event_id':3,'period':1,'time':'15:37','video_sec':1300});d['sync']['periods']['2']={'start':2500,'end':None};json.dump(d,open('$TMP/pub5.json','w'))"
+post "Ohne Schlüssel: nur Ergänzungen"      200 "$TMP/pub5.json"
+[[ $(json "d['version'], d['added'], d['changes'], d['proposal']") == "3 2 0 None" ]] && echo "ok    Ergänzungen als Version 3" || { echo "FEHLER Ergänzungen $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+python3 -I -c "import json;d=json.load(open('$TMP/pub5.json'));d['sync']['events'][0]['video_sec']=905;d['sync']['events'].append({'event_id':7,'period':2,'time':'3:00','video_sec':2700});json.dump(d,open('$TMP/pub6.json','w'))"
+post "Ohne Schlüssel: Änderung und Ergänzung" 200 "$TMP/pub6.json"
+PROP=$(json "d['proposal']")
+[[ $(json "d['version'], d['added'], d['changes']") == "4 1 1" && ${#PROP} == 8 ]] && echo "ok    Ergänzung als Version 4, Änderung als Vorschlag" || { echo "FEHLER gemischt $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+check "Version 4 lesen"                      200 - "/api/sync.php?video=lfIFpRsE55I"
+[[ $(json "sorted((e['event_id'], float(e['video_sec'])) for e in d['sync']['events'])") == "[(1, 900.0), (2, 1100.0), (3, 1300.0), (7, 2700.0)]" ]] && echo "ok    Gesetztes bleibt, Ergänzung ist drin" || { echo "FEHLER Version 4 $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+post "Derselbe Vorschlag noch einmal"       200 "$TMP/pub6.json"
+[[ $(json "d['proposal'], d['added']") == "$PROP 0" ]] && echo "ok    Kein doppelter Vorschlag" || { echo "FEHLER doppelt $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+check "Vorschläge lesen"                     200 - "/api/sync.php?video=lfIFpRsE55I&proposals=1"
+[[ $(json "len(d['proposals']), [(c['key'], float(c['old']), float(c['new'])) for c in d['proposals'][0]['changes']]") == "1 [('e1', 900.0, 905.0)]" ]] && echo "ok    Ein Vorschlag: Tor 1 von 900 auf 905" || { echo "FEHLER Vorschläge $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+printf '{"action":"accept","video_id":"lfIFpRsE55I","proposal_id":"%s","token":"%s"}' "$PROP" "0000" > "$TMP/acc0.json"
+post "Übernehmen mit falschem Schlüssel"    403 "$TMP/acc0.json"
+printf '{"action":"accept","video_id":"lfIFpRsE55I","proposal_id":"%s","token":"%s"}' "$PROP" "$TOKEN" > "$TMP/acc1.json"
+post "Vorschlag übernehmen"                 200 "$TMP/acc1.json"
+[[ $(json "d['version']") == 5 ]] && echo "ok    Übernommen als Version 5" || { echo "FEHLER Übernehmen $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+check "Version 5 lesen"                      200 - "/api/sync.php?video=lfIFpRsE55I"
+[[ $(json "sorted((e['event_id'], float(e['video_sec'])) for e in d['sync']['events'])") == "[(1, 905.0), (2, 1100.0), (3, 1300.0), (7, 2700.0)]" ]] && echo "ok    Änderung drin, Ergänzungen erhalten" || { echo "FEHLER Version 5 $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+post "Übernommener Vorschlag ist weg"       404 "$TMP/acc1.json"
+python3 -I -c "import json;d=json.load(open('$TMP/pub6.json'));d['sync']['events'][0]['video_sec']=905;d['sync']['not_in_video']=[];json.dump(d,open('$TMP/pub7.json','w'))"
+post "Entfernen wird Vorschlag"             200 "$TMP/pub7.json"
+PROP2=$(json "d['proposal']")
+printf '{"action":"reject","video_id":"lfIFpRsE55I","proposal_id":"%s","token":"%s"}' "$PROP2" "$TOKEN" > "$TMP/rej.json"
+post "Vorschlag verwerfen"                  200 "$TMP/rej.json"
+[[ $(json "d['version']") == 5 ]] && echo "ok    Verworfen, Version bleibt 5" || { echo "FEHLER Verwerfen $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+python3 -I -c "import json;d=json.load(open('$TMP/pub6.json'));d['token']='f'*32;json.dump(d,open('$TMP/pub8.json','w'))"
+post "Falscher Schlüssel beim Veröffentlichen" 403 "$TMP/pub8.json"
 check "Ohne Sync: 404"                       404 - "/api/sync.php?video=aaaaaaaaaaa"
 check "Ungültige Video-ID"                   400 - "/api/sync.php?video=x"
 python3 -I -c "import json;d=json.load(open('$TMP/pub1.json'));d['game_id']=123;d['video_id']='bbbbbbbbbbb';json.dump(d,open('$TMP/pub3.json','w'))"

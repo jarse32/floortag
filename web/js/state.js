@@ -43,6 +43,7 @@ export const ui = {
   published: null,     // veröffentlichter Sync dieses Videos (neueste Version) oder null
   leagueInfo: null,    // Ligadaten des geladenen Spiels (Name, Drittellänge …)
   publishOffer: false, // neuere veröffentlichte Version anbieten
+  proposals: null,     // offene Änderungsvorschläge anderer (nur mit Bearbeitungsschlüssel geladen)
   pubVersions: null,   // Liste der veröffentlichten Versionen, wenn aufgeklappt
   tagTeam: 'home',     // Team für neue Tags
   tagId: null,         // Tag in der Nachtragsleiste

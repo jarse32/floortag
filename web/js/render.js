@@ -11,7 +11,7 @@ import { CATALOG, codeOf, fill, outcomeLabel, placeLabel, findTag, openPhase, sh
 import { personLabel } from './game.js';
 import { statPeriods, statRows, computeStats, signed, goalSituations, situationLabels } from './stats.js';
 import { lineupOf, forcedPlayers, fieldPlayers } from './lineups.js';
-import { getToken } from './publish.js';
+import { getToken, describeChange } from './publish.js';
 import * as yt from './player.js';
 import { canShareNative } from './scenelink.js';
 
@@ -460,6 +460,23 @@ function plusMinusHtml(scope, names) {
 // ===== Veröffentlichen =====
 const dateTime = iso => (iso ? new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
 
+// Offene Vorschläge anderer, nur für die Person mit dem Schlüssel
+function proposalsHtml(list) {
+  if (!list || !list.length) return '';
+  const MAX = 8;
+  const item = pr => {
+    const lines = pr.changes.slice(0, MAX).map(c => `<li>${esc(describeChange(c))}</li>`).join('');
+    const more = pr.changes.length > MAX ? `<li class="note">und ${pr.changes.length - MAX} weitere</li>` : '';
+    return `<li class="pub-proposal"><div><strong>Vorschlag vom ${esc(dateTime(pr.created))}</strong> · ${pr.changes.length} ${pr.changes.length === 1 ? 'Änderung' : 'Änderungen'}</div>
+      <ul>${lines}${more}</ul>
+      <div class="row"><button class="btn small" data-pub="accept" data-p="${esc(pr.id)}">Übernehmen</button>
+      <button class="btn small ghost" data-pub="reject" data-p="${esc(pr.id)}">Verwerfen</button></div></li>`;
+  };
+  return `<div class="pub-offer"><strong>${list.length === 1 ? 'Ein Änderungsvorschlag' : `${list.length} Änderungsvorschläge`} von anderen</strong>
+    <p class="note">Zeiten sind Videozeiten. Übernommen wird auf den neuesten Stand, Ergänzungen anderer bleiben erhalten.</p>
+    <ul class="pub-proposals">${list.map(item).join('')}</ul></div>`;
+}
+
 function renderPublish() {
   const el = $('#publishPanel');
   if (!el) return;
@@ -480,10 +497,15 @@ function renderPublish() {
     parts.push(`<p>Veröffentlicht · Version ${p.latest} vom ${esc(dateTime(p.updated))}. ${edited ? 'Du hast Änderungen, die noch nicht veröffentlicht sind.' : 'Dein Stand entspricht der veröffentlichten Version.'}</p>
       <div class="export-actions"><button class="btn" data-pub="publish" ${edited ? '' : 'disabled'}>Änderungen veröffentlichen</button>
       <button class="btn ghost" data-pub="copykey">Bearbeitungsschlüssel kopieren</button></div>`);
+    parts.push(proposalsHtml(ui.proposals));
   } else {
-    parts.push(`<p>Für dieses Video gibt es einen veröffentlichten Sync (Version ${p.latest} vom ${esc(dateTime(p.updated))}). Ändern kann ihn, wer den Bearbeitungsschlüssel hat.</p>
+    // Ohne Schlüssel: Ergänzungen gehen sofort live, Änderungen an schon Gesetztem als Vorschlag
+    parts.push(`<p>Für dieses Video gibt es einen veröffentlichten Sync (Version ${p.latest} vom ${esc(dateTime(p.updated))}). ${edited ? 'Dein Stand weicht davon ab.' : 'Dein Stand entspricht der veröffentlichten Version.'}</p>
+      <div class="export-actions"><button class="btn" data-pub="publish" ${edited ? '' : 'disabled'}>Beitragen</button></div>
+      <p class="note">Was bisher fehlt, zum Beispiel neu gesetzte Ereignisse, ein Drittelende oder der Beginn einer Überzahl, wird sofort Teil des veröffentlichten Syncs. Änderungen an schon Gesetztem gehen als Vorschlag an die Person mit dem Bearbeitungsschlüssel.</p>
+      <details class="pub-keybox"><summary>Ich habe den Bearbeitungsschlüssel</summary>
       <form class="idform pub-key"><input name="key" type="text" placeholder="Bearbeitungsschlüssel einfügen" autocomplete="off" aria-label="Bearbeitungsschlüssel">
-      <button class="btn ghost" type="submit">Schlüssel übernehmen</button></form>`);
+      <button class="btn ghost" type="submit">Schlüssel übernehmen</button></form></details>`);
   }
   if (p) {
     const list = ui.pubVersions;
