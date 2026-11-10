@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sceneUrl, parseScene, stripScene, gameUrl, parseVideoParam } from '../web/js/scenelink.js';
-import { ownVideos } from '../web/js/storage.js';
+import { ownVideos, pickVideo, hasOwnWork, videoChoice, setVideoChoice } from '../web/js/storage.js';
 
 const BASE = 'https://tag.floorballdashboard.app/?spiel=1&modus=analyse#ft=abc';
 
@@ -68,4 +68,42 @@ test('Eigene Videos zu einem Spiel: zuletzt bearbeitetes zuerst, ohne „ohne-vi
   });
   assert.deepEqual(ownVideos(58959, store), ['bbbbbbbbbbb', 'aaaaaaaaaaa']);
   assert.deepEqual(ownVideos(1, store), []);
+});
+
+test('Videowahl beim Laden: von Hand gewählt vor Saisonmanager, eigene Arbeit vor falschem Saisonmanager-Link', () => {
+  const work = new Set(['eigen']);
+  const hasWork = v => work.has(v);
+  // Adresse bzw. Teilen-Link gewinnt immer
+  assert.deepEqual(pickVideo({ forced: 'url', choice: 'wahl', smId: 'sm' }), { id: 'url', source: 'forced' });
+  // Von Hand gewählt schlägt den Saisonmanager
+  assert.deepEqual(pickVideo({ choice: 'wahl', smId: 'sm', own: ['eigen'], hasWork }), { id: 'wahl', source: 'choice' });
+  // Ohne Wahl: Saisonmanager, außer es gibt nur zu einem anderen Video eigene Arbeit
+  assert.deepEqual(pickVideo({ smId: 'sm', own: ['eigen'], hasWork }), { id: 'eigen', source: 'own' });
+  work.add('sm');
+  assert.deepEqual(pickVideo({ smId: 'sm', own: ['eigen', 'sm'], hasWork }), { id: 'sm', source: 'sm' });
+  // Eigener Stand ohne Arbeit (nur Ligalängen) verdrängt den Saisonmanager nicht
+  assert.deepEqual(pickVideo({ smId: 'sm', own: ['leer'], hasWork: () => false }), { id: 'sm', source: 'sm' });
+  // Kein Saisonmanager-Link: zuletzt bearbeitetes eigenes Video
+  assert.deepEqual(pickVideo({ own: ['b', 'a'] }), { id: 'b', source: 'own' });
+  assert.deepEqual(pickVideo({}), { id: null, source: null });
+});
+
+test('Eigene Arbeit zu einem Video und gemerkte Videowahl', () => {
+  const entries = {
+    'floortag:1:leer': JSON.stringify({ periods: {}, placed: {}, periodLen: 900, lengthSource: 'league' }),
+    'floortag:1:sync': JSON.stringify({ periods: { 1: { start: 30 } }, placed: {} }),
+    'floortag-tags:1:tags': JSON.stringify({ tags: [{ id: 1 }] }),
+    'floortag-tags:1:alt': '[]'
+  };
+  const store = { ...fakeStore(entries), setItem: (k, v) => { entries[k] = v; }, removeItem: k => { delete entries[k]; } };
+  assert.equal(hasOwnWork(1, 'leer', store), false);
+  assert.equal(hasOwnWork(1, 'sync', store), true);
+  assert.equal(hasOwnWork(1, 'tags', store), true);
+  assert.equal(hasOwnWork(1, 'alt', store), false);
+  assert.equal(hasOwnWork(1, 'fehlt', store), false);
+  setVideoChoice(1, 'richtig', 'falsch', store);
+  assert.equal(videoChoice(1, store), 'richtig');
+  // Zurück zum Saisonmanager-Video löscht die Wahl
+  setVideoChoice(1, 'falsch', 'falsch', store);
+  assert.equal(videoChoice(1, store), null);
 });

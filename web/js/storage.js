@@ -49,6 +49,47 @@ export function ownVideos(gameId, store = localStorage) {
   return [...found].sort((a, b) => b[1].localeCompare(a[1])).map(([v]) => v);
 }
 
+// ===== Von Hand gewähltes Video pro Spiel =====
+// Der Video-Link im Saisonmanager ist manchmal falsch. Wer das Video von Hand wechselt,
+// bekommt es beim nächsten Laden wieder: floortag-video:<Spiel> = Video-ID.
+function choiceKey(gameId) { return `floortag-video:${gameId}`; }
+export function videoChoice(gameId, store = localStorage) {
+  try { return store.getItem(choiceKey(gameId)) || null; } catch (e) { return null; }
+}
+// Gleich dem Saisonmanager-Video: Wahl löschen, dann gilt wieder der Saisonmanager
+export function setVideoChoice(gameId, videoId, smId, store = localStorage) {
+  if (state.sharedView || !gameId) return;
+  try {
+    if (!videoId || videoId === smId) store.removeItem(choiceKey(gameId));
+    else store.setItem(choiceKey(gameId), videoId);
+  } catch (e) { /* Speicher nicht verfügbar */ }
+}
+// Gibt es zu diesem Video schon eigene Arbeit (Drittel, Ereignisse, Anker, „nicht im Video“ oder Tags)?
+// Nur übernommene Ligalängen zählen nicht, die entstehen schon beim bloßen Öffnen.
+export function hasOwnWork(gameId, videoId, store = localStorage) {
+  const filled = o => !!o && typeof o === 'object' && Object.keys(o).length > 0;
+  try {
+    const s = JSON.parse(store.getItem(`floortag:${gameId}:${videoId}`) || 'null');
+    if (s && (filled(s.periods) || filled(s.placed) || filled(s.anchors) || filled(s.missing))) return true;
+    const t = JSON.parse(store.getItem(`floortag-tags:${gameId}:${videoId}`) || 'null');
+    return Array.isArray(t) ? t.length > 0 : !!(t && t.tags && t.tags.length);
+  } catch (e) { return false; }
+}
+// Welches Video beim Laden eines Spiels? Reihenfolge: Teilen-/Szenen-Link bzw. ?video=,
+// von Hand gewählt, Saisonmanager – außer es gibt nur zu einem anderen Video eigene Arbeit –,
+// zuletzt bearbeitetes eigenes Video. source: forced | choice | sm | own | null
+export function pickVideo({ forced = null, choice = null, smId = null, own = [], hasWork = () => false }) {
+  if (forced) return { id: forced, source: 'forced' };
+  if (choice) return { id: choice, source: 'choice' };
+  if (smId) {
+    const other = own.find(v => v !== smId && hasWork(v));
+    if (other && !hasWork(smId)) return { id: other, source: 'own' };
+    return { id: smId, source: 'sm' };
+  }
+  if (own.length) return { id: own[0], source: 'own' };
+  return { id: null, source: null };
+}
+
 // Liefert true, wenn es für dieses Spiel und Video einen eigenen Sync-Stand gab
 export function restore() {
   state.periods = {}; state.placed = {}; state.anchors = {}; state.missing = {}; state.gsFix = {}; state.ppStart = {}; state.tags = []; state.complete = {}; state.lineups = {};

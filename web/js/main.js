@@ -3,7 +3,7 @@ import { state, ui } from './state.js';
 import { extractVideoId, fmt, fmtGame, esc } from './format.js';
 import { prepareGame, events, findEvent, periodLength, teamShort } from './game.js';
 import { timeOf, place, setMissing, addAnchor, removeAnchor, gameTimeFor, correctGameTime } from './sync.js';
-import { save, restore, ownVideos, buildSyncFile, syncFileName, applySyncFile, saveTags, buildTagFile, tagFileName, applyTagFile } from './storage.js';
+import { save, restore, ownVideos, videoChoice, setVideoChoice, hasOwnWork, pickVideo,buildSyncFile, syncFileName, applySyncFile, saveTags, buildTagFile, tagFileName, applyTagFile } from './storage.js';
 import { CATALOG, codeOf, addTag, findTag, updateTag, setPlayer, removeTag, restoreTag, openPhase, nextShootoutTeam, inShootout } from './tags.js';
 import { buildClips, toSportscodeXml, toCsv, toEdl } from './export.js';
 import * as yt from './player.js';
@@ -264,15 +264,21 @@ function loadGame(data) {
   renderMatchline();
   $('#loader').hidden = true;
   $('#app').hidden = false;
-  // Video: Teilen-Link oder Adresse, dann Saisonmanager (nur YouTube), dann eigener Stand in diesem Browser
+  // Video: Teilen-Link oder Adresse, dann von Hand gewählt, dann Saisonmanager (nur YouTube), dann eigener Stand
   const smLink = data.vod_link || data.live_stream_link || '';
   const smId = extractVideoId(smLink);
-  const own = !ui.shared && !smId ? ownVideos(state.game.id)[0] : null;
-  const id = (ui.shared && ui.shared.vid) || (ui.scene && ui.scene.video) || ui.urlVideo || smId || own;
+  ui.smVideo = smId;
+  const gid = state.game.id;
+  const forced = (ui.shared && ui.shared.vid) || (ui.scene && ui.scene.video) || ui.urlVideo || null;
+  const { id, source } = pickVideo(ui.shared
+    ? { forced, smId }
+    : { forced, choice: videoChoice(gid), smId, own: ownVideos(gid), hasWork: v => hasOwnWork(gid, v) });
   $('#videoInput').value = id ? `https://www.youtube.com/watch?v=${id}` : smLink;
   ui.leagueInfo = null;
   if (id) setVideo(id); else { state.videoId = null; const had = restoreState(); renderAll(); checkLeague(had); }
-  if (own && id === own) showToast('Im Saisonmanager steht kein YouTube-Link. Geladen ist das Video aus deinem Stand.');
+  if (source === 'choice' && smId) showToast('Geladen ist das Video, das du für dieses Spiel gewählt hast, nicht der Link aus dem Saisonmanager.');
+  else if (source === 'own' && smId) showToast('Geladen ist das Video aus deinem Stand, nicht der Link aus dem Saisonmanager.');
+  else if (source === 'own') showToast('Im Saisonmanager steht kein YouTube-Link. Geladen ist das Video aus deinem Stand.');
   if (!id && !ui.shared) videoFromPublished(state.game.id);
   // Beim ersten Spiel in diesem Modus die Anleitung zeigen
   if (!introSeen(ui.mode) && !ui.scene) openHelp(ui.mode);
@@ -386,6 +392,8 @@ $('#videoBtn').addEventListener('click', () => {
     if (new URLSearchParams(location.search).has('video')) {
       const url = new URL(location.href); url.searchParams.set('video', id); history.replaceState(null, '', url);
     }
+    // Von Hand gewählt: beim nächsten Laden wieder dieses Video statt des Saisonmanager-Links
+    if (state.game) setVideoChoice(state.game.id, id, ui.smVideo);
     setVideo(id);
   } else showPlayerMessage('Daraus konnte keine YouTube-Video-ID gelesen werden.');
 });
@@ -708,7 +716,10 @@ $('#syncInput').addEventListener('change', async e => {
   try {
     const d = JSON.parse(await f.text());
     applySyncFile(d);
-    if (d.video_id && d.video_id !== state.videoId) { $('#videoInput').value = d.video_id; state.videoId = d.video_id; showVideo(d.video_id); }
+    if (d.video_id && d.video_id !== state.videoId) {
+      $('#videoInput').value = d.video_id; state.videoId = d.video_id; showVideo(d.video_id);
+      setVideoChoice(state.game.id, d.video_id, ui.smVideo);
+    }
     commit();
   } catch (err) { n.textContent = err.message; n.classList.add('warn'); }
   e.target.value = '';
@@ -787,6 +798,7 @@ $('#adoptBtn').addEventListener('click', () => {
   if (!confirm('Deinen eigenen Stand für dieses Spiel durch den geteilten ersetzen? Das lässt sich nicht rückgängig machen.')) return;
   state.sharedView = false;
   save(); saveTags();
+  setVideoChoice(state.game.id, state.videoId, ui.smVideo);
   leaveShared();
 });
 // Link zum Ansehen erzeugen und kopieren
