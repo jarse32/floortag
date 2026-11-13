@@ -197,3 +197,35 @@ test('Strafe „nicht im Video“ bekommt weiter kein Kapitel', () => {
   assert.equal(penalties(c), before - 1);
   assert.equal(c.notInVideo, 1);
 });
+
+// ===== Beginn von Überzahl als Kapitel =====
+const ppLines = c => lines(c).filter(l => / Überzahl /.test(l) && !/^\d+:\d+(:\d+)? \d+:\d+ Tor/.test(l));
+
+test('Überzahl-Kapitel nur auf Wunsch', () => {
+  const s = fullySynced();
+  assert.equal(ppLines(buildChapters()).length, 0);
+  s.chapterPowerplay = true;
+  // Drei Strafen, eine läuft über die Drittelpause: die Fortsetzung bekommt kein eigenes Kapitel
+  const pp = ppLines(buildChapters());
+  assert.equal(pp.length, 3);
+  for (const l of pp) assert.match(l, / Überzahl (BAL|TVEH) · 5:4$/);
+});
+
+test('Überzahl-Kapitel beginnt beim gesetzten bzw. geschätzten Spielbeginn nach der Strafe', () => {
+  const s = fullySynced();
+  s.chapterPowerplay = true;
+  s.ppDelay = 0;
+  const before = ppLines(buildChapters()).map(l => toSec(l.split(' ')[0]));
+  s.ppDelay = 40;
+  const after = ppLines(buildChapters()).map(l => toSec(l.split(' ')[0]));
+  after.forEach((t, i) => assert.ok(Math.abs(t - before[i] - 40) <= 10, `Kapitel ${i + 1}`));
+});
+
+test('Torhüter raus ohne Strafe ergibt kein Überzahl-Kapitel (deckt das Tag-Kapitel ab)', () => {
+  const s = fullySynced();
+  s.chapterPowerplay = true;
+  const n = ppLines(buildChapters()).length;
+  // 6:5 durch Torhüter raus im 3. Drittel, ohne laufende Strafe
+  s.tags = [{ id: 't1', code: 'empty_net', team: 'home', v: 6300, end: 6340 }];
+  assert.equal(ppLines(buildChapters()).length, n);
+});

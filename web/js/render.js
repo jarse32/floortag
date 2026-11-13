@@ -56,6 +56,7 @@ function renderSettings() {
   const ppd = $('#ppDelayInput'); if (ppd) ppd.value = state.ppDelay;
   $('#leadInput').value = state.leadIn;
   $('#penaltyCheck').checked = state.includePenalties;
+  $('#powerplayCheck').checked = state.chapterPowerplay;
   $('#chapterTags').innerHTML = '<legend>Aus deinen Tags als Kapitel</legend>' + CHAPTER_TAGS.map(([k, l]) =>
     `<label class="check"><input type="checkbox" data-chapter-tag="${k}" ${state.chapterTags.includes(k) ? 'checked' : ''}> ${esc(l)}</label>`).join('');
   $('#youthCheck').checked = state.hideYouth;

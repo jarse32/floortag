@@ -668,6 +668,7 @@ numberSetting('#pauseLenInput', 'pauseLen', 60);
 numberSetting('#ppDelayInput', 'ppDelay');
 numberSetting('#leadInput', 'leadIn');
 $('#penaltyCheck').addEventListener('change', e => { state.includePenalties = e.target.checked; commit(); });
+$('#powerplayCheck').addEventListener('change', e => { state.chapterPowerplay = e.target.checked; commit(); });
 $('#chapterTags').addEventListener('change', e => {
   const k = e.target.dataset.chapterTag; if (!k) return;
   state.chapterTags = e.target.checked ? [...new Set([...state.chapterTags, k])] : state.chapterTags.filter(x => x !== k);

@@ -1,12 +1,15 @@
 // ===== Kapitelmarken für YouTube =====
 // Jede Zeile nach demselben Muster: Stand, Art, Team, dann mit „·“ getrennt Spieler und Zusatz.
-// Pausen und Spielende nennen den Stand. Ausgewählte eigene Tags kommen auf Wunsch dazu (state.chapterTags).
+// Pausen und Spielende nennen den Stand. Ausgewählte eigene Tags kommen auf Wunsch dazu (state.chapterTags),
+// ebenso der Beginn von Überzahlphasen (state.chapterPowerplay).
 import { state } from './state.js';
 import { fmt } from './format.js';
-import { events, gameSec, periodList, periodTitle, pauseTitle, teamShort, personLabel } from './game.js';
+import { events, gameSec, periodList, periodLength, periodTitle, pauseTitle, teamShort, personLabel } from './game.js';
 import { timeOf, videoTimeAt } from './sync.js';
 import { goalSituations, situationLabels } from './stats.js';
 import { isShootout } from './tags.js';
+import { powerPlayPhases } from './phases.js';
+import { ppDelayEstimate, phaseStart } from './ppstart.js';
 
 // Tag-Arten, die als Kapitel taugen (Schlüssel für state.chapterTags)
 export const CHAPTER_TAGS = [
@@ -63,6 +66,28 @@ function tagItems(wanted) {
   return items;
 }
 
+// Beginn von Überzahlphasen, z. B. „Überzahl BAL · 5:4“. Ein Kapitel, wenn die Überzahl beginnt oder sich
+// die Stärke ändert (5:4 → 5:3), nicht für die Fortsetzung nach der Drittelpause. Phasen, die nur durch
+// „Torhüter raus“ entstehen (6:5), deckt das Kapitel „Torhüter raus“ aus den Tags ab.
+function powerplayItems() {
+  const items = [], delay = ppDelayEstimate();
+  let prev = null;
+  for (const ph of powerPlayPhases()) {
+    const cont = prev && prev.team === ph.team && prev.strength.join() === ph.strength.join() &&
+      ((prev.p === ph.p && prev.to === ph.from) || (prev.p === ph.p - 1 && prev.to === periodLength(prev.p) && ph.from === 0));
+    prev = ph;
+    if (cont) continue;
+    const opp = ph.team === 'home' ? 'guest' : 'home';
+    const onlyEmptyNet = ph.emptyNet.includes(ph.team) && !ph.emptyNet.includes(opp) && ph.strength[0] - 1 === ph.strength[1];
+    if (onlyEmptyNet) continue;
+    const raw = videoTimeAt(ph.p, ph.from), end = videoTimeAt(ph.p, ph.to);
+    if (raw == null || end == null || end <= raw || end < 0) continue;
+    const extra = ph.emptyNet.includes(ph.team) ? 'ohne Torhüter' : '';
+    items.push({ t: phaseStart(ph, raw, end, delay), label: join([`Überzahl ${teamShort(ph.team)}`, `${ph.strength[0]}:${ph.strength[1]}`, extra]) });
+  }
+  return items;
+}
+
 export function buildChapters() {
   const items = [];
   let missing = 0, notInVideo = 0, notInVideoGoals = 0;
@@ -98,6 +123,7 @@ export function buildChapters() {
       items.push({ t: st.end, label: last ? join(['Spielende', `Endstand ${finalScore()}`]) : join([pauseTitle(p), `Stand ${scoreAfter(p)}`]) });
     }
   });
+  if (state.chapterPowerplay) for (const it of powerplayItems()) items.push({ t: Math.max(0, it.t), label: it.label });
   for (const it of tagItems(wanted)) items.push({ t: Math.max(0, it.t), label: it.label });
   // Bei gleicher Stelle steht die Zeile ohne Zeit nach dem Kapitel
   items.sort((a, b) => a.t - b.t || !!a.untimed - !!b.untimed);

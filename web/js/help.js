@@ -12,7 +12,7 @@ export const GUIDES = {
       { title: 'Ereignisse prüfen', text: 'Klick auf ein Tor oder eine Strafe springt zur geschätzten Stelle. Passt sie nicht, spul zur richtigen Stelle und klick auf „Auf aktuelle Videozeit setzen“. Warst du schon vorher an der richtigen Stelle, reicht „Dort setzen“.', target: '#events' },
       { title: 'Feinjustieren', text: 'Mit −1 s / +1 s oder dem Regler rückst du ein Ereignis zurecht. Jedes gesetzte Ereignis verbessert die Schätzung der übrigen.', target: '#events' },
       { title: 'Veröffentlichen', text: 'Unter „Veröffentlichen“ machst du deinen Sync für alle verfügbar, die dieses Spiel öffnen. Den Bearbeitungsschlüssel merkt sich dein Browser; für ein zweites Gerät oder einen Co-Trainer kopierst du ihn. Ohne Schlüssel trägst du bei: Was fehlt, geht sofort online, Änderungen an schon Gesetztem werden ein Vorschlag, den die Person mit dem Schlüssel übernimmt oder verwirft.', target: '#publishPanel' },
-      { title: 'Kapitel und Link', text: 'Unter „Export“ kopierst du die YouTube-Kapitel für die Videobeschreibung. Mit „Link teilen“ schickst du Spiel und Szenen an andere.', target: '#chapters' }
+      { title: 'Kapitel und Link', text: 'Unter „Export“ kopierst du die YouTube-Kapitel für die Videobeschreibung. Auf Wunsch stehen dort auch Strafen und der Beginn jeder Überzahl. Mit „Link teilen“ schickst du Spiel und Szenen an andere.', target: '#chapters' }
     ],
     tips: [
       'Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, Komma/Punkt ±1 s, − / + Tempo, Enter setzt das gewählte Ereignis.',
