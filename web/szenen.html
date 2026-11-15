@@ -54,6 +54,8 @@
         <button id="playAllBtn" class="btn">Alle abspielen</button>
         <button id="prevBtn" class="btn ghost" aria-label="Vorherige Szene" title="Vorherige Szene (P)">‹</button>
         <button id="nextBtn" class="btn ghost" aria-label="Nächste Szene" title="Nächste Szene (N)">›</button>
+        <button id="loopBtn" class="sc-chip" aria-pressed="false" title="Nach der letzten Szene wieder von vorn beginnen">Dauerschleife</button>
+        <button id="shuffleBtn" class="sc-chip" aria-pressed="false" title="Szenen in zufälliger Reihenfolge zeigen">Zufällig</button>
         <span id="nowPlaying" class="sc-now"></span>
       </div>
       <div class="sc-transport">
@@ -68,7 +70,7 @@
           <button class="rate" data-rate="2" aria-pressed="false">2×</button>
         </div>
       </div>
-      <p class="hint">Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, − / + Tempo, N nächste Szene, P vorherige Szene. Ein Klick auf eine Szene spielt sie ab Vorlauf ab; bei „Alle abspielen“ geht es nach dem Nachlauf von selbst weiter.</p>
+      <p class="hint">Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, − / + Tempo, N nächste Szene, P vorherige Szene. Ein Klick auf eine Szene spielt sie ab Vorlauf ab; bei „Alle abspielen“ geht es nach dem Nachlauf von selbst weiter. „Dauerschleife“ beginnt nach der letzten Szene wieder von vorn, „Zufällig“ mischt die Reihenfolge (bei jeder Runde neu).</p>
     </div>
     <div class="sc-side">
       <div id="playerFilter" class="sc-pfilter"></div>

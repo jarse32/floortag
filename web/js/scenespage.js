@@ -16,7 +16,8 @@ const view = {
   leagues: [], schedule: null, team: null, games: [], scenes: [], run: 0,
   filter: new Set(['goal']), gameFilter: 'all', tab: 'scenes',
   player: null, roles: new Set(['goal', 'assist']), // Spielerauswahl: Kennung (player_id) und Rollen
-  current: null, playAll: false, pending: null, rate: 1, ppGap: null
+  current: null, playAll: false, pending: null, rate: 1, ppGap: null,
+  loop: false, shuffle: false, rank: new Map() // Dauerschleife, zufällige Reihenfolge (Zufallszahl pro Szene)
 };
 
 async function getJson(url) {
@@ -170,9 +171,16 @@ const sceneKey = s => `${s.gameId}:${s.video}:${s.start}:${s.code}`;
 // Szenen des gewählten Spielers (ohne Auswahl alle); Kategorien grenzen weiter ein, ohne Kategorie gilt beim Spieler alles
 const byPlayer = () => view.scenes.filter(s => matchesPlayer(s, view.player, view.roles));
 function filtered() {
-  const list = byPlayer();
-  if (view.player != null && !view.filter.size) return list;
-  return list.filter(s => s.cats.some(c => view.filter.has(c)));
+  let list = byPlayer();
+  if (view.player == null || view.filter.size) list = list.filter(s => s.cats.some(c => view.filter.has(c)));
+  if (!view.shuffle) return list;
+  const r = s => { const k = sceneKey(s); if (!view.rank.has(k)) view.rank.set(k, Math.random()); return view.rank.get(k); };
+  return list.slice().sort((a, b) => r(a) - r(b));
+}
+// Neue Zufallsreihenfolge; die gerade laufende Szene bleibt vorn, damit nichts doppelt kommt
+function reshuffle(keepFirst) {
+  view.rank = new Map();
+  if (keepFirst) view.rank.set(keepFirst, -1);
 }
 
 function render() {
@@ -277,7 +285,9 @@ function renderNow() {
   $('#playAllBtn').textContent = view.playAll ? 'Anhalten' : 'Alle abspielen';
   $('#playAllBtn').disabled = !list.length;
   $('#prevBtn').disabled = i <= 0;
-  $('#nextBtn').disabled = !list.length || i >= list.length - 1;
+  $('#nextBtn').disabled = !list.length || (i >= list.length - 1 && !view.loop);
+  $('#loopBtn').setAttribute('aria-pressed', String(view.loop));
+  $('#shuffleBtn').setAttribute('aria-pressed', String(view.shuffle));
   const s = list[i];
   $('#nowPlaying').textContent = s ? `${i + 1} von ${list.length} · ${s.code} · ${date(s.date)} ${s.home ? 'gegen' : 'bei'} ${s.opp}` : list.length ? `${list.length} Szenen` : '';
 }
@@ -312,7 +322,11 @@ function step(dir) {
   const list = filtered(), i = list.findIndex(s => sceneKey(s) === view.current);
   const j = i + dir;
   if (j >= 0 && j < list.length) play(j);
-  else if (dir > 0 && view.playAll) { view.playAll = false; yt.pause(); renderNow(); showToast('Alle Szenen abgespielt.'); }
+  else if (dir > 0 && view.loop && list.length) {
+    // Dauerschleife: wieder von vorn, gemischt in neuer Reihenfolge (die letzte Szene kommt nicht gleich wieder)
+    if (view.shuffle && list.length > 1) { const last = view.current; reshuffle(); if (sceneKey(filtered()[0]) === last) view.rank.set(last, 2); }
+    play(0);
+  } else if (dir > 0 && view.playAll) { view.playAll = false; yt.pause(); renderNow(); showToast('Alle Szenen abgespielt.'); }
 }
 $('#consentBtn').addEventListener('click', () => {
   giveConsent($('#consentRemember').checked);
@@ -377,6 +391,13 @@ $('#playAllBtn').addEventListener('click', () => {
   } else { yt.pause(); renderNow(); }
 });
 $('#prevBtn').addEventListener('click', () => step(-1));
+$('#loopBtn').addEventListener('click', () => { view.loop = !view.loop; renderNow(); });
+// Zufällig: beim Einschalten neu mischen, die laufende Szene bleibt Nummer 1; beim Ausschalten wieder nach Datum
+$('#shuffleBtn').addEventListener('click', () => {
+  view.shuffle = !view.shuffle;
+  if (view.shuffle) reshuffle(view.current);
+  render();
+});
 // Spulen und Abspieltempo
 document.querySelectorAll('[data-seek]').forEach(b => b.addEventListener('click', () => yt.seek(yt.now() + Number(b.dataset.seek))));
 const RATES = [0.5, 1, 1.5, 2];
