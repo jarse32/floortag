@@ -56,7 +56,19 @@
         <button id="nextBtn" class="btn ghost" aria-label="Nächste Szene" title="Nächste Szene (N)">›</button>
         <span id="nowPlaying" class="sc-now"></span>
       </div>
-      <p class="hint">Tastatur: K oder Leertaste Play/Pause, N nächste Szene, P vorherige Szene. Ein Klick auf eine Szene spielt sie ab Vorlauf ab; bei „Alle abspielen“ geht es nach dem Nachlauf von selbst weiter.</p>
+      <div class="sc-transport">
+        <button class="btn ghost" data-seek="-5">−5 s</button>
+        <button class="btn ghost" data-seek="-1">−1 s</button>
+        <button class="btn ghost" data-seek="1">+1 s</button>
+        <button class="btn ghost" data-seek="5">+5 s</button>
+        <div class="rates" role="group" aria-label="Abspieltempo">
+          <button class="rate" data-rate="0.5" aria-pressed="false">0,5×</button>
+          <button class="rate" data-rate="1" aria-pressed="true">1×</button>
+          <button class="rate" data-rate="1.5" aria-pressed="false">1,5×</button>
+          <button class="rate" data-rate="2" aria-pressed="false">2×</button>
+        </div>
+      </div>
+      <p class="hint">Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, − / + Tempo, N nächste Szene, P vorherige Szene. Ein Klick auf eine Szene spielt sie ab Vorlauf ab; bei „Alle abspielen“ geht es nach dem Nachlauf von selbst weiter.</p>
     </div>
     <div class="sc-side">
       <div id="playerFilter" class="sc-pfilter"></div>

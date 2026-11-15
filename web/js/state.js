@@ -6,7 +6,7 @@ export const state = {
   periodLen: 1200,     // Drittellänge in Sekunden
   otLen: 600,          // Verlängerung in Sekunden
   pauseLen: 600,       // Drittelpause in Sekunden
-  ppDelay: 30,         // geschätzter Abstand zwischen Strafe und Beginn der Über-/Unterzahl in Sekunden
+  ppDelay: 45,         // geschätzter Abstand zwischen Strafe und Beginn der Über-/Unterzahl in Sekunden
   leadIn: 8,           // Vorlauf für Kapitelmarken und Clips in Sekunden
   leadOut: 5,          // Nachlauf für Clips im Analyse-Export in Sekunden
   fps: 25,             // Bildrate des Videos für die Schnittliste (EDL)

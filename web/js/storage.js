@@ -115,7 +115,7 @@ export function restore() {
 // Ohne gültige Drittellänge fehlt das Drittelende als Anker und alle Schätzungen verrutschen.
 const SETTING_RULES = {
   periodLen: [300, 1800, 1200], otLen: [60, 1200, 600], pauseLen: [60, 1800, 600],
-  leadIn: [0, 30, 8], leadOut: [0, 60, 5], counterLen: [2, 60, 10], ppDelay: [0, 180, 30]
+  leadIn: [0, 30, 8], leadOut: [0, 60, 5], counterLen: [2, 60, 10], ppDelay: [0, 180, 45]
 };
 export function sanitizeSettings() {
   const fixed = [];

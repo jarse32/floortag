@@ -5,6 +5,7 @@ import { state } from './state.js';
 import { fmt, esc } from './format.js';
 import { SCENE_GROUPS, PERSON_ROLES, catLabel, collectScenes, countByCat, loadGameState, sideOf, teamsOf, hasSyncData, playersOf, matchesPlayer } from './scenes.js';
 import { fetchIndex, fetchPublished } from './publish.js';
+import { ppGaps } from './ppstart.js';
 import { sceneUrl, gameUrl, canShareNative } from './scenelink.js';
 import { hasConsent, giveConsent } from './consent.js';
 import * as yt from './player.js';
@@ -15,7 +16,7 @@ const view = {
   leagues: [], schedule: null, team: null, games: [], scenes: [], run: 0,
   filter: new Set(['goal']), gameFilter: 'all', tab: 'scenes',
   player: null, roles: new Set(['goal', 'assist']), // Spielerauswahl: Kennung (player_id) und Rollen
-  current: null, playAll: false, pending: null
+  current: null, playAll: false, pending: null, rate: 1, ppGap: null
 };
 
 async function getJson(url) {
@@ -128,25 +129,38 @@ async function loadTeam(team) {
   render();
 
   const todo = view.games.filter(g => g.result && g.source);
-  for (const [i, g] of todo.entries()) {
-    $('#loadNote').textContent = `Szenen werden geladen … ${i} von ${todo.length} Spielen`;
+  const loaded = [];
+  for (const [n, g] of todo.entries()) {
+    $('#loadNote').textContent = `Szenen werden geladen … ${n} von ${todo.length} Spielen`;
     try {
       const video = g.own ? g.own.video : g.pub.video;
       const data = await getJson(`api/game.php?id=${encodeURIComponent(g.id)}`);
       const pub = g.own ? null : ((await fetchPublished(video)) || {}).sync || null;
       if (run !== view.run) return; // inzwischen ein anderes Team gewählt
-      // Laden und Auswerten ohne await dazwischen: der Zustand gehört in dieser Zeit diesem Spiel
-      if (!loadGameState(data, video, { pub, league: view.schedule.league })) continue;
+      loaded.push({ g, data, pub, video });
+    } catch (e) { g.error = e.message; }
+  }
+  if (run !== view.run) return;
+  // Abstand Strafe → Spielbeginn: wo gesetzt, gilt der eigene; sonst der Durchschnitt aus allen Spielen mit gesetzten Beginnen.
+  // Laden und Auswerten jeweils ohne await dazwischen: der Zustand gehört in dieser Zeit diesem Spiel
+  const load = x => loadGameState(x.data, x.video, { pub: x.pub, league: view.schedule.league });
+  const gaps = loaded.flatMap(x => (load(x) ? ppGaps() : []));
+  view.ppGap = gaps.length ? { sec: Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length), count: gaps.length } : null;
+  for (const x of loaded) {
+    const { g, video } = x;
+    try {
+      if (!load(x)) continue;
+      if (view.ppGap && !ppGaps().length) state.ppDelay = view.ppGap.sec;
       const opp = g.side === 'home' ? g.guest : g.home;
       const list = collectScenes(g.side).map(c => ({ ...c, gameId: g.id, video, date: g.date, opp, home: g.side === 'home', result: g.result }));
       g.scenes = list.length; g.tags = state.tags.length; g.video = video;
       view.scenes.push(...list);
     } catch (e) { g.error = e.message; }
-    render();
   }
   if (run !== view.run) return;
   const synced = view.games.filter(g => g.result && g.source).length, played = view.games.filter(g => g.result).length;
-  $('#loadNote').textContent = `${synced} von ${played} gespielten Spielen mit Sync`;
+  const gapNote = view.ppGap ? ` · Über- und Unterzahl ohne gesetzten Beginn starten ${view.ppGap.sec} s nach der Strafe (Durchschnitt aus ${view.ppGap.count} gesetzten)` : '';
+  $('#loadNote').textContent = `${synced} von ${played} gespielten Spielen mit Sync${gapNote}`;
   render();
 }
 
@@ -272,7 +286,8 @@ function renderNow() {
 yt.initPlayer('player', {
   onLoad: () => { $('#playerEmpty').hidden = true; $('#consent').hidden = true; },
   onReady: () => { if (view.pending) { const p = view.pending; view.pending = null; yt.playAt(p.video, p.t); } },
-  onStateChange() {},
+  // Nach einem Videowechsel setzt YouTube das Tempo zurück
+  onStateChange() { if (yt.isPlaying() && yt.getRate() !== view.rate) yt.setRate(view.rate); },
   onError: msg => showToast(msg)
 });
 function play(i) {
@@ -362,6 +377,14 @@ $('#playAllBtn').addEventListener('click', () => {
   } else { yt.pause(); renderNow(); }
 });
 $('#prevBtn').addEventListener('click', () => step(-1));
+// Spulen und Abspieltempo
+document.querySelectorAll('[data-seek]').forEach(b => b.addEventListener('click', () => yt.seek(yt.now() + Number(b.dataset.seek))));
+const RATES = [0.5, 1, 1.5, 2];
+function setRate(r) {
+  view.rate = r; yt.setRate(r);
+  document.querySelectorAll('[data-rate]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.rate) === r)));
+}
+document.querySelectorAll('[data-rate]').forEach(b => b.addEventListener('click', () => setRate(Number(b.dataset.rate))));
 $('#nextBtn').addEventListener('click', () => step(1));
 document.addEventListener('keydown', e => {
   if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -369,6 +392,11 @@ document.addEventListener('keydown', e => {
   if (k === 'k' || k === ' ') { e.preventDefault(); yt.togglePlay(); }
   else if (k === 'n') step(1);
   else if (k === 'p') step(-1);
+  else if (k === 'j' || k === 'l') yt.seek(yt.now() + (k === 'j' ? -5 : 5));
+  else if (e.key === '-' || e.key === '+') {
+    const i = RATES.indexOf(view.rate), next = RATES[Math.min(RATES.length - 1, Math.max(0, i + (e.key === '+' ? 1 : -1)))];
+    if (next !== view.rate) setRate(next);
+  }
 });
 
 // ===== Start: ?liga=…&team=…&filter=… hat Vorrang vor der letzten Wahl =====

@@ -7,13 +7,18 @@ import { events, gameSec, periodLength } from './game.js';
 import { timeOf } from './sync.js';
 import { powerPlayPhases } from './phases.js';
 
-// Geschätzter Abstand zwischen Pfiff und Spielbeginn in Sekunden
-export function ppDelayEstimate() {
+// Gesetzte Abstände zwischen Pfiff und Spielbeginn in diesem Video (Sekunden)
+export function ppGaps() {
   const gaps = [];
   for (const e of events()) {
     const set = state.ppStart[e.event_id], t = timeOf(e);
     if (set != null && t != null && set >= t) gaps.push(set - t);
   }
+  return gaps;
+}
+// Geschätzter Abstand zwischen Pfiff und Spielbeginn in Sekunden
+export function ppDelayEstimate() {
+  const gaps = ppGaps();
   return gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : state.ppDelay;
 }
 
