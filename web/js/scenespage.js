@@ -12,6 +12,9 @@ import * as yt from './player.js';
 import { overlayText } from './overlay.js';
 import { mountStage, EMPTY_MODEL } from './stageview.js';
 import { createRemote } from './remoteplayer.js';
+import { SHARE_PREFIX, decodeShare, applySharePayload } from './share.js';
+import { fetchLeagueInfo } from './leagueinfo.js';
+import { ownVideos } from './storage.js';
 
 const $ = s => document.querySelector(s);
 const PREFS = 'floortag:scenes';
@@ -24,6 +27,7 @@ const view = {
   present: false, stopped: null, black: false, // Präsentieren: aktiv, Szene, an deren Ende angehalten wurde, Bild schwarz
   ytControls: false, switching: null, // YouTube-Bedienung freigegeben; Szenenwechsel, bei dem das Bild schwarz bleibt, bis das Video läuft
   remote: false, // Präsentation im Beamer-Fenster, hier die Referentenansicht
+  single: null, // Einzelspiel: { g, data, video, shared, pub, league } statt Liga
   overlayUntil: 0 // bis wann die Einblendung unten links steht (danach blendet sie aus, außer „Einblendung bleibt“)
 };
 // Vorlieben fürs Präsentieren (nur diese werden gespeichert)
@@ -49,7 +53,10 @@ function showToast(text) {
 $('#toast').addEventListener('click', () => { $('#toast').hidden = true; });
 
 function savePrefs() {
-  try { localStorage.setItem(PREFS, JSON.stringify({ league: $('#leagueSelect').value, team: view.team, filter: [...view.filter] })); } catch (e) { /* ignorieren */ }
+  // Im Einzelspiel bleiben Liga und Team der Ligaansicht erhalten, nur die Filter werden gemerkt
+  const prev = view.single ? readPrefs() : null;
+  const league = prev ? prev.league : $('#leagueSelect').value, team = prev ? prev.team : view.team;
+  try { localStorage.setItem(PREFS, JSON.stringify({ league, team, filter: [...view.filter] })); } catch (e) { /* ignorieren */ }
 }
 function readPrefs() {
   try { return JSON.parse(localStorage.getItem(PREFS) || '{}') || {}; } catch (e) { return {}; }
@@ -57,7 +64,10 @@ function readPrefs() {
 function updateUrl() {
   const url = new URL(location.href);
   url.search = '';
-  if ($('#leagueSelect').value) url.searchParams.set('liga', $('#leagueSelect').value);
+  if (view.single) {
+    url.searchParams.set('spiel', view.single.g.id);
+    url.searchParams.set('video', view.single.video);
+  } else if ($('#leagueSelect').value) url.searchParams.set('liga', $('#leagueSelect').value);
   if (view.team) url.searchParams.set('team', view.team);
   if (view.filter.size) url.searchParams.set('filter', [...view.filter].join(','));
   if (view.player != null) { url.searchParams.set('spieler', view.player); url.searchParams.set('rolle', [...view.roles].join(',')); }
@@ -175,6 +185,52 @@ async function loadTeam(team) {
   const gapNote = view.ppGap ? ` · Über- und Unterzahl ohne gesetzten Beginn starten ${view.ppGap.sec} s nach der Strafe (Durchschnitt aus ${view.ppGap.count} gesetzten)` : '';
   $('#loadNote').textContent = `${synced} von ${played} gespielten Spielen mit Sync${gapNote}`;
   render();
+}
+
+// ===== Einzelspiel =====
+// ?spiel=58668&video=… zeigt nur dieses Spiel, z. B. aus „Präsentieren“ in der Spielansicht.
+// Mit #ft=… (Teilen-Link) gilt der Stand aus dem Link, mit Tags; sonst der eigene Stand, sonst der veröffentlichte Sync.
+// Gespeichert wird dabei nichts (loadGameState setzt sharedView).
+async function loadSingle(id, video, shared, team) {
+  showError('');
+  $('#leagueLabel').hidden = true;
+  $('#loadNote').textContent = 'Spiel wird geladen …';
+  let data;
+  try { data = await getJson(`api/game.php?id=${encodeURIComponent(id)}`); }
+  catch (e) { showError(e.message); $('#loadNote').textContent = ''; return; }
+  const g = { id: data.id, home: data.home_team_name, guest: data.guest_team_name, date: data.date, result: data.result_string || '' };
+  video = video || (shared && shared.vid) || ownVideos(id)[0] || null;
+  if (!video) { showError('Zu diesem Spiel kenne ich kein Video. Öffne es zuerst in der Spielansicht.'); $('#loadNote').textContent = ''; return; }
+  let league = null, pub = null;
+  try { league = await fetchLeagueInfo(data.league_id); } catch (e) { /* Standardlängen */ }
+  if (!shared) { try { pub = ((await fetchPublished(video)) || {}).sync || null; } catch (e) { /* ohne veröffentlichten Sync */ } }
+  view.single = { g, data, video, shared, pub, league };
+  const back = `./?spiel=${encodeURIComponent(g.id)}&video=${encodeURIComponent(video)}${shared ? location.hash : ''}`;
+  $('#singleGame').hidden = false;
+  $('#singleGame').innerHTML = `<strong>${esc(g.home)} <span class="score">${esc(g.result)}</span> ${esc(g.guest)}</strong> · ${esc(date(g.date))}
+    · <a href="${esc(back)}">Zurück zum Spiel</a>${data.league_id ? ` · <a data-league-link href="szenen.html?liga=${esc(data.league_id)}">Alle Spiele der Liga</a>` : ''}`;
+  $('#teamSelect').innerHTML = [g.home, g.guest].map(t => `<option>${esc(t)}</option>`).join('');
+  $('#teamSelect').disabled = false;
+  selectSingleTeam([g.home, g.guest].includes(team) ? team : g.home);
+}
+function selectSingleTeam(team) {
+  const { g, data, video, shared, pub, league } = view.single;
+  if (team !== view.team && view.team != null) view.player = null; // anderes Team, andere Spieler
+  view.team = team; view.current = null; view.playAll = false;
+  $('#teamSelect').value = team;
+  const side = sideOf(g, team), opp = side === 'home' ? g.guest : g.home;
+  let source = null;
+  try {
+    source = loadGameState(data, video, { pub, league });
+    if (shared) { applySharePayload(shared); source = 'shared'; }
+  } catch (e) { showError(`Der Stand lässt sich nicht laden: ${e.message}`); }
+  view.scenes = source ? collectScenes(side).map(c => ({ ...c, gameId: g.id, video, date: g.date, opp, home: side === 'home', result: g.result })) : [];
+  view.games = [{ ...g, side, source, video, scenes: view.scenes.length, tags: source ? state.tags.length : 0 }];
+  const from = { shared: 'Stand aus dem geteilten Link, mit Tags', own: 'dein Stand aus diesem Browser', published: 'veröffentlichter Sync, ohne Tags' }[source];
+  $('#loadNote').textContent = from ? `${view.scenes.length} Szenen · ${from}` : 'Zu diesem Spiel gibt es noch keinen Sync.';
+  const ll = document.querySelector('[data-league-link]');
+  if (ll) ll.href = `szenen.html?liga=${encodeURIComponent(data.league_id)}&team=${encodeURIComponent(team)}`;
+  savePrefs(); updateUrl(); render();
 }
 
 // ===== Darstellung =====
@@ -603,7 +659,7 @@ async function shareScene(s) {
 }
 
 $('#leagueSelect').addEventListener('change', e => { view.games = []; view.scenes = []; render(); if (e.target.value) loadSchedule(e.target.value); savePrefs(); });
-$('#teamSelect').addEventListener('change', e => { if (e.target.value) loadTeam(e.target.value); });
+$('#teamSelect').addEventListener('change', e => { if (!e.target.value) return; if (view.single) selectSingleTeam(e.target.value); else loadTeam(e.target.value); });
 $('#teamForm').addEventListener('submit', e => e.preventDefault());
 
 document.querySelectorAll('[data-stab]').forEach(b => b.addEventListener('click', () => { view.tab = b.dataset.stab; render(); }));
@@ -689,6 +745,18 @@ async function init() {
   if (pid && /^n?\d{1,9}$/.test(pid)) view.player = pid;
   const roles = (params.get('rolle') || '').split(',').filter(r => PERSON_ROLES.some(([k]) => k === r));
   if (roles.length) view.roles = new Set(roles);
+  // Einzelspiel aus der Spielansicht bzw. einem Teilen-Link
+  const single = params.get('spiel');
+  if (single && /^\d{1,9}$/.test(single)) {
+    const vid = params.get('video');
+    let shared = null;
+    if (location.hash.startsWith(SHARE_PREFIX)) {
+      try { shared = await decodeShare(location.hash.slice(SHARE_PREFIX.length)); }
+      catch (e) { showError(`Der geteilte Link lässt sich nicht öffnen: ${e.message}`); return; }
+    }
+    await loadSingle(Number(single), vid && /^[\w-]{11}$/.test(vid) ? vid : null, shared, params.get('team'));
+    return;
+  }
   await loadLeagues();
   const league = params.get('liga') || prefs.league;
   const team = params.get('team') || prefs.team || null;

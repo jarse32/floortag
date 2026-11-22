@@ -414,6 +414,8 @@ main.overview { display: block; max-width: 1100px; margin: 0 auto; padding: 1.5r
 main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1.5rem; }
 .sc-pick { display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center; margin-bottom: 1rem; }
 .sc-pick label { display: inline-flex; gap: .4rem; align-items: center; font-weight: 600; }
+.sc-pick [hidden] { display: none; }
+.sc-single .score { color: var(--pine); padding: 0 .2rem; }
 .sc-pick select { max-width: 22rem; }
 .sc-tabs { margin-bottom: 1rem; }
 .sc-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(20rem, 1fr); gap: 1.5rem; align-items: start; }

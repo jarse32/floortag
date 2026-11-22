@@ -51,7 +51,8 @@ export const GUIDES = {
       { title: 'Video freigeben', text: 'Klick auf „YouTube-Video laden“.', target: '.player-wrap' },
       { title: 'Szenen abspielen', text: 'Klick auf ein Tor, eine Strafe oder einen Tag in der Ereignis- bzw. Tag-Liste. Das Video springt kurz vor die Szene und spielt sie ab.', target: '#events' },
       { title: 'Tags und Statistik', text: 'In den Reitern „Tags“ und „Statistik“ findest du die zusätzlichen Szenen und Auswertungen, sofern sie getaggt wurden.', target: '.tabs' },
-      { title: 'Tempo', text: 'Mit 0,5× bis 2× siehst du Szenen langsamer oder schneller.', target: '.rates' }
+      { title: 'Tempo', text: 'Mit 0,5× bis 2× siehst du Szenen langsamer oder schneller.', target: '.rates' },
+      { title: 'Präsentieren', text: '„Präsentieren“ oben zeigt die Szenen dieses Spiels nacheinander im Vollbild oder auf einem zweiten Bildschirm, z. B. in der Videobesprechung. Bei einem geteilten Link sind die Tags dabei. Du wählst Team und Kategorien, etwa Tore und Überzahl.', target: '#presentLink' }
     ],
     tips: ['Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, − / + Tempo, N nächstes Ereignis.', 'Szenen und Tags sind nur dort zu sehen, wo sie gesetzt wurden, oder über einen geteilten Link. Fehlt beides, bekommst du einen Hinweis in der Ereignisliste.', 'Eine Szene weiterschicken: Ereignis antippen und „Link zur Szene kopieren“ bzw. „Szene teilen“, bei Tags über das Kettensymbol.', 'Alle Szenen eines Teams über die ganze Saison, etwa alle Überzahlspiele oder alle Tore und Vorlagen eines Spielers, findest du oben unter „Szenen“. Dort erscheinen alle Spiele mit Sync.']
   }

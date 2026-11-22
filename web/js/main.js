@@ -802,6 +802,13 @@ $('#adoptBtn').addEventListener('click', () => {
   setVideoChoice(state.game.id, state.videoId, ui.smVideo);
   leaveShared();
 });
+// Präsentieren: Seite „Szenen“ mit nur diesem Spiel; in der geteilten Ansicht mit dem Stand aus dem Link (#ft=…)
+$('#presentLink').addEventListener('click', e => {
+  if (!state.game) return;
+  e.preventDefault();
+  const video = state.videoId ? `&video=${encodeURIComponent(state.videoId)}` : '';
+  location.href = `szenen.html?spiel=${encodeURIComponent(state.game.id)}${video}${ui.shared ? location.hash : ''}`;
+});
 // Link zum Ansehen erzeugen und kopieren
 $('#shareBtn').addEventListener('click', async () => {
   const b = $('#shareBtn');

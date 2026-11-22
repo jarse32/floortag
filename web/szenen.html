@@ -25,7 +25,9 @@
 
 <main class="scenes-page">
   <form id="teamForm" class="sc-pick">
-    <label>Liga <select id="leagueSelect" aria-label="Liga wählen"><option value="">Liga wählen …</option></select></label>
+    <label id="leagueLabel">Liga <select id="leagueSelect" aria-label="Liga wählen"><option value="">Liga wählen …</option></select></label>
+    <!-- Einzelspiel (?spiel=…, aus der Spielansicht oder einem Teilen-Link): Spiel statt Liga, Team = eines der beiden -->
+    <span id="singleGame" class="sc-single" hidden></span>
     <label>Team <select id="teamSelect" aria-label="Team wählen" disabled><option value="">zuerst Liga wählen</option></select></label>
     <span id="loadNote" class="note" role="status"></span>
   </form>
