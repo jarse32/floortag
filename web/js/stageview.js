@@ -24,7 +24,7 @@ export function mountStage(stage) {
     if (m.overlay) {
       text(ov, '.pr-title', m.overlay.title);
       text(ov, '.pr-line', m.overlay.line);
-      ov.className = `pr-overlay ${m.overlay.side || ''}`;
+      ov.className = `pr-overlay ${m.overlay.side || ''}${m.overlay.faded ? ' faded' : ''}`;
     }
     card.hidden = !m.card;
     if (m.card) {

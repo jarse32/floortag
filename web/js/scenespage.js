@@ -23,11 +23,12 @@ const view = {
   loop: false, shuffle: false, rank: new Map(), // Dauerschleife, zufällige Reihenfolge (Zufallszahl pro Szene)
   present: false, stopped: null, black: false, // Präsentieren: aktiv, Szene, an deren Ende angehalten wurde, Bild schwarz
   ytControls: false, switching: null, // YouTube-Bedienung freigegeben; Szenenwechsel, bei dem das Bild schwarz bleibt, bis das Video läuft
-  remote: false // Präsentation im Beamer-Fenster, hier die Referentenansicht
+  remote: false, // Präsentation im Beamer-Fenster, hier die Referentenansicht
+  overlayUntil: 0 // bis wann die Einblendung unten links steht (danach blendet sie aus, außer „Einblendung bleibt“)
 };
 // Vorlieben fürs Präsentieren (nur diese werden gespeichert)
 const PRESENT_PREFS = 'floortag:present';
-const pres = { stopAfter: true, overlay: true, players: false };
+const pres = { stopAfter: true, overlay: true, overlayKeep: false, players: false };
 try { Object.assign(pres, JSON.parse(localStorage.getItem(PRESENT_PREFS) || '{}')); } catch (e) { /* ignorieren */ }
 function savePresent() { try { localStorage.setItem(PRESENT_PREFS, JSON.stringify(pres)); } catch (e) { /* ignorieren */ } }
 
@@ -393,7 +394,7 @@ function presentModel(list, i) {
       : `Alle ${list.length} Szenen gezeigt · ← zurück, R noch einmal, Esc beendet`;
   }
   return {
-    overlay: pres.overlay && s && !view.black && !carding ? { title: t.title, line: t.line, side: s.side || '' } : null,
+    overlay: pres.overlay && s && !view.black && !carding ? { title: t.title, line: t.line, side: s.side || '', faded: !pres.overlayKeep && Date.now() >= view.overlayUntil } : null,
     // Ankündigung beim Szenenwechsel: groß die Szenenart, darunter Situation und Spiel
     card: carding ? { count: `Szene ${i + 1} von ${list.length}`, code: t.code, detail: t.detail, title: t.title, side: s.side || '' } : null,
     pause, black: view.black, switching: !!view.switching, ytControls: view.ytControls
@@ -412,6 +413,7 @@ function renderPresent(list = filtered(), i = list.findIndex(s => sceneKey(s) ==
   stage.querySelector('[data-pr="stop"]').setAttribute('aria-pressed', String(pres.stopAfter));
   stage.querySelector('[data-pr="overlay"]').setAttribute('aria-pressed', String(pres.overlay));
   stage.querySelector('[data-pr="players"]').setAttribute('aria-pressed', String(pres.players));
+  stage.querySelector('[data-pr="keep"]').setAttribute('aria-pressed', String(pres.overlayKeep));
   const ytb = stage.querySelector('[data-pr="yt"]');
   ytb.setAttribute('aria-pressed', String(view.ytControls));
   ytb.textContent = view.ytControls ? 'Fertig' : 'YouTube-Bedienung';
@@ -446,7 +448,14 @@ function renderRemoteTime() {
 // Mit Einblendung kündigt eine große Tafel die Szene an. Sie steht mindestens CARD_MIN ms, damit sie lesbar ist;
 // ist das Video früher bereit, wird es so lange angehalten (kein Verlust beim Vorlauf).
 const CARD_MIN = 1800, SWITCH_MAX = 5000;
-let switchTimer = null;
+// Die Einblendung unten links steht nach dem Szenenwechsel OVERLAY_MS lang und blendet dann aus
+const OVERLAY_MS = 6000;
+let switchTimer = null, overlayTimer = null;
+function showOverlayFor() {
+  view.overlayUntil = Date.now() + OVERLAY_MS;
+  clearTimeout(overlayTimer);
+  overlayTimer = setTimeout(() => { if (view.present) renderPresent(); }, OVERLAY_MS + 50);
+}
 function startSwitch(s) {
   view.switching = { start: s.start, since: Date.now(), ready: false, held: false };
   clearTimeout(switchTimer);
@@ -459,6 +468,7 @@ function endSwitch(resume = false) {
   view.switching = null;
   clearTimeout(switchTimer);
   if (resume && sw && sw.held) out.play();
+  if (sw && view.present) showOverlayFor();
   renderPresent();
 }
 function checkSwitch() {
@@ -566,7 +576,12 @@ function presentAction(a) {
     if (i < 0) play(0); else out.togglePlay();
   } else if (a === 'black') setBlack(!view.black);
   else if (a === 'stop') { pres.stopAfter = !pres.stopAfter; savePresent(); }
-  else if (a === 'overlay') { pres.overlay = !pres.overlay; savePresent(); }
+  else if (a === 'overlay') {
+    // Ausgeblendet: erst wieder zeigen; sichtbar: ganz abschalten (bzw. wieder einschalten)
+    const faded = pres.overlay && !pres.overlayKeep && Date.now() >= view.overlayUntil;
+    if (!faded) { pres.overlay = !pres.overlay; savePresent(); }
+    if (pres.overlay) showOverlayFor();
+  } else if (a === 'keep') { pres.overlayKeep = !pres.overlayKeep; savePresent(); if (!pres.overlayKeep) showOverlayFor(); }
   else if (a === 'players') { pres.players = !pres.players; savePresent(); }
   else if (a === 'yt') view.ytControls = !view.ytControls;
   else if (a === 'exit') exitPresent();

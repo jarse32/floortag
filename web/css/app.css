@@ -474,6 +474,8 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
   padding: .55em .9em .6em; border-left: .3em solid var(--ovl-home); border-radius: 0 .3em .3em 0; background: var(--ovl-bg); color: var(--ovl-ink);
   font-size: clamp(.75rem, 1.9cqw, 2.4rem); pointer-events: none; animation: pr-in .35s ease-out; }
 .pr-overlay.guest { border-left-color: var(--ovl-guest); }
+.pr-overlay:not([hidden]) { transition: opacity .8s ease; }
+.pr-overlay.faded { opacity: 0; }
 .pr-title { font: 700 1.05em/1.15 var(--display); letter-spacing: .01em; }
 .pr-line { font: 400 .85em/1.25 var(--body); color: var(--ovl-muted); }
 @keyframes pr-in { from { opacity: 0; transform: translateX(-.6em); } }
