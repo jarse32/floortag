@@ -458,6 +458,13 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
 .sc-stage.presenting .pr-shield { display: block; position: absolute; inset: 0; z-index: 1; cursor: pointer; }
 .sc-stage.presenting .consent { z-index: 3; }
 .sc-stage.presenting:has(.consent:not([hidden])) .pr-bar { display: none; }
+/* Szenenwechsel: schwarz bis das Video an der neuen Stelle läuft, dann Aufblende; Einblendung und Leisten liegen darüber */
+.sc-stage.presenting .player-wrap::after { content: ""; position: absolute; inset: 0; z-index: 1; background: #000; opacity: 0; pointer-events: none; transition: opacity .3s ease-out; }
+.sc-stage.presenting.switching .player-wrap::after { opacity: 1; transition: none; }
+/* YouTube-Bedienung freigegeben (Qualität, Untertitel): keine Klickfläche, Leiste bleibt sichtbar für „Fertig“ */
+.sc-stage.presenting.yt-controls .pr-shield { display: none; }
+.sc-stage.presenting.yt-controls .pr-bar { opacity: 1; pointer-events: auto; }
+.sc-stage.presenting.yt-controls { cursor: auto; }
 .sc-stage.presenting:fullscreen, .sc-stage.presenting.pseudo-full { display: grid; place-items: center; background: #000; }
 .sc-stage.presenting.pseudo-full { position: fixed; inset: 0; z-index: 50; }
 .sc-player:has(> .pseudo-full) { z-index: 50; } /* klebende Spalte bildet eine eigene Stapelebene */

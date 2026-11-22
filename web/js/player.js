@@ -79,6 +79,8 @@ export function now() {
   if (isIOS && seekTarget != null && [-1, 5].includes(player.getPlayerState()) && real < 1) return seekTarget;
   return real;
 }
+// Echte Position ohne Sprungziel (für „läuft das Video schon an der neuen Stelle?“)
+export function rawNow() { return playerReady ? player.getCurrentTime() : 0; }
 export function duration() { return playerReady ? player.getDuration() : 0; }
 export function seek(t) {
   if (!playerReady) return;

@@ -19,7 +19,8 @@ const view = {
   player: null, roles: new Set(['goal', 'assist']), // Spielerauswahl: Kennung (player_id) und Rollen
   current: null, playAll: false, pending: null, rate: 1, ppGap: null,
   loop: false, shuffle: false, rank: new Map(), // Dauerschleife, zufällige Reihenfolge (Zufallszahl pro Szene)
-  present: false, stopped: null, black: false // Präsentieren: aktiv, Szene, an deren Ende angehalten wurde, Bild schwarz
+  present: false, stopped: null, black: false, // Präsentieren: aktiv, Szene, an deren Ende angehalten wurde, Bild schwarz
+  ytControls: false, switching: null // YouTube-Bedienung freigegeben; Szenenwechsel, bei dem das Bild schwarz bleibt, bis das Video läuft
 };
 // Vorlieben fürs Präsentieren (nur diese werden gespeichert)
 const PRESENT_PREFS = 'floortag:present';
@@ -308,7 +309,7 @@ yt.initPlayer('player', {
   // Nach einem Videowechsel setzt YouTube das Tempo zurück
   onStateChange() {
     if (yt.isPlaying() && yt.getRate() !== view.rate) yt.setRate(view.rate);
-    if (view.present) renderPresent();
+    if (view.present) { checkSwitch(); renderPresent(); }
   },
   onError: msg => showToast(msg)
 });
@@ -316,6 +317,7 @@ function play(i) {
   const s = filtered()[i]; if (!s) return;
   view.current = sceneKey(s);
   view.stopped = null; setBlack(false);
+  if (view.present) startSwitch(s);
   if (!hasConsent()) {
     view.pending = { video: s.video, t: s.start };
     $('#playerEmpty').hidden = true; $('#consent').hidden = false;
@@ -344,12 +346,14 @@ function step(dir) {
 }
 $('#consentBtn').addEventListener('click', () => {
   giveConsent($('#consentRemember').checked);
+  if (view.pending && view.present) startSwitch({ start: view.pending.t });
   if (view.pending) yt.loadVideo(view.pending.video);
 });
 // Playlist: nach dem Nachlauf zur nächsten Szene
 // Präsentieren: mit „Nach jeder Szene anhalten“ pausiert das Video am Ende, sonst geht es weiter.
 // Wer danach mit der Leertaste weiterspielt, läuft über das Ende hinaus (kein zweites Anhalten).
 setInterval(() => {
+  checkSwitch();
   if (!(view.playAll || view.present) || !view.current || !yt.isPlaying()) return;
   const s = filtered().find(x => sceneKey(x) === view.current);
   if (!s || yt.now() < s.end) return;
@@ -387,6 +391,32 @@ function renderPresent(list = filtered(), i = list.findIndex(s => sceneKey(s) ==
   stage.querySelector('[data-pr="stop"]').setAttribute('aria-pressed', String(pres.stopAfter));
   stage.querySelector('[data-pr="overlay"]').setAttribute('aria-pressed', String(pres.overlay));
   stage.querySelector('[data-pr="players"]').setAttribute('aria-pressed', String(pres.players));
+  const ytb = stage.querySelector('[data-pr="yt"]');
+  ytb.setAttribute('aria-pressed', String(view.ytControls));
+  ytb.textContent = view.ytControls ? 'Fertig' : 'YouTube-Bedienung';
+}
+// Szenenwechsel: Nach jedem Sprung puffert YouTube an der neuen Stelle. Statt Ladekreis und altem Bild
+// bleibt das Bild schwarz (die Einblendung zeigt schon die neue Szene), bis das Video dort läuft; dann kurze Aufblende.
+let switchTimer = null;
+function startSwitch(s) {
+  view.switching = { start: s.start };
+  stage.classList.add('switching');
+  clearTimeout(switchTimer);
+  switchTimer = setTimeout(endSwitch, 5000); // spätestens dann wieder Bild, falls YouTube hängt
+}
+function endSwitch() {
+  view.switching = null;
+  clearTimeout(switchTimer);
+  stage.classList.remove('switching');
+}
+function checkSwitch() {
+  if (!view.switching || !yt.isPlaying()) return;
+  const t = yt.rawNow();
+  if (t >= view.switching.start - 0.5 && t <= view.switching.start + 3) endSwitch();
+}
+function setYtControls(on) {
+  view.ytControls = on;
+  stage.classList.toggle('yt-controls', on);
 }
 function setBlack(on) {
   view.black = on;
@@ -409,7 +439,7 @@ function enterPresent() {
 }
 function exitPresent() {
   if (!view.present) return;
-  view.present = false; view.stopped = null; setBlack(false);
+  view.present = false; view.stopped = null; setBlack(false); endSwitch(); setYtControls(false);
   stage.classList.remove('pseudo-full', 'active');
   document.body.appendChild($('#toast'));
   if (document.fullscreenElement === stage) document.exitFullscreen().catch(() => {});
@@ -440,6 +470,7 @@ function presentAction(a) {
   else if (a === 'stop') { pres.stopAfter = !pres.stopAfter; savePresent(); }
   else if (a === 'overlay') { pres.overlay = !pres.overlay; savePresent(); }
   else if (a === 'players') { pres.players = !pres.players; savePresent(); }
+  else if (a === 'yt') setYtControls(!view.ytControls);
   else if (a === 'exit') exitPresent();
   renderNow();
 }
@@ -521,7 +552,7 @@ document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (view.present) {
     // Präsenter-Fernbedienungen senden Bild ab/auf, Pfeiltasten und B bzw. Punkt
-    const map = { arrowright: 'next', pagedown: 'next', n: 'next', arrowleft: 'prev', pageup: 'prev', p: 'prev', r: 'again', b: 'black', '.': 'black', e: 'overlay', k: 'toggle', ' ': 'toggle' };
+    const map = { arrowright: 'next', pagedown: 'next', n: 'next', arrowleft: 'prev', pageup: 'prev', p: 'prev', r: 'again', b: 'black', '.': 'black', e: 'overlay', k: 'toggle', ' ': 'toggle', y: 'yt' };
     if (map[k]) { e.preventDefault(); presentAction(map[k]); return; }
     if (k === 'escape') { exitPresent(); return; }
   } else if (k === 'f') { enterPresent(); return; }
