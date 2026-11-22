@@ -38,8 +38,25 @@
 
   <section id="scenesPanel" class="sc-layout" hidden>
     <div class="sc-player">
+      <div id="stage" class="sc-stage">
       <div class="player-wrap">
         <div id="player"></div>
+        <!-- Präsentieren: Klickfläche über dem Video (hält den Tastaturfokus auf der Seite), Einblendung, Pause, Schwarzbild -->
+        <div id="prShield" class="pr-shield" aria-hidden="true"></div>
+        <div id="prOverlay" class="pr-overlay" hidden><span class="pr-title"></span><span class="pr-line"></span></div>
+        <div id="prPause" class="pr-pause" role="status" hidden></div>
+        <div id="prBlack" class="pr-black" hidden></div>
+        <div id="prBar" class="pr-bar" role="toolbar" aria-label="Präsentation">
+          <span id="prCount" class="pr-count"></span>
+          <button class="btn ghost" data-pr="prev" aria-label="Vorherige Szene" title="Vorherige Szene (←)">‹</button>
+          <button class="btn ghost" data-pr="toggle" title="Pause / weiter (Leertaste)">Pause</button>
+          <button class="btn ghost" data-pr="next" aria-label="Nächste Szene" title="Nächste Szene (→)">›</button>
+          <button class="btn ghost" data-pr="again" title="Szene noch einmal (R)">Noch einmal</button>
+          <button class="sc-chip" data-pr="stop" aria-pressed="true" title="Am Ende jeder Szene anhalten">Nach jeder Szene anhalten</button>
+          <button class="sc-chip" data-pr="overlay" aria-pressed="true" title="Einblendung unten links (E)">Einblendung</button>
+          <button class="sc-chip" data-pr="players" aria-pressed="false" title="Torschütze, Vorlage bzw. bestraften Spieler einblenden">Spieler zeigen</button>
+          <button class="btn" data-pr="exit" title="Präsentation beenden (Esc)">Beenden</button>
+        </div>
         <div id="consent" class="consent" hidden>
           <p class="consent-title">Video von YouTube</p>
           <p>Die Spielvideos liegen bei YouTube. Wenn du sie lädst, überträgt dein Browser Daten an Google, darunter deine IP-Adresse, und YouTube kann Cookies oder ähnliche Techniken einsetzen. FloorTag nutzt dafür den erweiterten Datenschutzmodus von YouTube. Mehr dazu steht in der <a href="https://floorballdashboard.app/datenschutz/#floortag" target="_blank" rel="noopener">Datenschutzerklärung</a>.</p>
@@ -50,8 +67,10 @@
         </div>
         <div id="playerEmpty" class="player-empty">Wähle eine Szene oder „Alle abspielen“.</div>
       </div>
+      </div>
       <div class="sc-transport">
         <button id="playAllBtn" class="btn">Alle abspielen</button>
+        <button id="presentBtn" class="btn ghost" title="Szenen im Vollbild zeigen, z. B. am Beamer (F)">Präsentieren</button>
         <button id="prevBtn" class="btn ghost" aria-label="Vorherige Szene" title="Vorherige Szene (P)">‹</button>
         <button id="nextBtn" class="btn ghost" aria-label="Nächste Szene" title="Nächste Szene (N)">›</button>
         <button id="loopBtn" class="sc-chip" aria-pressed="false" title="Nach der letzten Szene wieder von vorn beginnen">Dauerschleife</button>
@@ -71,6 +90,7 @@
         </div>
       </div>
       <p class="hint">Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, − / + Tempo, N nächste Szene, P vorherige Szene. Ein Klick auf eine Szene spielt sie ab Vorlauf ab; bei „Alle abspielen“ geht es nach dem Nachlauf von selbst weiter. „Dauerschleife“ beginnt nach der letzten Szene wieder von vorn, „Zufällig“ mischt die Reihenfolge (bei jeder Runde neu).</p>
+      <p class="hint">„Präsentieren“ (Taste F) zeigt die Szenen im Vollbild, mit Spiel und Szene unten links, und hält nach jeder Szene an. Präsenter-Fernbedienungen funktionieren: → bzw. Bild ab nächste Szene, ← bzw. Bild auf vorherige, R noch einmal, B Bild schwarz, E Einblendung an/aus, Esc beendet.</p>
     </div>
     <div class="sc-side">
       <div id="playerFilter" class="sc-pfilter"></div>

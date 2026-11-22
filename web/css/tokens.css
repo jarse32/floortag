@@ -12,6 +12,12 @@
   --period: #E2EAE4;
   --danger: #A33A2A;
   --on-badge: #FFFFFF;
+  /* Einblendung über dem Video (Präsentieren): in beiden Modi gleich, weil sie auf dem Videobild liegt */
+  --ovl-bg: rgba(8, 16, 12, .8);
+  --ovl-ink: #F2F6F3;
+  --ovl-muted: #C3D0C9;
+  --ovl-home: #44AA7E;
+  --ovl-guest: #7AA2D4;
   --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;

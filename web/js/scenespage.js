@@ -9,6 +9,7 @@ import { ppGaps } from './ppstart.js';
 import { sceneUrl, gameUrl, canShareNative } from './scenelink.js';
 import { hasConsent, giveConsent } from './consent.js';
 import * as yt from './player.js';
+import { overlayText } from './overlay.js';
 
 const $ = s => document.querySelector(s);
 const PREFS = 'floortag:scenes';
@@ -17,8 +18,14 @@ const view = {
   filter: new Set(['goal']), gameFilter: 'all', tab: 'scenes',
   player: null, roles: new Set(['goal', 'assist']), // Spielerauswahl: Kennung (player_id) und Rollen
   current: null, playAll: false, pending: null, rate: 1, ppGap: null,
-  loop: false, shuffle: false, rank: new Map() // Dauerschleife, zufällige Reihenfolge (Zufallszahl pro Szene)
+  loop: false, shuffle: false, rank: new Map(), // Dauerschleife, zufällige Reihenfolge (Zufallszahl pro Szene)
+  present: false, stopped: null, black: false // Präsentieren: aktiv, Szene, an deren Ende angehalten wurde, Bild schwarz
 };
+// Vorlieben fürs Präsentieren (nur diese werden gespeichert)
+const PRESENT_PREFS = 'floortag:present';
+const pres = { stopAfter: true, overlay: true, players: false };
+try { Object.assign(pres, JSON.parse(localStorage.getItem(PRESENT_PREFS) || '{}')); } catch (e) { /* ignorieren */ }
+function savePresent() { try { localStorage.setItem(PRESENT_PREFS, JSON.stringify(pres)); } catch (e) { /* ignorieren */ } }
 
 async function getJson(url) {
   const res = await fetch(url);
@@ -284,11 +291,13 @@ function renderNow() {
   const list = filtered(), i = list.findIndex(s => sceneKey(s) === view.current);
   $('#playAllBtn').textContent = view.playAll ? 'Anhalten' : 'Alle abspielen';
   $('#playAllBtn').disabled = !list.length;
+  $('#presentBtn').disabled = !list.length;
   $('#prevBtn').disabled = i <= 0;
   $('#nextBtn').disabled = !list.length || (i >= list.length - 1 && !view.loop);
   $('#loopBtn').setAttribute('aria-pressed', String(view.loop));
   $('#shuffleBtn').setAttribute('aria-pressed', String(view.shuffle));
   const s = list[i];
+  renderPresent(list, i);
   $('#nowPlaying').textContent = s ? `${i + 1} von ${list.length} · ${s.code} · ${date(s.date)} ${s.home ? 'gegen' : 'bei'} ${s.opp}` : list.length ? `${list.length} Szenen` : '';
 }
 
@@ -297,12 +306,16 @@ yt.initPlayer('player', {
   onLoad: () => { $('#playerEmpty').hidden = true; $('#consent').hidden = true; },
   onReady: () => { if (view.pending) { const p = view.pending; view.pending = null; yt.playAt(p.video, p.t); } },
   // Nach einem Videowechsel setzt YouTube das Tempo zurück
-  onStateChange() { if (yt.isPlaying() && yt.getRate() !== view.rate) yt.setRate(view.rate); },
+  onStateChange() {
+    if (yt.isPlaying() && yt.getRate() !== view.rate) yt.setRate(view.rate);
+    if (view.present) renderPresent();
+  },
   onError: msg => showToast(msg)
 });
 function play(i) {
   const s = filtered()[i]; if (!s) return;
   view.current = sceneKey(s);
+  view.stopped = null; setBlack(false);
   if (!hasConsent()) {
     view.pending = { video: s.video, t: s.start };
     $('#playerEmpty').hidden = true; $('#consent').hidden = false;
@@ -326,18 +339,114 @@ function step(dir) {
     // Dauerschleife: wieder von vorn, gemischt in neuer Reihenfolge (die letzte Szene kommt nicht gleich wieder)
     if (view.shuffle && list.length > 1) { const last = view.current; reshuffle(); if (sceneKey(filtered()[0]) === last) view.rank.set(last, 2); }
     play(0);
-  } else if (dir > 0 && view.playAll) { view.playAll = false; yt.pause(); renderNow(); showToast('Alle Szenen abgespielt.'); }
+  } else if (dir > 0 && view.present) { yt.pause(); view.stopped = view.current; renderNow(); }
+  else if (dir > 0 && view.playAll) { view.playAll = false; yt.pause(); renderNow(); showToast('Alle Szenen abgespielt.'); }
 }
 $('#consentBtn').addEventListener('click', () => {
   giveConsent($('#consentRemember').checked);
   if (view.pending) yt.loadVideo(view.pending.video);
 });
 // Playlist: nach dem Nachlauf zur nächsten Szene
+// Präsentieren: mit „Nach jeder Szene anhalten“ pausiert das Video am Ende, sonst geht es weiter.
+// Wer danach mit der Leertaste weiterspielt, läuft über das Ende hinaus (kein zweites Anhalten).
 setInterval(() => {
-  if (!view.playAll || !view.current || !yt.isPlaying()) return;
+  if (!(view.playAll || view.present) || !view.current || !yt.isPlaying()) return;
   const s = filtered().find(x => sceneKey(x) === view.current);
-  if (s && yt.now() >= s.end) step(1);
+  if (!s || yt.now() < s.end) return;
+  if (view.present && pres.stopAfter) {
+    if (view.stopped !== view.current) { view.stopped = view.current; yt.pause(); renderNow(); }
+  } else step(1);
 }, 250);
+
+// ===== Präsentieren =====
+// Ins Vollbild geht der eigene Rahmen um den Player, nicht YouTubes Vollbild: nur so liegt die Einblendung über dem Video.
+const stage = $('#stage');
+function renderPresent(list = filtered(), i = list.findIndex(s => sceneKey(s) === view.current)) {
+  stage.classList.toggle('presenting', view.present);
+  const s = list[i];
+  const ov = $('#prOverlay');
+  ov.hidden = !view.present || !pres.overlay || !s || view.black;
+  if (s) {
+    const t = overlayText(s, view.team, { players: pres.players });
+    ov.querySelector('.pr-title').textContent = t.title;
+    ov.querySelector('.pr-line').textContent = t.line;
+    ov.className = `pr-overlay ${s.side || ''}`;
+  }
+  // Leiste nach dem automatischen Anhalten: was als Nächstes kommt
+  const pause = $('#prPause');
+  const stoppedHere = view.present && s && view.stopped === view.current && !view.black;
+  pause.hidden = !stoppedHere;
+  if (stoppedHere) {
+    const next = list[i + 1] || (view.loop ? list[0] : null);
+    pause.textContent = next
+      ? `Szene ${i + 1} von ${list.length} · Weiter mit →: ${next.code}${next.gameId !== s.gameId ? ` · ${next.home ? 'gegen' : 'bei'} ${next.opp}` : ''}`
+      : `Alle ${list.length} Szenen gezeigt · ← zurück, R noch einmal, Esc beendet`;
+  }
+  $('#prCount').textContent = s ? `${i + 1} / ${list.length}` : '';
+  stage.querySelector('[data-pr="toggle"]').textContent = yt.isPlaying() ? 'Pause' : 'Weiter';
+  stage.querySelector('[data-pr="stop"]').setAttribute('aria-pressed', String(pres.stopAfter));
+  stage.querySelector('[data-pr="overlay"]').setAttribute('aria-pressed', String(pres.overlay));
+  stage.querySelector('[data-pr="players"]').setAttribute('aria-pressed', String(pres.players));
+}
+function setBlack(on) {
+  view.black = on;
+  $('#prBlack').hidden = !on;
+  if (on) yt.pause();
+}
+function enterPresent() {
+  const list = filtered(); if (!list.length) return;
+  view.present = true; view.playAll = false;
+  stage.appendChild($('#toast')); // Meldungen sind sonst im Vollbild unsichtbar
+  // Ohne Fullscreen-API (iPhone) bleibt es bei der großen Ansicht im Fenster
+  const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
+  // Manche Umgebungen lehnen das Vollbild ab, ohne Fehler zu melden: dann füllt die Präsentation das Fenster
+  const fallback = () => { if (view.present && !(document.fullscreenElement || document.webkitFullscreenElement)) stage.classList.add('pseudo-full'); };
+  if (req) { Promise.resolve(req.call(stage)).catch(fallback); setTimeout(fallback, 600); }
+  else fallback();
+  const i = list.findIndex(s => sceneKey(s) === view.current);
+  play(i >= 0 ? i : 0);
+  activity();
+}
+function exitPresent() {
+  if (!view.present) return;
+  view.present = false; view.stopped = null; setBlack(false);
+  stage.classList.remove('pseudo-full', 'active');
+  document.body.appendChild($('#toast'));
+  if (document.fullscreenElement === stage) document.exitFullscreen().catch(() => {});
+  else if (document.webkitFullscreenElement === stage) document.webkitExitFullscreen();
+  renderNow();
+}
+const fsChange = () => { if (view.present && !(document.fullscreenElement || document.webkitFullscreenElement) && !stage.classList.contains('pseudo-full')) exitPresent(); };
+document.addEventListener('fullscreenchange', fsChange);
+document.addEventListener('webkitfullscreenchange', fsChange);
+// Mauszeiger und Bedienleiste verschwinden nach zwei Sekunden ohne Bewegung
+let idleTimer = null;
+function activity() {
+  if (!view.present) return;
+  stage.classList.add('active');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => stage.classList.remove('active'), 2000);
+}
+stage.addEventListener('mousemove', activity);
+function presentAction(a) {
+  const list = filtered(), i = list.findIndex(s => sceneKey(s) === view.current);
+  if (a === 'next') { if (i < 0) play(0); else step(1); }
+  else if (a === 'prev') step(-1);
+  else if (a === 'again') { if (i >= 0) play(i); }
+  else if (a === 'toggle') {
+    if (view.black) setBlack(false);
+    if (i < 0) play(0); else yt.togglePlay();
+  } else if (a === 'black') setBlack(!view.black);
+  else if (a === 'stop') { pres.stopAfter = !pres.stopAfter; savePresent(); }
+  else if (a === 'overlay') { pres.overlay = !pres.overlay; savePresent(); }
+  else if (a === 'players') { pres.players = !pres.players; savePresent(); }
+  else if (a === 'exit') exitPresent();
+  renderNow();
+}
+$('#presentBtn').addEventListener('click', enterPresent);
+stage.querySelector('#prBar').addEventListener('click', e => { const b = e.target.closest('[data-pr]'); if (b) presentAction(b.dataset.pr); });
+// Klick aufs Video: Pause / weiter (die Klickfläche hält den Fokus auf der Seite, damit die Tasten ankommen)
+$('#prShield').addEventListener('click', () => { activity(); presentAction('toggle'); });
 
 // ===== Bedienung =====
 async function shareScene(s) {
@@ -410,6 +519,12 @@ $('#nextBtn').addEventListener('click', () => step(1));
 document.addEventListener('keydown', e => {
   if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key.toLowerCase();
+  if (view.present) {
+    // Präsenter-Fernbedienungen senden Bild ab/auf, Pfeiltasten und B bzw. Punkt
+    const map = { arrowright: 'next', pagedown: 'next', n: 'next', arrowleft: 'prev', pageup: 'prev', p: 'prev', r: 'again', b: 'black', '.': 'black', e: 'overlay', k: 'toggle', ' ': 'toggle' };
+    if (map[k]) { e.preventDefault(); presentAction(map[k]); return; }
+    if (k === 'escape') { exitPresent(); return; }
+  } else if (k === 'f') { enterPresent(); return; }
   if (k === 'k' || k === ' ') { e.preventDefault(); yt.togglePlay(); }
   else if (k === 'n') step(1);
   else if (k === 'p') step(-1);
