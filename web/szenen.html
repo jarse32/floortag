@@ -41,12 +41,20 @@
       <div id="stage" class="sc-stage">
       <div class="player-wrap">
         <div id="player"></div>
-        <!-- Präsentieren: Klickfläche über dem Video (hält den Tastaturfokus auf der Seite), Einblendung, Pause, Schwarzbild -->
+        <!-- Präsentieren: Klickfläche über dem Video (hält den Tastaturfokus auf der Seite); Einblendung, Ankündigung usw. legt stageview.js an -->
         <div id="prShield" class="pr-shield" aria-hidden="true"></div>
-        <div id="prOverlay" class="pr-overlay" hidden><span class="pr-title"></span><span class="pr-line"></span></div>
-        <div id="prCard" class="pr-card" hidden><span class="pr-card-count"></span><span class="pr-card-code"></span><span class="pr-card-detail"></span><span class="pr-card-title"></span></div>
-        <div id="prPause" class="pr-pause" role="status" hidden></div>
-        <div id="prBlack" class="pr-black" hidden></div>
+        <!-- Referentenansicht, solange das Video im Beamer-Fenster läuft -->
+        <div id="prRemote" class="pr-remote" aria-live="polite">
+          <p id="prrStatus" class="prr-status"></p>
+          <div class="prr-now">
+            <span id="prrCount" class="prr-count"></span>
+            <strong id="prrCode" class="prr-code"></strong>
+            <span id="prrDetail" class="prr-detail"></span>
+            <span id="prrTitle" class="prr-title"></span>
+          </div>
+          <p id="prrTime" class="prr-time"></p>
+          <p id="prrNext" class="prr-next"></p>
+        </div>
         <div id="prBar" class="pr-bar" role="toolbar" aria-label="Präsentation">
           <span id="prCount" class="pr-count"></span>
           <button class="btn ghost" data-pr="prev" aria-label="Vorherige Szene" title="Vorherige Szene (←)">‹</button>
@@ -72,7 +80,8 @@
       </div>
       <div class="sc-transport">
         <button id="playAllBtn" class="btn">Alle abspielen</button>
-        <button id="presentBtn" class="btn ghost" title="Szenen im Vollbild zeigen, z. B. am Beamer (F)">Präsentieren</button>
+        <button id="presentBtn" class="btn ghost" title="Szenen in diesem Fenster im Vollbild zeigen (F)">Präsentieren</button>
+        <button id="beamerBtn" class="btn ghost" title="Video in einem eigenen Fenster für Beamer oder Fernseher, hier die Referentenansicht">Auf zweitem Bildschirm</button>
         <button id="prevBtn" class="btn ghost" aria-label="Vorherige Szene" title="Vorherige Szene (P)">‹</button>
         <button id="nextBtn" class="btn ghost" aria-label="Nächste Szene" title="Nächste Szene (N)">›</button>
         <button id="loopBtn" class="sc-chip" aria-pressed="false" title="Nach der letzten Szene wieder von vorn beginnen">Dauerschleife</button>
@@ -93,6 +102,7 @@
       </div>
       <p class="hint">Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, − / + Tempo, N nächste Szene, P vorherige Szene. Ein Klick auf eine Szene spielt sie ab Vorlauf ab; bei „Alle abspielen“ geht es nach dem Nachlauf von selbst weiter. „Dauerschleife“ beginnt nach der letzten Szene wieder von vorn, „Zufällig“ mischt die Reihenfolge (bei jeder Runde neu).</p>
       <p class="hint">„Präsentieren“ (Taste F) zeigt die Szenen im Vollbild, mit Spiel und Szene unten links, kündigt jede Szene groß an, während YouTube lädt, und hält nach jeder Szene an. Präsenter-Fernbedienungen funktionieren: → bzw. Bild ab nächste Szene, ← bzw. Bild auf vorherige, R noch einmal, B Bild schwarz, E Einblendung an/aus, Esc beendet. Für die Qualität o. Ä. gibt „YouTube-Bedienung“ (Taste Y) die Steuerung von YouTube frei, „Fertig“ holt die Tasten zurück.</p>
+      <p class="hint">„Auf zweitem Bildschirm“ öffnet ein eigenes Fenster nur mit dem Video. Zieh es auf Beamer oder Fernseher (z. B. Apple TV als separater Bildschirm) und klick dort einmal auf „Präsentation starten“. Hier siehst du dann die aktuelle Szene mit Restzeit, die nächste Szene und die Liste; die Tasten wirken in beiden Fenstern.</p>
     </div>
     <div class="sc-side">
       <div id="playerFilter" class="sc-pfilter"></div>

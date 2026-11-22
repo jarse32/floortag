@@ -10,6 +10,8 @@ import { sceneUrl, gameUrl, canShareNative } from './scenelink.js';
 import { hasConsent, giveConsent } from './consent.js';
 import * as yt from './player.js';
 import { overlayText } from './overlay.js';
+import { mountStage, EMPTY_MODEL } from './stageview.js';
+import { createRemote } from './remoteplayer.js';
 
 const $ = s => document.querySelector(s);
 const PREFS = 'floortag:scenes';
@@ -20,7 +22,8 @@ const view = {
   current: null, playAll: false, pending: null, rate: 1, ppGap: null,
   loop: false, shuffle: false, rank: new Map(), // Dauerschleife, zufällige Reihenfolge (Zufallszahl pro Szene)
   present: false, stopped: null, black: false, // Präsentieren: aktiv, Szene, an deren Ende angehalten wurde, Bild schwarz
-  ytControls: false, switching: null // YouTube-Bedienung freigegeben; Szenenwechsel, bei dem das Bild schwarz bleibt, bis das Video läuft
+  ytControls: false, switching: null, // YouTube-Bedienung freigegeben; Szenenwechsel, bei dem das Bild schwarz bleibt, bis das Video läuft
+  remote: false // Präsentation im Beamer-Fenster, hier die Referentenansicht
 };
 // Vorlieben fürs Präsentieren (nur diese werden gespeichert)
 const PRESENT_PREFS = 'floortag:present';
@@ -293,6 +296,7 @@ function renderNow() {
   $('#playAllBtn').textContent = view.playAll ? 'Anhalten' : 'Alle abspielen';
   $('#playAllBtn').disabled = !list.length;
   $('#presentBtn').disabled = !list.length;
+  $('#beamerBtn').disabled = !list.length;
   $('#prevBtn').disabled = i <= 0;
   $('#nextBtn').disabled = !list.length || (i >= list.length - 1 && !view.loop);
   $('#loopBtn').setAttribute('aria-pressed', String(view.loop));
@@ -303,28 +307,32 @@ function renderNow() {
 }
 
 // ===== Abspielen =====
-yt.initPlayer('player', {
+// out ist der Player, der gerade spielt: hier im Fenster (player.js) oder im Beamer-Fenster (remoteplayer.js).
+// Beide haben dieselbe Schnittstelle; alles Folgende spricht nur out an.
+let out = yt, remote = null;
+const playerHandlers = {
   onLoad: () => { $('#playerEmpty').hidden = true; $('#consent').hidden = true; },
-  onReady: () => { if (view.pending) { const p = view.pending; view.pending = null; yt.playAt(p.video, p.t); } },
+  onReady: () => { if (view.pending) { const p = view.pending; view.pending = null; out.playAt(p.video, p.t); } },
   // Nach einem Videowechsel setzt YouTube das Tempo zurück
   onStateChange() {
-    if (yt.isPlaying() && yt.getRate() !== view.rate) yt.setRate(view.rate);
+    if (out.isPlaying() && out.getRate() !== view.rate) out.setRate(view.rate);
     if (view.present) { checkSwitch(); renderPresent(); }
   },
   onError: msg => showToast(msg)
-});
+};
+yt.initPlayer('player', playerHandlers);
 function play(i) {
   const s = filtered()[i]; if (!s) return;
   view.current = sceneKey(s);
-  view.stopped = null; setBlack(false);
+  view.stopped = null; view.black = false;
   if (view.present) startSwitch(s);
   if (!hasConsent()) {
     view.pending = { video: s.video, t: s.start };
     $('#playerEmpty').hidden = true; $('#consent').hidden = false;
-  } else if (!yt.isReady()) {
+  } else if (!out.isReady()) {
     view.pending = { video: s.video, t: s.start };
-    yt.loadVideo(s.video);
-  } else yt.playAt(s.video, s.start);
+    out.loadVideo(s.video);
+  } else out.playAt(s.video, s.start);
   renderScenes(filtered()); renderNow();
   const row = document.querySelector(`.sc-row[data-i="${i}"]`);
   const box = document.querySelector('.sc-side');
@@ -341,61 +349,66 @@ function step(dir) {
     // Dauerschleife: wieder von vorn, gemischt in neuer Reihenfolge (die letzte Szene kommt nicht gleich wieder)
     if (view.shuffle && list.length > 1) { const last = view.current; reshuffle(); if (sceneKey(filtered()[0]) === last) view.rank.set(last, 2); }
     play(0);
-  } else if (dir > 0 && view.present) { yt.pause(); view.stopped = view.current; renderNow(); }
-  else if (dir > 0 && view.playAll) { view.playAll = false; yt.pause(); renderNow(); showToast('Alle Szenen abgespielt.'); }
+  } else if (dir > 0 && view.present) { out.pause(); view.stopped = view.current; renderNow(); }
+  else if (dir > 0 && view.playAll) { view.playAll = false; out.pause(); renderNow(); showToast('Alle Szenen abgespielt.'); }
 }
 $('#consentBtn').addEventListener('click', () => {
   giveConsent($('#consentRemember').checked);
   if (view.pending && view.present) startSwitch({ start: view.pending.t });
-  if (view.pending) yt.loadVideo(view.pending.video);
+  if (view.pending) out.loadVideo(view.pending.video);
 });
 // Playlist: nach dem Nachlauf zur nächsten Szene
 // Präsentieren: mit „Nach jeder Szene anhalten“ pausiert das Video am Ende, sonst geht es weiter.
 // Wer danach mit der Leertaste weiterspielt, läuft über das Ende hinaus (kein zweites Anhalten).
 setInterval(() => {
+  if (remote && remote.win && remote.win.closed) { exitPresent(); return; }
   checkSwitch();
-  if (!(view.playAll || view.present) || !view.current || !yt.isPlaying()) return;
+  if (view.remote) renderRemoteTime();
+  if (!(view.playAll || view.present) || !view.current || !out.isPlaying()) return;
   const s = filtered().find(x => sceneKey(x) === view.current);
-  if (!s || yt.now() < s.end) return;
+  if (!s || out.now() < s.end) return;
   if (view.present && pres.stopAfter) {
-    if (view.stopped !== view.current) { view.stopped = view.current; yt.pause(); renderNow(); }
+    if (view.stopped !== view.current) { view.stopped = view.current; out.pause(); renderNow(); }
   } else step(1);
 }, 250);
 
 // ===== Präsentieren =====
-// Ins Vollbild geht der eigene Rahmen um den Player, nicht YouTubes Vollbild: nur so liegt die Einblendung über dem Video.
+// Hier im Fenster: Vollbild des eigenen Rahmens um den Player (nicht YouTubes Vollbild, sonst wäre die Einblendung verdeckt).
+// Auf zweitem Bildschirm: Video und Bühne im Beamer-Fenster (praesentation.html), hier die Referentenansicht.
 const stage = $('#stage');
-function renderPresent(list = filtered(), i = list.findIndex(s => sceneKey(s) === view.current)) {
-  stage.classList.toggle('presenting', view.present);
+const renderStage = mountStage(stage);
+
+// Was über dem Video liegt, als Modell für stageview.js (hier oder im Beamer-Fenster gezeichnet)
+function presentModel(list, i) {
+  if (!view.present) return EMPTY_MODEL;
   const s = list[i];
-  const ov = $('#prOverlay'), card = $('#prCard');
-  const carding = view.present && pres.overlay && !!s && !!view.switching && !view.black;
-  ov.hidden = !view.present || !pres.overlay || !s || view.black || carding;
-  card.hidden = !carding;
-  if (s) {
-    const t = overlayText(s, view.team, { players: pres.players });
-    ov.querySelector('.pr-title').textContent = t.title;
-    ov.querySelector('.pr-line').textContent = t.line;
-    ov.className = `pr-overlay ${s.side || ''}`;
-    // Ankündigung beim Szenenwechsel: groß die Szenenart, darunter Situation und Spiel
-    card.querySelector('.pr-card-count').textContent = `Szene ${i + 1} von ${list.length}`;
-    card.querySelector('.pr-card-code').textContent = t.code;
-    card.querySelector('.pr-card-detail').textContent = t.detail;
-    card.querySelector('.pr-card-title').textContent = t.title;
-    card.className = `pr-card ${s.side || ''}`;
-  }
-  // Leiste nach dem automatischen Anhalten: was als Nächstes kommt
-  const pause = $('#prPause');
-  const stoppedHere = view.present && s && view.stopped === view.current && !view.black;
-  pause.hidden = !stoppedHere;
+  const t = s ? overlayText(s, view.team, { players: pres.players }) : null;
+  const carding = pres.overlay && !!s && !!view.switching && !view.black;
+  const stoppedHere = s && view.stopped === view.current && !view.black;
+  let pause = null;
   if (stoppedHere) {
     const next = list[i + 1] || (view.loop ? list[0] : null);
-    pause.textContent = next
+    pause = next
       ? `Szene ${i + 1} von ${list.length} · Weiter mit →: ${next.code}${next.gameId !== s.gameId ? ` · ${next.home ? 'gegen' : 'bei'} ${next.opp}` : ''}`
       : `Alle ${list.length} Szenen gezeigt · ← zurück, R noch einmal, Esc beendet`;
   }
+  return {
+    overlay: pres.overlay && s && !view.black && !carding ? { title: t.title, line: t.line, side: s.side || '' } : null,
+    // Ankündigung beim Szenenwechsel: groß die Szenenart, darunter Situation und Spiel
+    card: carding ? { count: `Szene ${i + 1} von ${list.length}`, code: t.code, detail: t.detail, title: t.title, side: s.side || '' } : null,
+    pause, black: view.black, switching: !!view.switching, ytControls: view.ytControls
+  };
+}
+function renderPresent(list = filtered(), i = list.findIndex(s => sceneKey(s) === view.current)) {
+  stage.classList.toggle('presenting', view.present && !view.remote);
+  stage.classList.toggle('remote', view.present && view.remote);
+  const model = presentModel(list, i);
+  renderStage(view.remote ? EMPTY_MODEL : model);
+  if (remote) remote.render(model);
+  if (view.remote) renderRemote(list, i);
+  const s = list[i];
   $('#prCount').textContent = s ? `${i + 1} / ${list.length}` : '';
-  stage.querySelector('[data-pr="toggle"]').textContent = yt.isPlaying() ? 'Pause' : 'Weiter';
+  stage.querySelector('[data-pr="toggle"]').textContent = out.isPlaying() ? 'Pause' : 'Weiter';
   stage.querySelector('[data-pr="stop"]').setAttribute('aria-pressed', String(pres.stopAfter));
   stage.querySelector('[data-pr="overlay"]').setAttribute('aria-pressed', String(pres.overlay));
   stage.querySelector('[data-pr="players"]').setAttribute('aria-pressed', String(pres.players));
@@ -403,15 +416,39 @@ function renderPresent(list = filtered(), i = list.findIndex(s => sceneKey(s) ==
   ytb.setAttribute('aria-pressed', String(view.ytControls));
   ytb.textContent = view.ytControls ? 'Fertig' : 'YouTube-Bedienung';
 }
+
+// Referentenansicht im Hauptfenster, solange das Video im Beamer-Fenster läuft
+function renderRemote(list, i) {
+  const s = list[i], next = s ? (list[i + 1] || (view.loop ? list[0] : null)) : list[0];
+  const t = s ? overlayText(s, view.team, { players: true }) : null;
+  $('#prrStatus').textContent = !remote.connected() ? 'Beamer-Fenster wird geöffnet …'
+    : !remote.started() ? 'Im Beamer-Fenster einmal auf „Präsentation starten“ klicken. Danach bedienst du alles hier.'
+      : view.black ? 'Bild schwarz (B schaltet zurück)'
+        : view.switching ? 'Ankündigung läuft'
+          : view.stopped === view.current ? 'Angehalten am Szenenende'
+            : out.isPlaying() ? 'Läuft' : 'Angehalten';
+  $('#prrCount').textContent = s ? `Szene ${i + 1} von ${list.length}` : `${list.length} Szenen`;
+  $('#prrCode').textContent = t ? t.code : 'Noch keine Szene gewählt';
+  $('#prrDetail').textContent = t ? t.detail : '';
+  $('#prrTitle').textContent = t ? t.title : '';
+  $('#prrNext').textContent = next ? `Danach: ${next.code}${!s || next.gameId !== s.gameId ? ` · ${next.home ? 'gegen' : 'bei'} ${next.opp}` : ''}` : 'Danach: keine weitere Szene';
+  renderRemoteTime();
+}
+function renderRemoteTime() {
+  const s = filtered().find(x => sceneKey(x) === view.current);
+  if (!s || !remote) { $('#prrTime').textContent = ''; return; }
+  const left = Math.round(s.end - out.now());
+  $('#prrTime').textContent = left > 0 ? `noch ${fmt(left)}` : 'Szene zu Ende';
+}
+
 // Szenenwechsel: Nach jedem Sprung puffert YouTube an der neuen Stelle. Statt Ladekreis und altem Bild
-// bleibt das Bild schwarz (die Einblendung zeigt schon die neue Szene), bis das Video dort läuft; dann kurze Aufblende.
+// bleibt das Bild schwarz, bis das Video dort läuft; dann kurze Aufblende.
 // Mit Einblendung kündigt eine große Tafel die Szene an. Sie steht mindestens CARD_MIN ms, damit sie lesbar ist;
 // ist das Video früher bereit, wird es so lange angehalten (kein Verlust beim Vorlauf).
 const CARD_MIN = 1800, SWITCH_MAX = 5000;
 let switchTimer = null;
 function startSwitch(s) {
   view.switching = { start: s.start, since: Date.now(), ready: false, held: false };
-  stage.classList.add('switching');
   clearTimeout(switchTimer);
   switchTimer = setTimeout(() => endSwitch(true), SWITCH_MAX); // spätestens dann wieder Bild, falls YouTube hängt
   if (view.present) renderPresent();
@@ -421,63 +458,99 @@ function endSwitch(resume = false) {
   const sw = view.switching;
   view.switching = null;
   clearTimeout(switchTimer);
-  stage.classList.remove('switching');
-  if (resume && sw && sw.held) yt.play();
-  if (view.present) renderPresent();
+  if (resume && sw && sw.held) out.play();
+  renderPresent();
 }
 function checkSwitch() {
   const sw = view.switching;
   if (!sw) return;
-  if (!sw.ready && yt.isPlaying()) {
-    const t = yt.rawNow();
+  if (!sw.ready && out.isPlaying()) {
+    const t = out.rawNow();
     sw.ready = t >= sw.start - 0.5 && t <= sw.start + 3;
   }
   if (!sw.ready) return;
   if (pres.overlay && Date.now() - sw.since < CARD_MIN) {
-    if (yt.isPlaying()) { yt.pause(); sw.held = true; }
+    if (out.isPlaying()) { out.pause(); sw.held = true; }
     return;
   }
   endSwitch(true);
 }
-function setYtControls(on) {
-  view.ytControls = on;
-  stage.classList.toggle('yt-controls', on);
-}
 function setBlack(on) {
   view.black = on;
-  $('#prBlack').hidden = !on;
-  if (on) yt.pause();
+  if (on) out.pause();
 }
-function enterPresent() {
+// mode: 'here' (Vollbild in diesem Fenster) oder 'beamer' (zweites Fenster, hier die Referentenansicht)
+function enterPresent(mode = 'here') {
   const list = filtered(); if (!list.length) return;
+  if (view.present) exitPresent();
+  if (mode === 'beamer') {
+    if (typeof BroadcastChannel === 'undefined') { showToast('Dieser Browser kann kein zweites Fenster steuern. Nimm „Präsentieren“ oder Chrome.'); return; }
+    const id = Math.random().toString(36).slice(2, 12).padEnd(8, '0');
+    // Sofort öffnen (noch innerhalb des Klicks), sonst blockiert der Browser das Fenster
+    const win = window.open(`praesentation.html#${id}`, 'floortag-beamer', 'popup,width=960,height=600');
+    if (!win) { showToast('Der Browser hat das Beamer-Fenster blockiert. Erlaube Pop-ups für FloorTag und versuch es noch einmal.'); return; }
+    if (yt.isPlaying()) yt.pause();
+    remote = createRemote(id, {
+      onHello: () => renderNow(),
+      // Erst nach dem Startklick darf das Beamer-Fenster abspielen: aktuelle Szene dann neu ankündigen
+      onStarted: () => { const l = filtered(), j = l.findIndex(s => sceneKey(s) === view.current); if (j >= 0) play(j); else renderNow(); },
+      onKey: key => document.dispatchEvent(new KeyboardEvent('keydown', { key })),
+      onBye: () => exitPresent()
+    });
+    remote.win = win;
+    remote.initPlayer('player', playerHandlers);
+    out = remote;
+    view.remote = true;
+    placeOnOtherScreen(win);
+  } else {
+    stage.appendChild($('#toast')); // Meldungen sind sonst im Vollbild unsichtbar
+    // Ohne Fullscreen-API (iPhone) bleibt es bei der großen Ansicht im Fenster
+    const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
+    // Manche Umgebungen lehnen das Vollbild ab, ohne Fehler zu melden: dann füllt die Präsentation das Fenster
+    const fallback = () => { if (view.present && !view.remote && !(document.fullscreenElement || document.webkitFullscreenElement)) stage.classList.add('pseudo-full'); };
+    if (req) { Promise.resolve(req.call(stage)).catch(fallback); setTimeout(fallback, 600); }
+    else fallback();
+  }
   view.present = true; view.playAll = false;
-  stage.appendChild($('#toast')); // Meldungen sind sonst im Vollbild unsichtbar
-  // Ohne Fullscreen-API (iPhone) bleibt es bei der großen Ansicht im Fenster
-  const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
-  // Manche Umgebungen lehnen das Vollbild ab, ohne Fehler zu melden: dann füllt die Präsentation das Fenster
-  const fallback = () => { if (view.present && !(document.fullscreenElement || document.webkitFullscreenElement)) stage.classList.add('pseudo-full'); };
-  if (req) { Promise.resolve(req.call(stage)).catch(fallback); setTimeout(fallback, 600); }
-  else fallback();
   const i = list.findIndex(s => sceneKey(s) === view.current);
   play(i >= 0 ? i : 0);
   activity();
 }
+// Mit Erlaubnis („Fenster auf allen Bildschirmen verwalten“) legt Chrome das Beamer-Fenster auf den anderen Bildschirm
+async function placeOnOtherScreen(win) {
+  if (!window.screen.isExtended || !('getScreenDetails' in window)) return;
+  try {
+    const sd = await window.getScreenDetails();
+    const other = sd.screens.find(x => x !== sd.currentScreen);
+    if (!other || win.closed) return;
+    win.moveTo(other.availLeft, other.availTop);
+    win.resizeTo(other.availWidth, other.availHeight);
+  } catch (e) { /* nicht erlaubt: Fenster bleibt hier und lässt sich hinüberziehen */ }
+}
 function exitPresent() {
   if (!view.present) return;
-  view.present = false; view.stopped = null; setBlack(false); endSwitch(); setYtControls(false);
+  view.present = false; view.stopped = null; view.black = false; view.ytControls = false; endSwitch();
+  if (remote) {
+    const r = remote, win = r.win;
+    remote = null; out = yt; view.remote = false;
+    r.close();
+    try { if (win && !win.closed) win.close(); } catch (e) { /* schon zu */ }
+    view.pending = null;
+  }
   stage.classList.remove('pseudo-full', 'active');
   document.body.appendChild($('#toast'));
   if (document.fullscreenElement === stage) document.exitFullscreen().catch(() => {});
   else if (document.webkitFullscreenElement === stage) document.webkitExitFullscreen();
   renderNow();
 }
-const fsChange = () => { if (view.present && !(document.fullscreenElement || document.webkitFullscreenElement) && !stage.classList.contains('pseudo-full')) exitPresent(); };
+const fsChange = () => { if (view.present && !view.remote && !(document.fullscreenElement || document.webkitFullscreenElement) && !stage.classList.contains('pseudo-full')) exitPresent(); };
 document.addEventListener('fullscreenchange', fsChange);
 document.addEventListener('webkitfullscreenchange', fsChange);
-// Mauszeiger und Bedienleiste verschwinden nach zwei Sekunden ohne Bewegung
+window.addEventListener('pagehide', () => { if (remote) exitPresent(); });
+// Mauszeiger und Bedienleiste verschwinden nach zwei Sekunden ohne Bewegung (nur hier im Vollbild)
 let idleTimer = null;
 function activity() {
-  if (!view.present) return;
+  if (!view.present || view.remote) return;
   stage.classList.add('active');
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => stage.classList.remove('active'), 2000);
@@ -490,16 +563,17 @@ function presentAction(a) {
   else if (a === 'again') { if (i >= 0) play(i); }
   else if (a === 'toggle') {
     if (view.black) setBlack(false);
-    if (i < 0) play(0); else yt.togglePlay();
+    if (i < 0) play(0); else out.togglePlay();
   } else if (a === 'black') setBlack(!view.black);
   else if (a === 'stop') { pres.stopAfter = !pres.stopAfter; savePresent(); }
   else if (a === 'overlay') { pres.overlay = !pres.overlay; savePresent(); }
   else if (a === 'players') { pres.players = !pres.players; savePresent(); }
-  else if (a === 'yt') setYtControls(!view.ytControls);
+  else if (a === 'yt') view.ytControls = !view.ytControls;
   else if (a === 'exit') exitPresent();
   renderNow();
 }
-$('#presentBtn').addEventListener('click', enterPresent);
+$('#presentBtn').addEventListener('click', () => enterPresent('here'));
+$('#beamerBtn').addEventListener('click', () => enterPresent('beamer'));
 stage.querySelector('#prBar').addEventListener('click', e => { const b = e.target.closest('[data-pr]'); if (b) presentAction(b.dataset.pr); });
 // Klick aufs Video: Pause / weiter (die Klickfläche hält den Fokus auf der Seite, damit die Tasten ankommen)
 $('#prShield').addEventListener('click', () => { activity(); presentAction('toggle'); });
@@ -553,7 +627,7 @@ $('#playAllBtn').addEventListener('click', () => {
   if (view.playAll) {
     const list = filtered(), i = list.findIndex(s => sceneKey(s) === view.current);
     play(i >= 0 ? i : 0);
-  } else { yt.pause(); renderNow(); }
+  } else { out.pause(); renderNow(); }
 });
 $('#prevBtn').addEventListener('click', () => step(-1));
 $('#loopBtn').addEventListener('click', () => { view.loop = !view.loop; renderNow(); });
@@ -564,10 +638,10 @@ $('#shuffleBtn').addEventListener('click', () => {
   render();
 });
 // Spulen und Abspieltempo
-document.querySelectorAll('[data-seek]').forEach(b => b.addEventListener('click', () => yt.seek(yt.now() + Number(b.dataset.seek))));
+document.querySelectorAll('[data-seek]').forEach(b => b.addEventListener('click', () => out.seek(out.now() + Number(b.dataset.seek))));
 const RATES = [0.5, 1, 1.5, 2];
 function setRate(r) {
-  view.rate = r; yt.setRate(r);
+  view.rate = r; out.setRate(r);
   document.querySelectorAll('[data-rate]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.rate) === r)));
 }
 document.querySelectorAll('[data-rate]').forEach(b => b.addEventListener('click', () => setRate(Number(b.dataset.rate))));
@@ -580,11 +654,11 @@ document.addEventListener('keydown', e => {
     const map = { arrowright: 'next', pagedown: 'next', n: 'next', arrowleft: 'prev', pageup: 'prev', p: 'prev', r: 'again', b: 'black', '.': 'black', e: 'overlay', k: 'toggle', ' ': 'toggle', y: 'yt' };
     if (map[k]) { e.preventDefault(); presentAction(map[k]); return; }
     if (k === 'escape') { exitPresent(); return; }
-  } else if (k === 'f') { enterPresent(); return; }
-  if (k === 'k' || k === ' ') { e.preventDefault(); yt.togglePlay(); }
+  } else if (k === 'f') { enterPresent('here'); return; }
+  if (k === 'k' || k === ' ') { e.preventDefault(); out.togglePlay(); }
   else if (k === 'n') step(1);
   else if (k === 'p') step(-1);
-  else if (k === 'j' || k === 'l') yt.seek(yt.now() + (k === 'j' ? -5 : 5));
+  else if (k === 'j' || k === 'l') out.seek(out.now() + (k === 'j' ? -5 : 5));
   else if (e.key === '-' || e.key === '+') {
     const i = RATES.indexOf(view.rate), next = RATES[Math.min(RATES.length - 1, Math.max(0, i + (e.key === '+' ? 1 : -1)))];
     if (next !== view.rate) setRate(next);
