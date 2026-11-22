@@ -56,3 +56,13 @@ test('Phasen mit Stärke, Tags mit Ergebnis und gekürztem Kommentar', () => {
   assert.ok(line.endsWith('…'));
   assert.ok(line.length < 120);
 });
+
+test('Ankündigung: Code und Rest getrennt, zusammen wie die Zeile', () => {
+  synced();
+  const g = goals().find(c => Object.fromEntries(c.labels).Spielzeit === '15:37');
+  const t = overlayText(g, 'TVEH');
+  assert.match(t.code, /^Tor \S+$/);
+  assert.equal(t.detail, '1. Drittel 15:37 · 2:1');
+  assert.equal(t.line, `${t.code} · ${t.detail}`);
+  assert.equal(overlayText({ labels: [] }, '').line, '');
+});

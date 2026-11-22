@@ -454,7 +454,7 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
 /* Präsentieren (Seite „Szenen“): eigener Rahmen im Vollbild, Video in 16:9 mittig, Einblendung unten links */
 .sc-stage { position: relative; }
 .sc-stage .player-wrap { container-type: inline-size; }
-.pr-shield, .pr-bar, .pr-overlay, .pr-pause, .pr-black { display: none; }
+.pr-shield, .pr-bar, .pr-overlay, .pr-card, .pr-pause, .pr-black { display: none; }
 .sc-stage.presenting .pr-shield { display: block; position: absolute; inset: 0; z-index: 1; cursor: pointer; }
 .sc-stage.presenting .consent { z-index: 3; }
 .sc-stage.presenting:has(.consent:not([hidden])) .pr-bar { display: none; }
@@ -480,6 +480,16 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
 @media (prefers-reduced-motion: reduce) { .pr-overlay:not([hidden]) { animation: none; } }
 .pr-pause:not([hidden]) { display: block; position: absolute; left: 0; right: 0; top: 0; z-index: 2; padding: .7em 1.2em; background: var(--ovl-bg); color: var(--ovl-ink);
   font: 600 clamp(.8rem, 1.6cqw, 1.8rem)/1.3 var(--body); text-align: center; pointer-events: none; }
+/* Ankündigung beim Szenenwechsel, mittig auf dem schwarzen Bild */
+.pr-card:not([hidden]) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35em; position: absolute; inset: 0; z-index: 2;
+  padding: 0 8cqw; color: var(--ovl-ink); text-align: center; font-size: clamp(.8rem, 2cqw, 2.6rem); pointer-events: none; animation: pr-card-in .4s ease-out; }
+.pr-card-count { font: 600 .8em/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--ovl-muted); }
+.pr-card-code { font: 700 3.2em/1.05 var(--display); padding: .1em 0 .12em; border-bottom: .09em solid var(--ovl-home); }
+.pr-card.guest .pr-card-code { border-bottom-color: var(--ovl-guest); }
+.pr-card-detail { font: 600 1.25em/1.3 var(--body); }
+.pr-card-title { font: 400 .95em/1.3 var(--body); color: var(--ovl-muted); }
+@keyframes pr-card-in { from { opacity: 0; transform: scale(.97); } }
+@media (prefers-reduced-motion: reduce) { .pr-card:not([hidden]) { animation: none; } }
 .pr-black:not([hidden]) { display: block; position: absolute; inset: 0; z-index: 2; background: #000; pointer-events: none; }
 .sc-stage.presenting .pr-bar { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; justify-content: center; position: absolute; left: 50%; top: 1rem; z-index: 4;
   transform: translateX(-50%); width: max-content; max-width: calc(100% - 2rem); padding: .45rem .6rem; border-radius: 8px; background: var(--ovl-bg); color: var(--ovl-ink);

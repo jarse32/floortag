@@ -368,13 +368,21 @@ const stage = $('#stage');
 function renderPresent(list = filtered(), i = list.findIndex(s => sceneKey(s) === view.current)) {
   stage.classList.toggle('presenting', view.present);
   const s = list[i];
-  const ov = $('#prOverlay');
-  ov.hidden = !view.present || !pres.overlay || !s || view.black;
+  const ov = $('#prOverlay'), card = $('#prCard');
+  const carding = view.present && pres.overlay && !!s && !!view.switching && !view.black;
+  ov.hidden = !view.present || !pres.overlay || !s || view.black || carding;
+  card.hidden = !carding;
   if (s) {
     const t = overlayText(s, view.team, { players: pres.players });
     ov.querySelector('.pr-title').textContent = t.title;
     ov.querySelector('.pr-line').textContent = t.line;
     ov.className = `pr-overlay ${s.side || ''}`;
+    // Ankündigung beim Szenenwechsel: groß die Szenenart, darunter Situation und Spiel
+    card.querySelector('.pr-card-count').textContent = `Szene ${i + 1} von ${list.length}`;
+    card.querySelector('.pr-card-code').textContent = t.code;
+    card.querySelector('.pr-card-detail').textContent = t.detail;
+    card.querySelector('.pr-card-title').textContent = t.title;
+    card.className = `pr-card ${s.side || ''}`;
   }
   // Leiste nach dem automatischen Anhalten: was als Nächstes kommt
   const pause = $('#prPause');
@@ -397,22 +405,39 @@ function renderPresent(list = filtered(), i = list.findIndex(s => sceneKey(s) ==
 }
 // Szenenwechsel: Nach jedem Sprung puffert YouTube an der neuen Stelle. Statt Ladekreis und altem Bild
 // bleibt das Bild schwarz (die Einblendung zeigt schon die neue Szene), bis das Video dort läuft; dann kurze Aufblende.
+// Mit Einblendung kündigt eine große Tafel die Szene an. Sie steht mindestens CARD_MIN ms, damit sie lesbar ist;
+// ist das Video früher bereit, wird es so lange angehalten (kein Verlust beim Vorlauf).
+const CARD_MIN = 1800, SWITCH_MAX = 5000;
 let switchTimer = null;
 function startSwitch(s) {
-  view.switching = { start: s.start };
+  view.switching = { start: s.start, since: Date.now(), ready: false, held: false };
   stage.classList.add('switching');
   clearTimeout(switchTimer);
-  switchTimer = setTimeout(endSwitch, 5000); // spätestens dann wieder Bild, falls YouTube hängt
+  switchTimer = setTimeout(() => endSwitch(true), SWITCH_MAX); // spätestens dann wieder Bild, falls YouTube hängt
+  if (view.present) renderPresent();
 }
-function endSwitch() {
+// resume: ein für die Tafel angehaltenes Video weiterspielen (nicht beim Beenden der Präsentation)
+function endSwitch(resume = false) {
+  const sw = view.switching;
   view.switching = null;
   clearTimeout(switchTimer);
   stage.classList.remove('switching');
+  if (resume && sw && sw.held) yt.play();
+  if (view.present) renderPresent();
 }
 function checkSwitch() {
-  if (!view.switching || !yt.isPlaying()) return;
-  const t = yt.rawNow();
-  if (t >= view.switching.start - 0.5 && t <= view.switching.start + 3) endSwitch();
+  const sw = view.switching;
+  if (!sw) return;
+  if (!sw.ready && yt.isPlaying()) {
+    const t = yt.rawNow();
+    sw.ready = t >= sw.start - 0.5 && t <= sw.start + 3;
+  }
+  if (!sw.ready) return;
+  if (pres.overlay && Date.now() - sw.since < CARD_MIN) {
+    if (yt.isPlaying()) { yt.pause(); sw.held = true; }
+    return;
+  }
+  endSwitch(true);
 }
 function setYtControls(on) {
   view.ytControls = on;

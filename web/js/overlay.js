@@ -16,14 +16,16 @@ const clip = (t, n) => (t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t);
 
 // scene: Szene der Seite „Szenen“ (code, labels, date, opp, home), team: Name des gewählten Teams.
 // players: Torschütze, Vorlage bzw. bestraften Spieler mit anzeigen.
-// Ergebnis: { title: „Heim – Gast · Datum“, line: „Code · Abschnitt Zeit · Stand · Situation …“ }
+// Ergebnis: { title: „Heim – Gast · Datum“, code, detail: „Abschnitt Zeit · Stand · Situation …“, line: „Code · detail“ }
 export function overlayText(scene, team, { players = false } = {}) {
   const l = Object.fromEntries(scene.labels || []);
   const teams = scene.opp ? (scene.home ? [team, scene.opp] : [scene.opp, team]).filter(Boolean).join(' – ') : (team || '');
   const title = [teams, shortDate(scene.date)].filter(Boolean).join(' · ');
   const where = [l.Abschnitt, l.Spielzeit].filter(Boolean).join(' ');
-  const parts = [scene.code, where, l.Spielstand, l.Spielsituation || l['Stärke']];
+  const parts = [where, l.Spielstand, l.Spielsituation || l['Stärke']];
   if (players) parts.push(l.Spieler, l.Vorlage && `Vorlage ${l.Vorlage}`);
   parts.push(l.Ergebnis, l.Kommentar && clip(l.Kommentar, MAX_COMMENT));
-  return { title, line: parts.filter(Boolean).join(' · ') };
+  const detail = parts.filter(Boolean).join(' · ');
+  const code = scene.code || '';
+  return { title, code, detail, line: [code, detail].filter(Boolean).join(' · ') };
 }
