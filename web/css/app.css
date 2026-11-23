@@ -458,6 +458,7 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
 .sc-stage .player-wrap { container-type: inline-size; }
 .pr-shield, .pr-bar, .pr-overlay, .pr-card, .pr-pause, .pr-black { display: none; }
 .sc-stage.presenting .pr-shield { display: block; position: absolute; inset: 0; z-index: 1; cursor: pointer; }
+.sc-stage.presenting .pr-shield { touch-action: none; -webkit-tap-highlight-color: transparent; } /* Wischen wechselt die Szene statt zu scrollen */
 .sc-stage.presenting .consent { z-index: 3; }
 .sc-stage.presenting:has(.consent:not([hidden])) .pr-bar { display: none; }
 /* Szenenwechsel: schwarz bis das Video an der neuen Stelle läuft, dann Aufblende; Einblendung und Leisten liegen darüber */
@@ -502,9 +503,19 @@ main.scenes-page { display: block; max-width: 1500px; margin: 0 auto; padding: 1
 .pr-bar .btn.ghost { color: var(--ovl-ink); border-color: rgba(255, 255, 255, .3); }
 .pr-bar .sc-chip { background: transparent; color: var(--ovl-ink); border-color: rgba(255, 255, 255, .3); }
 .pr-bar .sc-chip[aria-pressed="true"] { background: var(--ovl-home); border-color: var(--ovl-home); color: #0E1813; }
-.pr-count { font: 700 1rem var(--display); font-variant-numeric: tabular-nums; padding: 0 .3rem; }
+.pr-count { font: 700 1rem var(--display); font-variant-numeric: tabular-nums; padding: 0 .3rem; white-space: nowrap; }
 /* Bedienleiste oben (unten liegt die Einblendung), unter der Pausenleiste, wenn die steht */
-.sc-stage.presenting .pr-pause:not([hidden]) ~ .pr-bar { top: calc(1rem + 3.2cqw); }
+.sc-stage.presenting .player-wrap:has(> .pr-pause:not([hidden])) .pr-bar { top: calc(1rem + 3.2cqw); }
+/* Mit dem Finger: größere Tasten (mindestens 44 px hoch), Leiste darf zweizeilig werden */
+.sc-stage.presenting.touch .pr-bar { gap: .5rem; padding: .6rem; }
+.sc-stage.presenting.touch .pr-bar .btn, .sc-stage.presenting.touch .pr-bar .sc-chip { min-height: 44px; min-width: 44px; padding-inline: .9rem; font-size: 1rem; }
+.sc-stage.presenting.touch .pr-bar [data-pr="prev"], .sc-stage.presenting.touch .pr-bar [data-pr="next"] { font-size: 1.4rem; line-height: 1; }
+/* Schmales Video (iPhone hochkant): nur Zählung, ‹ Pause ›, Beenden; die Schalter gibt es quer bzw. am Laptop */
+@container (max-width: 600px) {
+  .sc-stage.presenting .pr-bar .sc-chip, .sc-stage.presenting .pr-bar [data-pr="again"] { display: none; }
+  .sc-stage.presenting .pr-bar { flex-wrap: nowrap; top: .5rem; }
+  .sc-stage.presenting .player-wrap:has(> .pr-pause:not([hidden])) .pr-bar { top: 2.6rem; }
+}
 
 /* Referentenansicht: Video läuft im Beamer-Fenster, hier aktuelle und nächste Szene mit Restzeit und Bedienleiste */
 .pr-remote { display: none; }

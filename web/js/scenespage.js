@@ -613,15 +613,22 @@ const fsChange = () => { if (view.present && !view.remote && !(document.fullscre
 document.addEventListener('fullscreenchange', fsChange);
 document.addEventListener('webkitfullscreenchange', fsChange);
 window.addEventListener('pagehide', () => { if (remote) exitPresent(); });
-// Mauszeiger und Bedienleiste verschwinden nach zwei Sekunden ohne Bewegung (nur hier im Vollbild)
-let idleTimer = null;
+// Mauszeiger und Bedienleiste verschwinden nach zwei Sekunden ohne Bewegung (nur hier im Vollbild),
+// mit dem Finger nach vier Sekunden, weil man die Leiste dort erst durch Tippen holt
+let idleTimer = null, touchUi = false;
 function activity() {
   if (!view.present || view.remote) return;
   stage.classList.add('active');
   clearTimeout(idleTimer);
-  idleTimer = setTimeout(() => stage.classList.remove('active'), 2000);
+  idleTimer = setTimeout(() => stage.classList.remove('active'), touchUi ? 4000 : 2000);
 }
-stage.addEventListener('mousemove', activity);
+stage.addEventListener('mousemove', e => { if (!touchUi) activity(); });
+// Berührung erkennen: größere Tasten, und jedes Antippen der Leiste hält sie offen
+stage.addEventListener('pointerdown', e => {
+  touchUi = e.pointerType !== 'mouse';
+  stage.classList.toggle('touch', touchUi);
+  if (touchUi && e.target.closest('#prBar')) activity();
+});
 function presentAction(a) {
   const list = filtered(), i = list.findIndex(s => sceneKey(s) === view.current);
   if (a === 'next') { if (i < 0) play(0); else step(1); }
@@ -646,8 +653,26 @@ function presentAction(a) {
 $('#presentBtn').addEventListener('click', () => enterPresent('here'));
 $('#beamerBtn').addEventListener('click', () => enterPresent('beamer'));
 stage.querySelector('#prBar').addEventListener('click', e => { const b = e.target.closest('[data-pr]'); if (b) presentAction(b.dataset.pr); });
-// Klick aufs Video: Pause / weiter (die Klickfläche hält den Fokus auf der Seite, damit die Tasten ankommen)
-$('#prShield').addEventListener('click', () => { activity(); presentAction('toggle'); });
+// Klick aufs Video: Pause / weiter (die Klickfläche hält den Fokus auf der Seite, damit die Tasten ankommen).
+// Mit dem Finger: Tippen holt zuerst nur die Leiste, erst ein zweites Tippen hält an bzw. spielt weiter;
+// Wischen nach links zeigt die nächste Szene, nach rechts die vorige.
+const SWIPE_MIN = 50;
+let touchStart = null;
+const shield = $('#prShield');
+shield.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') touchStart = { x: e.clientX, y: e.clientY }; });
+shield.addEventListener('pointercancel', () => { touchStart = null; });
+shield.addEventListener('pointerup', e => {
+  if (!touchStart) return;
+  const dx = e.clientX - touchStart.x, dy = e.clientY - touchStart.y;
+  touchStart = null;
+  if (Math.abs(dx) >= SWIPE_MIN && Math.abs(dx) > Math.abs(dy) * 1.5) presentAction(dx < 0 ? 'next' : 'prev');
+  else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
+    const shown = stage.classList.contains('active');
+    activity();
+    if (shown) presentAction('toggle');
+  }
+});
+shield.addEventListener('click', () => { if (touchUi) return; activity(); presentAction('toggle'); });
 
 // ===== Bedienung =====
 async function shareScene(s) {
