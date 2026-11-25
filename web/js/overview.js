@@ -5,13 +5,13 @@ import { state } from './state.js';
 import { prepareGame } from './game.js';
 import { restore, saveMeta, metaKey } from './storage.js';
 import { STAGES } from './progress.js';
-import { esc } from './format.js';
-import { fetchIndex } from './publish.js';
+import { esc, ago } from './format.js';
+import { fetchIndex, getToken } from './publish.js';
 import { gameUrl } from './scenelink.js';
 import { groupByDay, defaultDay, dayRange } from './schedule.js';
 
 const $ = s => document.querySelector(s);
-const view = { tab: 'mine', filter: 'all', league: null, day: null, leagueData: null, leagues: [], published: new Map() };
+const view = { tab: 'mine', filter: 'all', league: null, day: null, leagueData: null, leagues: [], published: new Map(), recent: null, recentFilter: 'all' };
 
 // ===== Gespeicherte Spiele =====
 function storedGames() {
@@ -102,6 +102,47 @@ function renderMine(games) {
       </div>
     </article>`;
   }).join('');
+}
+
+// ===== Zuletzt gesynct: veröffentlichte Syncs aller, das neueste zuerst =====
+const RECENT_MAX = 50;
+async function loadRecent(games) {
+  $('#recentList').innerHTML = '<p class="note">Wird geladen …</p>';
+  let idx = {};
+  try { idx = await fetchIndex() || {}; } catch (e) { $('#recentList').innerHTML = '<p class="ov-empty">Die veröffentlichten Syncs ließen sich nicht laden.</p>'; return; }
+  const list = Object.entries(idx).map(([video, e]) => ({ ...e, video }))
+    .sort((a, b) => String(b.updated || '').localeCompare(String(a.updated || ''))).slice(0, RECENT_MAX);
+  // Einträge ohne Eckdaten (ältere Index-Stände): Spiel über den Proxy nachladen
+  await Promise.all(list.filter(e => !e.home).map(async e => {
+    try {
+      const g = await getJson(`api/game.php?id=${e.game_id}`);
+      Object.assign(e, { home: g.home_team_name, guest: g.guest_team_name, date: g.date, league: g.league_name, league_id: g.league_id, result: g.result_string });
+    } catch (err) { /* ohne Eckdaten */ }
+  }));
+  view.recent = list;
+  renderRecent(games);
+}
+function renderRecent(games) {
+  if (!view.recent) return;
+  const own = new Set(games.map(g => `${g.gameId}:${g.video}`));
+  const mark = view.recent.map(e => ({ ...e, mine: !!getToken(e.video), local: own.has(`${e.game_id}:${e.video}`) }));
+  const n = { all: mark.length, others: mark.filter(e => !e.mine).length, mine: mark.filter(e => e.mine).length };
+  $('#recentFilter').innerHTML = [['all', 'Alle'], ['others', 'Von anderen'], ['mine', 'Von dir']]
+    .map(([k, l]) => `<button data-rfilter="${k}" aria-pressed="${view.recentFilter === k}">${l} (${n[k]})</button>`).join('');
+  const shown = mark.filter(e => view.recentFilter === 'all' || (view.recentFilter === 'mine') === e.mine);
+  if (!mark.length) { $('#recentList').innerHTML = '<p class="ov-empty">Noch kein Sync veröffentlicht.</p>'; return; }
+  if (!shown.length) { $('#recentList').innerHTML = `<p class="ov-empty">${view.recentFilter === 'mine' ? 'Du hast in diesem Browser noch keinen Sync veröffentlicht.' : 'Bisher gibt es nur Syncs von dir.'}</p>`; return; }
+  $('#recentList').innerHTML = shown.map(e => `<article class="ov-card">
+      <div class="ov-main">
+        <div class="ov-date"><strong class="ov-ago" title="${esc(new Date(e.updated).toLocaleString('de-DE'))}">${esc(ago(e.updated))}</strong>${e.date ? ` · Spiel vom ${esc(shortDate(e.date))}` : ''}${e.league ? ` · ${esc(e.league)}` : ''}</div>
+        <div class="ov-match">${e.home ? `<span>${esc(e.home)}</span> <span class="score">${esc(e.result || '–')}</span> <span>${esc(e.guest)}</span>` : `<span>Spiel ${esc(e.game_id)}</span>`}</div>
+        <div class="ov-details"><span class="ov-pub">${e.mine ? 'von dir veröffentlicht' : 'von anderen'}</span> Version ${esc(e.version)} · ${esc(e.periods)} Abschnitt${e.periods === 1 ? '' : 'e'} fertig · ${esc(e.events)} Ereignisse${e.local ? ' · auch in deinem Browser bearbeitet' : ''}</div>
+      </div>
+      <div class="ov-actions">
+        <a class="btn small" href="${gameUrl(e.game_id, e.video)}">Öffnen</a>
+        ${e.league_id ? `<button class="btn small ghost" data-open-league="${esc(e.league_id)}">Liga ansehen</button>` : ''}
+      </div>
+    </article>`).join('');
 }
 
 // ===== Liga =====
@@ -228,6 +269,7 @@ function setTab(tab) {
   document.querySelectorAll('[data-otab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.otab === tab)));
   $('#minePanel').hidden = tab !== 'mine';
   $('#leaguePanel').hidden = tab !== 'league';
+  $('#recentPanel').hidden = tab !== 'recent';
 }
 
 async function init() {
@@ -240,7 +282,14 @@ async function init() {
   loadLeagueList(games);
   if (await fillMissingMeta(games)) { games = storedGames(); renderMine(games); renderLeagueButtons(games); }
 
-  document.querySelectorAll('[data-otab]').forEach(b => b.addEventListener('click', () => setTab(b.dataset.otab)));
+  document.querySelectorAll('[data-otab]').forEach(b => b.addEventListener('click', () => {
+    setTab(b.dataset.otab);
+    if (b.dataset.otab === 'recent' && !view.recent) loadRecent(games);
+  }));
+  $('#recentFilter').addEventListener('click', e => {
+    const b = e.target.closest('[data-rfilter]'); if (!b) return;
+    view.recentFilter = b.dataset.rfilter; renderRecent(games);
+  });
   $('#mineFilter').addEventListener('click', e => {
     const b = e.target.closest('[data-filter]'); if (!b) return;
     view.filter = b.dataset.filter; renderMine(games);

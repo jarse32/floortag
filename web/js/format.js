@@ -37,3 +37,15 @@ export function extractVideoId(input) {
   } catch (e) { /* kein gültiger Link */ }
   return null;
 }
+
+// „vor 3 Std.“, ab einer Woche das Datum
+export function ago(iso, now = Date.now()) {
+  const t = Date.parse(iso); if (!t) return '';
+  const min = Math.round((now - t) / 60000);
+  if (min < 1) return 'gerade eben';
+  if (min < 60) return `vor ${min} Min.`;
+  if (min < 24 * 60) return `vor ${Math.round(min / 60)} Std.`;
+  const days = Math.round(min / 1440);
+  if (days < 7) return days === 1 ? 'gestern' : `vor ${days} Tagen`;
+  return new Date(t).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}

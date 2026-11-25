@@ -27,12 +27,19 @@
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-otab="mine" aria-selected="true">Deine Spiele</button>
     <button class="tab" role="tab" data-otab="league" aria-selected="false">Liga-Spielplan</button>
+    <button class="tab" role="tab" data-otab="recent" aria-selected="false">Zuletzt gesynct</button>
   </div>
 
   <section id="minePanel" class="ov-panel">
     <p class="note">Alle Spiele, die du in diesem Browser bearbeitet hast, mit ihrer Stufe. Stände aus anderen Browsern oder von anderen Personen erscheinen hier nicht.</p>
     <div id="mineFilter" class="segbtns ov-filter" role="group" aria-label="Nach Stufe filtern"></div>
     <div id="mineList" class="ov-list"></div>
+  </section>
+
+  <section id="recentPanel" class="ov-panel" hidden>
+    <p class="note">Die zuletzt veröffentlichten oder ergänzten Syncs, von dir und von anderen, das neueste zuerst. Wer etwas veröffentlicht hat, speichert FloorTag nicht.</p>
+    <div id="recentFilter" class="segbtns ov-filter" role="group" aria-label="Nach Herkunft filtern"></div>
+    <div id="recentList" class="ov-list"></div>
   </section>
 
   <section id="leaguePanel" class="ov-panel" hidden>

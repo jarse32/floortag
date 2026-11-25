@@ -118,6 +118,7 @@ check "Ältere Version lesen"                 200 - "/api/sync.php?video=lfIFpRs
 [[ $(json "len(d['sync']['events'])") == 1 ]] && echo "ok    Version 1 unverändert" || { echo "FEHLER Version 1"; FAILS=$((FAILS+1)); }
 check "Übersicht der Syncs"                  200 - "/api/sync.php?index=1"
 [[ $(json "d['lfIFpRsE55I']['game_id'], d['lfIFpRsE55I']['version'], d['lfIFpRsE55I']['periods']") == "58668 2 1" ]] && echo "ok    Index aktuell" || { echo "FEHLER Index $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
+[[ $(json "d['lfIFpRsE55I'].get('home'), d['lfIFpRsE55I'].get('league_id')") == "Baltic Storms 2449" ]] && echo "ok    Index mit Teams und Liga" || { echo "FEHLER Index ohne Eckdaten $(cat "$TMP/body")"; FAILS=$((FAILS+1)); }
 # Ohne Schlüssel: Ergänzungen sofort, Änderungen als Vorschlag
 python3 -I -c "import json;d=json.load(open('$TMP/pub2.json'));d.pop('token');d['sync']['events'].append({'event_id':3,'period':1,'time':'15:37','video_sec':1300});d['sync']['periods']['2']={'start':2500,'end':None};json.dump(d,open('$TMP/pub5.json','w'))"
 post "Ohne Schlüssel: nur Ergänzungen"      200 "$TMP/pub5.json"

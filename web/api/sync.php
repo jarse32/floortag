@@ -172,6 +172,17 @@ function apply_changes(array $items, array $changes): array {
     }
     return $items;
 }
+// Eckdaten des Spiels für die Übersicht „Zuletzt gesynct“ aus dem Cache von game.php (nur Teams, Liga, Datum, Ergebnis)
+function game_info(int $id): array {
+    $g = read_json(CACHE_DIR . "/game-$id.json");
+    if (!is_array($g) || ($g['id'] ?? null) !== $id) return [];
+    $str = fn($v) => is_string($v) ? mb_substr($v, 0, 80) : null;
+    return array_filter(['home' => $str($g['home_team_name'] ?? null), 'guest' => $str($g['guest_team_name'] ?? null),
+        'date' => $str($g['date'] ?? null), 'league' => $str($g['league_name'] ?? null),
+        'league_id' => is_int($g['league_id'] ?? null) ? $g['league_id'] : null, 'result' => $str($g['result_string'] ?? null)],
+        fn($v) => $v !== null);
+}
+
 // Neue Version schreiben und den Index nachziehen; gibt die Versionsnummer zurück
 function write_version(string $dir, array &$meta, array $sync): int {
     $n = $meta['versions'] + 1;
@@ -183,7 +194,7 @@ function write_version(string $dir, array &$meta, array $sync): int {
     write_json("$dir/meta.json", $meta);
     $idxFile = DATA_DIR . '/index.json';
     $idx = read_json($idxFile) ?? [];
-    $idx[$meta['video_id']] = ['game_id' => $meta['game_id'], 'version' => $n, 'updated' => $now] + summary($sync);
+    $idx[$meta['video_id']] = ['game_id' => $meta['game_id'], 'version' => $n, 'updated' => $now] + summary($sync) + game_info($meta['game_id']);
     write_json($idxFile, $idx);
     return $n;
 }
@@ -227,7 +238,18 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // ===== Lesen =====
 if ($method === 'GET') {
-    if (isset($_GET['index'])) out(read_json(DATA_DIR . '/index.json') ?? []);
+    if (isset($_GET['index'])) {
+        // Ältere Einträge ohne Eckdaten einmal aus dem Cache von game.php ergänzen
+        $idx = read_json(DATA_DIR . '/index.json') ?? [];
+        $changed = false;
+        foreach ($idx as $v => $e) {
+            if (isset($e['home']) || !is_int($e['game_id'] ?? null)) continue;
+            $info = game_info($e['game_id']);
+            if ($info) { $idx[$v] = $e + $info; $changed = true; }
+        }
+        if ($changed) write_json(DATA_DIR . '/index.json', $idx);
+        out($idx);
+    }
     $video = (string) ($_GET['video'] ?? '');
     if (!video_ok($video)) fail(400, 'Ungültige Video-ID.');
     $meta = read_json(DATA_DIR . "/$video/meta.json");

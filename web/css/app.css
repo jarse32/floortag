@@ -364,6 +364,8 @@ main.overview { display: block; max-width: 1100px; margin: 0 auto; padding: 1.5r
 .ov-step { width: 14px; height: 6px; border-radius: 2px; background: var(--line); }
 .ov-step.on { background: var(--pine); }
 .ov-empty { color: var(--muted); padding: 1rem 0; }
+.ov-details .ov-pub { margin: 0 .4rem 0 0; }
+.ov-ago { color: var(--ink); }
 .ov-quick { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin: -.2rem 0 1rem; }
 .ov-league { font: 700 1.5rem var(--display); margin: .5rem 0 .2rem; }
 .ov-tablewrap { overflow-x: auto; }
