@@ -149,7 +149,7 @@ function renderEvents() {
           <button class="btn small" data-act="placeback" data-id="${e.event_id}">Dort setzen</button>
           <button class="btn small ghost" data-act="goback" data-id="${e.event_id}">Zurück</button></div>` : ''}
         <div class="row">
-          <button class="btn small" data-act="setnow" data-id="${e.event_id}">Auf aktuelle Videozeit setzen</button>
+          <button class="btn small" data-act="setnow" data-id="${e.event_id}" data-kbd="Enter">Auf aktuelle Videozeit setzen</button>
           <button class="btn small ghost" data-act="jump" data-id="${e.event_id}" ${t == null ? 'disabled' : ''}>Ab ${state.leadIn} s vorher abspielen</button>
           ${t != null ? linkBtn(e.event_id) : ''}
         </div>

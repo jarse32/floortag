@@ -17,6 +17,7 @@ import { decideOnLoad, adoptPublished, publishSync, fetchPublished, fetchIndex, 
 import { toggleLineupPlayer } from './lineups.js';
 import { sceneUrl, parseScene, parseVideoParam, stripScene, canShareNative } from './scenelink.js';
 import { ppStartOf, setPpStart } from './ppstart.js';
+import { installShortcuts, gameShortcuts } from './shortcuts.js';
 
 // Zustand geändert: speichern und neu zeichnen
 function commit() {
@@ -735,6 +736,7 @@ $('#resetBtn').addEventListener('click', () => {
 });
 
 // ===== Tastatur =====
+installShortcuts(() => gameShortcuts(ui.mode, CATALOG));
 document.addEventListener('keydown', e => {
   if (!state.game || e.metaKey || e.ctrlKey || e.altKey) return;
   const tag = e.target.tagName;

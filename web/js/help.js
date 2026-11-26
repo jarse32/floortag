@@ -15,7 +15,7 @@ export const GUIDES = {
       { title: 'Kapitel und Link', text: 'Unter „Export“ kopierst du die YouTube-Kapitel für die Videobeschreibung. Auf Wunsch stehen dort auch Strafen und der Beginn jeder Überzahl. Mit „Link teilen“ schickst du Spiel und Szenen an andere.', target: '#chapters' }
     ],
     tips: [
-      'Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, Komma/Punkt ±1 s, − / + Tempo, Enter setzt das gewählte Ereignis.',
+      'Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, Komma/Punkt ±1 s, − / + Tempo, Enter setzt das gewählte Ereignis. Alle Kürzel zeigt die Taste „?“ bzw. ⌨ oben rechts.',
       'Streamlücke? Setz in der Drittelkarte je einen „freien Anker“ vor und nach der Lücke. Ereignisse in der Lücke markierst du als „Nicht im Video“.',
       'Bei einer Strafe steht die Uhr. In der Zeile der Strafe setzt du, wann das Spiel in Über- und Unterzahl weitergeht; dort beginnen Clips und Szenen. Ohne gesetzten Beginn schätzt FloorTag (Einstellung, danach der Durchschnitt der gesetzten).',
       'Spielzeit im Saisonmanager falsch? Setz das Ereignis an die richtige Stelle. Passt sie nicht zur Reihenfolge, bietet FloorTag an, die Spielzeit zu korrigieren (markiert mit *).',
@@ -54,7 +54,7 @@ export const GUIDES = {
       { title: 'Tempo', text: 'Mit 0,5× bis 2× siehst du Szenen langsamer oder schneller.', target: '.rates' },
       { title: 'Präsentieren', text: '„Präsentieren“ oben zeigt die Szenen dieses Spiels nacheinander im Vollbild oder auf einem zweiten Bildschirm, z. B. in der Videobesprechung. Bei einem geteilten Link sind die Tags dabei. Du wählst Team und Kategorien, etwa Tore und Überzahl.', target: '#presentLink' }
     ],
-    tips: ['Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, − / + Tempo, N nächstes Ereignis.', 'Szenen und Tags sind nur dort zu sehen, wo sie gesetzt wurden, oder über einen geteilten Link. Fehlt beides, bekommst du einen Hinweis in der Ereignisliste.', 'Eine Szene weiterschicken: Ereignis antippen und „Link zur Szene kopieren“ bzw. „Szene teilen“, bei Tags über das Kettensymbol.', 'Alle Szenen eines Teams über die ganze Saison, etwa alle Überzahlspiele oder alle Tore und Vorlagen eines Spielers, findest du oben unter „Szenen“. Dort erscheinen alle Spiele mit Sync.']
+    tips: ['Tastatur: K oder Leertaste Play/Pause, J/L ±5 s, H/Ö ±30 s, − / + Tempo, N nächstes Ereignis. Alle Kürzel zeigt die Taste „?“ bzw. ⌨ oben rechts.', 'Szenen und Tags sind nur dort zu sehen, wo sie gesetzt wurden, oder über einen geteilten Link. Fehlt beides, bekommst du einen Hinweis in der Ereignisliste.', 'Eine Szene weiterschicken: Ereignis antippen und „Link zur Szene kopieren“ bzw. „Szene teilen“, bei Tags über das Kettensymbol.', 'Alle Szenen eines Teams über die ganze Saison, etwa alle Überzahlspiele oder alle Tore und Vorlagen eines Spielers, findest du oben unter „Szenen“. Dort erscheinen alle Spiele mit Sync.']
   }
 };
 

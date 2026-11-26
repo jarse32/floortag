@@ -27,6 +27,7 @@
   </div>
   <a id="presentLink" class="btn ghost" href="szenen.html" hidden title="Szenen dieses Spiels im Vollbild oder auf zweitem Bildschirm zeigen, mit Tags">Präsentieren</a>
   <button id="shareBtn" class="btn share-btn" data-modes="sync analysis" title="Link kopieren, der Spiel, Sync und Tags zum Ansehen öffnet">Link teilen</button>
+  <button class="btn ghost help-btn kb-btn" data-kb-open aria-label="Tastenkürzel anzeigen" title="Tastenkürzel (?)">⌨</button>
   <button id="helpBtn" class="btn ghost help-btn" aria-label="Anleitung öffnen" title="Anleitung">?</button>
   </div>
 </header>
@@ -138,14 +139,14 @@
     </div>
     <div class="transport">
       <span id="clock" class="clock">0:00</span>
-      <button class="btn ghost" data-seek="-30">−30 s</button>
-      <button class="btn ghost" data-seek="-5">−5 s</button>
-      <button class="btn ghost" data-seek="-1">−1 s</button>
-      <button class="btn" id="playBtn">Play / Pause</button>
-      <button class="btn ghost" data-seek="1">+1 s</button>
-      <button class="btn ghost" data-seek="5">+5 s</button>
-      <button class="btn ghost" data-seek="30">+30 s</button>
-      <div class="rates" role="group" aria-label="Abspieltempo">
+      <button class="btn ghost" data-seek="-30" data-kbd="H">−30 s</button>
+      <button class="btn ghost" data-seek="-5" data-kbd="J">−5 s</button>
+      <button class="btn ghost" data-seek="-1" data-kbd=",">−1 s</button>
+      <button class="btn" id="playBtn" data-kbd="K">Play / Pause</button>
+      <button class="btn ghost" data-seek="1" data-kbd=".">+1 s</button>
+      <button class="btn ghost" data-seek="5" data-kbd="L">+5 s</button>
+      <button class="btn ghost" data-seek="30" data-kbd="Ö">+30 s</button>
+      <div class="rates" role="group" aria-label="Abspieltempo" data-kbd="− +">
         <button class="rate" data-rate="0.5" aria-pressed="false">0,5×</button>
         <button class="rate" data-rate="1" aria-pressed="true">1×</button>
         <button class="rate" data-rate="1.5" aria-pressed="false">1,5×</button>
@@ -155,8 +156,7 @@
     <div id="strip" class="strip" hidden aria-label="Zeitleiste des Videos"></div>
     <section id="tagbar" class="tagbar" aria-label="Taggen" data-modes="analysis"></section>
     <div id="periods" class="periods" data-modes="sync analysis"></div>
-    <p class="keys" data-modes="view">Klick auf ein Ereignis oder einen Tag spielt die Szene ab. Tastatur: <kbd>K</kbd> oder <kbd>Leertaste</kbd> Play/Pause, <kbd>J</kbd>/<kbd>L</kbd> ±5 s, <kbd>H</kbd>/<kbd>Ö</kbd> ±30 s, <kbd>-</kbd>/<kbd>+</kbd> Tempo, <kbd>N</kbd> nächstes Ereignis.</p>
-    <p class="keys" data-modes="sync analysis">Tastatur: <kbd>K</kbd> oder <kbd>Leertaste</kbd> Play/Pause, <kbd>J</kbd>/<kbd>L</kbd> ±5 s, <kbd>H</kbd>/<kbd>Ö</kbd> ±30 s, <kbd>,</kbd>/<kbd>.</kbd> ±1 s, <kbd>-</kbd>/<kbd>+</kbd> Tempo, <kbd>Enter</kbd> setzt das gewählte Ereignis auf die aktuelle Videozeit, <kbd>N</kbd> nächstes Ereignis.<span data-modes="analysis"> Tags: <kbd>1</kbd>–<kbd>9</kbd> Code an der aktuellen Stelle, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd> Ergebnis, <kbd>T</kbd> Team wechseln, <kbd>Esc</kbd> Nachtrag schließen, im Penaltyschießen <kbd>V</kbd>/<kbd>X</kbd>.</span></p>
+    <p class="keys">Die kleinen Zeichen an den Knöpfen sind Tastenkürzel. <button class="linkbtn" data-kb-open>Alle Tastenkürzel zeigen</button> (Taste <kbd>?</kbd>)</p>
   </section>
 
   <aside class="side">

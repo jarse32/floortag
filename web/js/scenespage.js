@@ -15,6 +15,8 @@ import { createRemote } from './remoteplayer.js';
 import { SHARE_PREFIX, decodeShare, applySharePayload } from './share.js';
 import { fetchLeagueInfo } from './leagueinfo.js';
 import { ownVideos } from './storage.js';
+import { installShortcuts, SCENES_SHORTCUTS } from './shortcuts.js';
+installShortcuts(() => SCENES_SHORTCUTS);
 
 const $ = s => document.querySelector(s);
 const PREFS = 'floortag:scenes';
